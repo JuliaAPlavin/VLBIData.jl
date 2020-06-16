@@ -1,16 +1,4 @@
-using Dates, FITSIO, Unitful, Parameters, AxisArrays, DataFrames, Query, PyCall, SplitApplyCombine
-
-
-
-function DataFrames.DataFrame(tbl::TableHDU)
-    pairs = [Symbol(n) => read(tbl, n) for n in FITSIO.colnames(tbl)]
-    pairs = [
-        k => (ndims(v) == 1 ? v : [v[:, i] for i in 1:size(v, 2)])
-        for (k, v) in pairs]
-    return DataFrame(pairs...)
-end
-
-Base.Dict(row::DataFrameRow) = Dict(zip(string.(keys(row)), values(row)))
+using Dates, FITSIO, Unitful, Parameters, DataFrames, Query, PyCall, SplitApplyCombine
 
 
 

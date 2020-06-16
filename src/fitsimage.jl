@@ -1,7 +1,11 @@
-using Unitful, UnitfulAstro, FITSIO, AxisArrays, Parameters, DataFrames, Query
+using Unitful, UnitfulAstro
+using FITSIO: FITSHeader, FITS, read_header
+using Parameters: @with_kw
+using DataFrames: select!, ncol
 import StatsBase: mad
+using AxisKeys
+using Utils
 
-@unit mas "mas" Mas 1e-3u"arcsecond" false
 
 @with_kw struct FitsImage{TD, TCC}
     path::String
@@ -17,16 +21,13 @@ function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
         header = read_header(primary)
 
         data = if read_data
-            ra_vals  = axis_vals(header, "RA---SIN", zero_reference=true) .* u"°" .|> mas
-            dec_vals = axis_vals(header, "DEC--SIN", zero_reference=true) .* u"°" .|> mas
+            ra_vals  = axis_vals(header, "RA---SIN", zero_reference=true) .* u"°" .|> u"mas"
+            dec_vals = axis_vals(header, "DEC--SIN", zero_reference=true) .* u"°" .|> u"mas"
 
             @assert header["BSCALE"] == 1 && header["BZERO"] == 0 && header["BUNIT"] == "JY/BEAM"
             data = read(primary)
             data = dropdims(data, dims=(3, 4))
-            AxisArray(
-                data,
-                Axis{:ra}(ra_vals),
-                Axis{:dec}(dec_vals))
+            KeyedArray(data, ra=ra_vals, dec=dec_vals)
         else
             nothing
         end
@@ -36,7 +37,7 @@ function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
             if ncol(comps) > 3
                 @assert all(comps[!, Symbol("MAJOR AX")] .== 0) && all(comps[!, Symbol("MINOR AX")] .== 0) && all(comps[!, :POSANGLE] .== 0) && all(comps[!, Symbol("TYPE OBJ")] .== 0)
             end
-            comps |> @map({flux = _.FLUX, dx = _.DELTAX * 3.6e6, dy = _.DELTAY * 3.6e6}) |> DataFrame
+            select!(comps, :FLUX => :flux, :DELTAX => (x->x*3.6e6) => :ra, :DELTAY => (x->x*3.6e6) => :dec)
         else
             nothing
         end
