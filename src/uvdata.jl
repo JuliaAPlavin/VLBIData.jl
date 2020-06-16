@@ -1,5 +1,12 @@
-using Dates, FITSIO, Unitful, Parameters, DataFrames, Query, PyCall, SplitApplyCombine
+using PyCall
+using Dates
+using FITSIO: FITSHeader, FITS, read_header
+using Unitful
+using Parameters: @with_kw
+using DataFrames: DataFrame
+using AxisKeys
 
+macro S_str(str) :(Symbol($str)) end
 
 
 @with_kw struct FrequencyWindow
@@ -45,9 +52,10 @@ end
 function read_freqs(uvh, fq_table)
     df = DataFrame(fq_table)
     @assert size(df, 1) == 1
-    fq = Dict(df[1, :])
-    @assert all(fq["SIDEBAND"] .== 1) && all(fq["CH WIDTH"] .== fq["TOTAL BANDWIDTH"])
-    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq["IF FREQ"].*u"Hz", fq["CH WIDTH"].*u"Hz", fq["SIDEBAND"])
+    fq = Dict(pairs(df[1, :]))
+    @assert !haskey(fq, :SIDEBAND) || all(fq[:SIDEBAND] .== 1)
+    @assert all(fq[S"CH WIDTH"] .== fq[S"TOTAL BANDWIDTH"])
+    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq[S"IF FREQ"].*u"Hz", fq[S"CH WIDTH"].*u"Hz", fq[:SIDEBAND])
     return isa(res, FrequencyWindow) ? [res] : res  # XXX: 1-sized array turn out as scalars
 end
 
@@ -77,12 +85,12 @@ function read_data_arrays(uvdata::UVData)
 
     count = size(raw["DATA"], 1)
     n_if = length(uvdata.freq_windows)
-    axarr = AxisArray(raw["DATA"],
-        Axis{:IX}(1:count),
-        Axis{:DEC}([1]), Axis{:RA}([1]),
-        Axis{:IF}(1:n_if), Axis{:FREQ}([1]), Axis{:STOKES}(uvdata.header.stokes),
-        Axis{:COMPLEX}([:re, :im, :wt]))
-    axarr = axarr[Axis{:DEC}(1), Axis{:RA}(1), Axis{:FREQ}(1)]  # drop always-singleton axes
+    axarr = KeyedArray(raw["DATA"],
+        IX=1:count,
+        DEC=[1], RA=[1],
+        IF=1:n_if, FREQ=[1], STOKES=uvdata.header.stokes,
+        COMPLEX=[:re, :im, :wt])
+    axarr = axarr[DEC=1, RA=1, FREQ=1]  # drop always-singleton axes
 
     uvw = [kk => Float32.(raw[k]) .* (u"c" * u"s") .|> u"m"
         for (kk, k) in zip([:u, :v, :w], uvw_keys)]
@@ -92,9 +100,9 @@ function read_data_arrays(uvdata::UVData)
         ant1_ix = round.(Int, raw["BASELINE"]) .÷ 256 .|> Int8,
         ant2_ix = round.(Int, raw["BASELINE"]) .% 256 .|> Int8,
         # int_time = raw["INTTIM"] .* u"s",
-        date = AxisArray(Float64.(raw["DATE"]) .+ raw["_DATE"], Axis{:IX}(1:count)),
-        visibility = map((r, i) -> r + im * i, axarr[Axis{:COMPLEX}(:re)], axarr[Axis{:COMPLEX}(:im)]),
-        weight = axarr[Axis{:COMPLEX}(:wt)],
+        date = KeyedArray(Float64.(raw["DATE"]) .+ raw["_DATE"], IX=1:count),
+        visibility = map((r, i) -> r + im * i, axarr(COMPLEX=:re), axarr(COMPLEX=:im)),
+        weight = axarr(COMPLEX=:wt),
     )
     data = merge(data, (date_0 = Float32.(data.date .- minimum(data.date)),))
     return data
@@ -103,7 +111,7 @@ end
 function read_data_dataframe(uvdata::UVData)
     data = read_data_arrays(uvdata)
     @assert ndims(data.visibility) == 3
-    df = map(Iterators.product(AxisArrays.axes.(Ref(data.visibility), [Axis{:IX}, Axis{:IF}, Axis{:STOKES}])...)) do (ix, iif, stokes)
+    df = map(Iterators.product(axiskeys.(Ref(data.visibility), [:IX, :IF, :STOKES])...)) do (ix, iif, stokes)
         if_spec = uvdata.freq_windows[iif]
         uvw = (data.u[ix], data.v[ix], data.w[ix])
         uvw_wl = (uvw ./ if_spec.wavelen)
@@ -118,11 +126,11 @@ function read_data_dataframe(uvdata::UVData)
             if_spec=if_spec,
             u=uvw[1], v=uvw[2], w=uvw[3],
             u_wl=uvw_wl[1], v_wl=uvw_wl[2], w_wl=uvw_wl[3],
-            visibility=data.visibility[Axis{:IX}(ix), Axis{:IF}(iif), Axis{:STOKES}(stokes)],
-            weight=data.weight[Axis{:IX}(ix), Axis{:IF}(iif), Axis{:STOKES}(stokes)],
+            visibility=data.visibility(IX=ix, IF=iif, STOKES=stokes),
+            weight=data.weight(IX=ix, IF=iif, STOKES=stokes),
         )
     end
-    df = df |> @filter(_.weight > 0) |> DataFrame
+    df = filter(x -> x.weight > 0, df) |> DataFrame
     return df
 end
 
