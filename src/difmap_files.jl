@@ -5,10 +5,14 @@ struct DifmapModel end
 
 function load(::Type{DifmapModel}, path)
     df = CSV.read(path, comment="!", delim=" ", ignorerepeated=true, header=["flux", "radius", "theta", "major", "ratio", "phi", "T", "freq", "specindex"])
-    df = mapcols(c -> parse.(Float64, strip.(string.(c), 'v')), df)
-    select!(df,
-        :theta => (x->sin(x |> deg2rad)) => :ra,
-        :theta => (x->cos(x |> deg2rad)) => :dec,
+    df = mapcols(df) do col
+        map(col) do x
+            ismissing(x) ? missing : parse(Float64, strip(string(x), 'v'))
+        end
+    end
+    transform!(df,
+        [:radius, :theta] => ((r, t) -> r .* sind.(t)) => :ra,
+        [:radius, :theta] => ((r, t) -> r .* cosd.(t)) => :dec,
     )
     return df
 end
