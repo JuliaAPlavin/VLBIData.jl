@@ -60,6 +60,8 @@ function read_freqs(uvh, fq_table)
 end
 
 function read_data_raw(uvdata::UVData)
+    pyimport_conda("numpy", "numpy")
+    pyimport_conda("astropy", "astropy")
     py"""
     import numpy as np
     import astropy.io.fits
