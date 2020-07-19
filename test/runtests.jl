@@ -37,6 +37,8 @@ end
     @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="vis", extension=nothing) == "J0000+0248_C_2016_01_03_pet_vis"
     @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="map"=>"vis") == "J0000+0248_C_2016_01_03_pet_vis.fits"
     @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="map"=>"vis", extension=nothing) == "J0000+0248_C_2016_01_03_pet_vis"
+    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="map"=>"vis", extension="fits.png") == "J0000+0248_C_2016_01_03_pet_vis.fits.png"
+    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits-1.png", suffix="map"=>"vis", extension="fits-1.png" => "fits-2.png") == "J0000+0248_C_2016_01_03_pet_vis.fits-2.png"
     @test_throws AssertionError VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="vis"=>"map")
 end
 

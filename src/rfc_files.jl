@@ -15,7 +15,7 @@ function fname_parse(fname)
         (?<epoch>\d{4}_\d{2}_\d{2})_
         (?<author>[a-z]{2,3})_
         (?<suffix>\w*)
-        \.(?<extension>\w+)
+        \.(?<extension>.+)
         $
     """x, basename(fname))
     return (; [k => m[k] for k in [:J2000, :band, :epoch, :author, :suffix, :extension]]...)
@@ -30,6 +30,9 @@ function fname_build(params)
     filter!(!isnothing, parts)
     fname = join(parts, "_")
     if get(params, :extension, nothing) != nothing
+        if startswith(params.extension, ".")
+            @warn "Provided extensions starts with '.' but probably shouldn't." params.extension
+        end
         fname *= ".$(params.extension)"
     end
     return fname
