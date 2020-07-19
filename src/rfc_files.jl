@@ -2,10 +2,11 @@ using FormatInterp
 using Utils
 import SplitApplyCombine
 
-function parse_fits_fname(fname)
+@deprecate parse_fits_fname(fname) fname_parse(fname) false
+function fname_parse(fname)
     m = match(r"""
         ^
-        (?<j2000>
+        (?<J2000>
             J
             (?P<ra_h>\d{2})(?P<ra_m>\d{2})
             (?P<dec_sign>[+-])(?P<dec_d>\d{2})(?P<dec_m>\d{1,2})[A-Z]?
@@ -17,18 +18,34 @@ function parse_fits_fname(fname)
         \.(?<extension>\w+)
         $
     """x, basename(fname))
-    return (; [k => m[k] for k in [:j2000, :band, :epoch, :author, :suffix, :extension]]...)
+    return (; [k => m[k] for k in [:J2000, :band, :epoch, :author, :suffix, :extension]]...)
 end
 
-function build_fits_fname(params)
-    res = f"{params.j2000}_{params.band}_{params.epoch}_{params.author}"
-    if params.suffix != nothing
-        res *= f"_{params.suffix}"
+@deprecate build_fits_fname(fname) fname_build(fname) false
+function fname_build(params)
+    parts = [
+        get(params, k, nothing)
+        for k in [:J2000, :band, :epoch, :author, :suffix]
+    ]
+    filter!(!isnothing, parts)
+    fname = join(parts, "_")
+    if get(params, :extension, nothing) != nothing
+        fname *= ".$(params.extension)"
     end
-    if params.extension != nothing
-        res *= f".{params.extension}"
+    return fname
+end
+
+@deprecate replace_in_fname(fname; kwargs...) fname_replace(fname; kwargs...) false
+function fname_replace(fname; kwargs...)
+    replace(old, (exp, new)::Pair) = (@assert old == exp; new)
+    replace(old, new) = new
+
+    parsed = fname_parse(fname)
+    for (k, v) in kwargs
+        new_v = replace(get(parsed, k, nothing), v)
+        parsed = merge(parsed, (k => new_v,))
     end
-    return res
+    return fname_build(parsed)
 end
 
 rfc_fname_swap_mapvis(fname::String) = if endswith(fname, "_vis.fits")
