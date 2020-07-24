@@ -6,19 +6,20 @@ import SplitApplyCombine
 function fname_parse(fname)
     m = match(r"""
         ^
+        (?<directory>.*/)?
         (?<J2000>
             J
             (?P<ra_h>\d{2})(?P<ra_m>\d{2})
             (?P<dec_sign>[+-])(?P<dec_d>\d{2})(?P<dec_m>\d{1,2})[A-Z]?
         )_
-        (?<band>[A-Z])_
+        ((?<band>[A-Z])_)?
         (?<epoch>\d{4}_\d{2}_\d{2})_
-        (?<author>[a-z]{2,3})_
-        (?<suffix>\w*)
-        \.(?<extension>.+)
+        (?<author>[a-z]{2,3})
+        (_(?<suffix>\w*))?
+        (\.(?<extension>.+))?
         $
-    """x, basename(fname))
-    return (; [k => m[k] for k in [:J2000, :band, :epoch, :author, :suffix, :extension]]...)
+    """x, fname)
+    return (; [k => m[k] for k in [:J2000, :band, :epoch, :author, :suffix, :extension, :directory]]...)
 end
 
 @deprecate build_fits_fname(fname) fname_build(fname) false
@@ -27,13 +28,16 @@ function fname_build(params)
         get(params, k, nothing)
         for k in [:J2000, :band, :epoch, :author, :suffix]
     ]
-    filter!(!isnothing, parts)
-    fname = join(parts, "_")
+    fname = join(filter(!isnothing, parts), "_")
     if get(params, :extension, nothing) != nothing
         if startswith(params.extension, ".")
             @warn "Provided extensions starts with '.' but probably shouldn't." params.extension
         end
         fname *= ".$(params.extension)"
+    end
+    if get(params, :directory, nothing) != nothing
+        @assert endswith(params.directory, "/")
+        fname = joinpath(params.directory, fname)
     end
     return fname
 end
@@ -64,10 +68,10 @@ function match_fits_files(
     get_key(by::Symbol, parsed_fname::NamedTuple) = getfield(parsed_fname, by)
     get_key(by::NTuple{N, Symbol}, parsed_fname::NamedTuple) where {N} = getfield.(Ref(parsed_fname), by)
     get_key(by::Function, parsed_fname::NamedTuple) = by(parsed_fname)
-    get_key(by, fname::String) = get_key(by, parse_fits_fname(fname))
+    get_key(by, fname::String) = get_key(by, fname_parse(fname))
 
     for fs in [files_a, files_b]
-        parsed = parse_fits_fname.(fs)
+        parsed = fname_parse.(fs)
         @assert !any(isnothing.(parsed))
         if check_same != nothing
             @assert get_key.(Ref(check_same), parsed) |> unique |> length == 1
