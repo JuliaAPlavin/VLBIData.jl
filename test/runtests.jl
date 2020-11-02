@@ -85,6 +85,11 @@ end
     @test mean(df[!, :visibility]) ≈ 0.021919968 + 0.00062215974im
 end
 
+@testset "difmap_files" begin
+    df = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
+    @test nrow(df) == 3
+    @test df[!, :flux] ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
+end
 
 import Aqua
 @testset "Aqua" begin
