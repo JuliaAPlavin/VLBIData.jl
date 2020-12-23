@@ -4,7 +4,7 @@ using Parameters: @with_kw
 using DataFrames: select!, ncol
 import StatsBase: mad
 using AxisKeys
-using Utils
+using Utils  # for u"mas"
 using StaticArrays
 
 
