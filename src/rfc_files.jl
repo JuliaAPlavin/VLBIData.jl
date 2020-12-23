@@ -1,5 +1,4 @@
 using FormatInterp
-using Utils
 import SplitApplyCombine
 
 
@@ -12,11 +11,11 @@ function fname_parse(fname)
             J
             (?P<ra_h>\d{2})(?P<ra_m>\d{2})
             (?P<dec_sign>[+-])(?P<dec_d>\d{2})(?P<dec_m>\d{1,2})[A-Z]?
-        )_
-        ((?<band>[A-Z]{1,3})_)?
-        ((?<epoch>\d{4}_\d{2}_\d{2})_)?
-        ((?<author>[a-z]{2,3})_)?
-        (?<suffix>[\w-]*)?
+        )
+        (_(?<band>[A-Z]{1,3}))?
+        (_(?<epoch>\d{4}_\d{2}_\d{2}))?
+        (_(?<author>[a-z]{2,3}))?
+        (_(?<suffix>[\w-]*))?
         (\.(?<extension>.+))?
         $
     """x, fname)
