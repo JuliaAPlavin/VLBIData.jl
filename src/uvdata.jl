@@ -5,7 +5,6 @@ using Unitful
 using Parameters: @with_kw
 using DataFrames: DataFrame
 using AxisKeys
-using Utils
 
 
 @with_kw struct FrequencyWindow
@@ -83,8 +82,8 @@ function read_freqs(uvh, fq_table)
     @assert size(df, 1) == 1
     fq = df[1, :]
     @assert !haskey(fq, :SIDEBAND) || all(fq[:SIDEBAND] .== 1)
-    @assert all(fq[S"CH WIDTH"] .== fq[S"TOTAL BANDWIDTH"])  (fq[S"CH WIDTH"], fq[S"TOTAL BANDWIDTH"])
-    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq[S"IF FREQ"].*u"Hz", fq[S"CH WIDTH"].*u"Hz", fq[:SIDEBAND])
+    @assert all(fq[Symbol("CH WIDTH")] .== fq[Symbol("TOTAL BANDWIDTH")])
+    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq[Symbol("IF FREQ")].*u"Hz", fq[Symbol("CH WIDTH")].*u"Hz", fq[:SIDEBAND])
     return isa(res, FrequencyWindow) ? [res] : res  # XXX: 1-sized array turn out as scalars
 end
 
