@@ -39,6 +39,3 @@ function DataFrame(tbl::TableHDU)
         for (k, v) in pairs]
     return DataFrame(pairs...)
 end
-
-# Base.Dict(row::DataFrameRow) = Dict(zip(string.(keys(row)), values(row)))
-

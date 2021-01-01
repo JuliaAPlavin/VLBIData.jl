@@ -4,6 +4,7 @@ using DataFrames
 using Statistics
 using AxisKeys
 using Unitful
+using Dates
 
 
 import VLBIData
@@ -65,4 +66,21 @@ end
         @test img.clean_components == VLBI.load(VLBI.FitsImage, joinpath(artifact"test_data", "J0000+0248_C_2016_01_03_pet_map.fits"), read_data=false, read_clean=true).clean_components
         @test img.data == VLBI.load(VLBI.FitsImage, joinpath(artifact"test_data", "J0000+0248_C_2016_01_03_pet_map.fits"), read_data=true, read_clean=false).data
     end
+end
+
+@testset "uvfits" begin
+    uv = VLBI.load(VLBI.UVData, joinpath(artifact"test_data", "J0000+0248_C_2016_01_03_pet_vis.fits"))
+    @test uv.header.object == "J0000+0248"
+    @test uv.header.date_obs === Date(2016, 1, 3)
+    @test uv.header.stokes == [:RR]
+    @test uv.header.frequency ≈ 4.128u"GHz"
+    @test length(uv.freq_windows) == 8
+    df = VLBI.read_data_dataframe(uv)
+    @test nrow(df) == 896
+    @test ncol(df) == 16
+    @test all(["u", "v", "w", "visibility", "iif"] .∈ Ref(names(df)))
+    @test isconcretetype.(eltype.(eachcol(df))) |> all
+    @test mean(df[!, :u]) ≈ 298060.56u"m"
+    @test mean(df[!, :v_wl]) ≈ -5.2631365e6
+    @test mean(df[!, :visibility]) ≈ 0.021919968 + 0.00062215974im
 end
