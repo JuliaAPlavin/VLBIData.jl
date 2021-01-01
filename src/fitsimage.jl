@@ -79,6 +79,8 @@ end
     major_axis::TU
     minor_axis::TU
     pa::Float64
+    sincos::NTuple{2, Float64} = sincos(pa)
+    rotmat::SMatrix{2, 2, Float64, 4} = (sincos[2], -sincos[1], -sincos[1], -sincos[2])
 end
 
 function image_beam(fi::FitsImage)
@@ -93,10 +95,9 @@ area(beam::ImageBeam) = π * beam.major_axis/2 * beam.minor_axis/2
 
 const mul = 4 * log(2)
 
-function (beam::ImageBeam)((ra, dec))
-#     @assert beam.major_axis == beam.minor_axis # XXXXXX
-    beam_ax = beam.major_axis
-    return exp(-(hypot(ra / beam_ax, dec / beam_ax))^2 * mul)
+function (beam::ImageBeam)(radec)
+    y, x = beam.rotmat * radec
+    return exp(-(hypot(x / beam.major_axis, y / beam.minor_axis))^2 * mul)
 end
 
 frequency(fi::FitsImage) = axis_val(fi.header, "FREQ") * u"Hz" |> u"GHz"
