@@ -84,3 +84,12 @@ end
     @test mean(df[!, :v_wl]) ≈ -5.2631365e6
     @test mean(df[!, :visibility]) ≈ 0.021919968 + 0.00062215974im
 end
+
+
+import Aqua
+@testset "Aqua" begin
+    Aqua.test_ambiguities(VLBI, recursive=false)
+    Aqua.test_unbound_args(VLBI)
+    Aqua.test_undefined_exports(VLBI)
+    Aqua.test_stale_deps(VLBI)
+end

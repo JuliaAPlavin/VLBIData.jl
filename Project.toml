@@ -4,7 +4,6 @@ authors = ["Alexander Plavin <alexander@plav.in>"]
 version = "0.1.9"
 
 [deps]
-AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
 AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
