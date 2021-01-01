@@ -87,34 +87,3 @@ function match_fits_files(
     end
     return ab_pairs
 end
-
-const band_to_freq_dict = Dict(
-    :L => 1.4,
-    :S => 2.3,
-    :C => 5.,
-    :X => 8.6,
-    :U => 15.,
-    :K => 24.,
-    :Q => 43.,
-    :W => 86.,
-)
-const freq_to_band_sorted_array = [f => b for (b, f) in pairs(band_to_freq_dict)] |> sort
-
-band_to_freq(band::Missing) = missing
-band_to_freq(band::Symbol) = band_to_freq_dict[band]
-band_to_freq(band::String) = band_to_freq_dict[Symbol(band)]
-
-function freq_to_band(freq; rtol=0.3)
-    ix = searchsortedfirst(first.(freq_to_band_sorted_array), freq)
-    ixes = (ix - 1, ix)
-    ixes = filter(x -> x ∈ eachindex(freq_to_band_sorted_array), ixes)
-    ix, _ = findmin(ixes) do ix
-        abs(freq - first(freq_to_band_sorted_array[ix]))
-    end
-    res_freq, band = freq_to_band_sorted_array[ix]
-    if abs(freq - res_freq) < rtol * max(freq, res_freq)
-        return band
-    else
-        return missing
-    end
-end
