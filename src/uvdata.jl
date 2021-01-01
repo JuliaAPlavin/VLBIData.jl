@@ -1,6 +1,6 @@
 using PyCall
 using Dates
-using FITSIO: FITSHeader, FITS, read_header
+using FITSIO: FITSHeader, FITS, TableHDU, read_header
 using Unitful
 using Parameters: @with_kw
 using DataFrames: DataFrame
@@ -42,10 +42,40 @@ function UVHeader(fh::FITSHeader)
     )
 end
 
+@with_kw struct Antenna
+    name::Symbol
+    id::Int
+end
+
+function Antenna(hdu_row)
+    @assert isempty(hdu_row["ORBPARM"])
+    Antenna(; name=Symbol(hdu_row["ANNAME"]), id=hdu_row["NOSTA"])
+end
+
+@with_kw struct AntArray
+    name::String
+    freq::typeof(1f0u"Hz")
+    antennas::Vector{Antenna}
+end
+
+strfloat_to_float(x::AbstractFloat) = x
+strfloat_to_float(x::String) = parse(Float64, replace(x, "D" => "E"))
+
+function AntArray(hdu::TableHDU)
+    header = read_header(hdu)
+    antennas = map(Antenna, DataFrame(hdu) |> eachrow)
+    AntArray(;
+        name=header["ARRNAM"],
+        freq=strfloat_to_float(header["FREQ"]) * u"Hz",
+        antennas,
+    )
+end
+
 @with_kw struct UVData
     path::String
     header::UVHeader
     freq_windows::Vector{FrequencyWindow}
+    ant_arrays::Vector{AntArray}
 end
 
 function read_freqs(uvh, fq_table)
@@ -53,7 +83,7 @@ function read_freqs(uvh, fq_table)
     @assert size(df, 1) == 1
     fq = Dict(pairs(df[1, :]))
     @assert !haskey(fq, :SIDEBAND) || all(fq[:SIDEBAND] .== 1)
-    @assert all(fq[S"CH WIDTH"] .== fq[S"TOTAL BANDWIDTH"])
+    @assert all(fq[S"CH WIDTH"] .== fq[S"TOTAL BANDWIDTH"])  (fq[S"CH WIDTH"], fq[S"TOTAL BANDWIDTH"])
     res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq[S"IF FREQ"].*u"Hz", fq[S"CH WIDTH"].*u"Hz", fq[:SIDEBAND])
     return isa(res, FrequencyWindow) ? [res] : res  # XXX: 1-sized array turn out as scalars
 end
@@ -139,12 +169,17 @@ function load(::Type{UVData}, path)
     fits = FITS(path)
     fh = read_header(fits[1])
     header = UVHeader(fh)
-    freqs = read_freqs(header, fits["AIPS FQ"])
+    freq_windows = read_freqs(header, fits["AIPS FQ"])
+    ant_arrays = AntArray[]
+    for i in Iterators.countfrom(1)
+        hdu = try
+            fits["AIPS AN", i]
+        catch err
+            err == ErrorException("illegal HDU number") && break
+        end
+        push!(ant_arrays, AntArray(hdu))
+    end
     close(fits)
 
-    UVData(
-        path=path,
-        header=header,
-        freq_windows=freqs,
-    )
+    UVData(; path, header, freq_windows, ant_arrays)
 end

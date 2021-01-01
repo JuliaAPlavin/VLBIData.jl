@@ -95,6 +95,12 @@ end
     @test uv.header.stokes == [:RR]
     @test uv.header.frequency ≈ 4.128u"GHz"
     @test length(uv.freq_windows) == 8
+    @test length(uv.ant_arrays) == 1
+    antarr = only(uv.ant_arrays)
+    @test antarr.name == "VLBA Correlator"
+    @test map(a -> a.id, antarr.antennas) == 1:9
+    @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
+
     df = VLBI.read_data_dataframe(uv)
     @test nrow(df) == 896
     @test ncol(df) == 16
