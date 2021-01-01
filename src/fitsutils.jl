@@ -1,4 +1,6 @@
-using FITSIO
+using FITSIO: FITSHeader, TableHDU, colnames
+using DataFrames: DataFrame
+
 
 function axis_ind(fh::FITSHeader, ctype::String)
     matching_cards = [k => v for (k, v) in pairs(fh) if v == ctype]
@@ -29,3 +31,14 @@ function axis_val(fh::FITSHeader, ctype::String; zero_reference=false)
     @assert length(vals) == 1
     return first(vals)
 end
+
+function DataFrame(tbl::TableHDU)
+    pairs = [Symbol(n) => read(tbl, n) for n in colnames(tbl)]
+    pairs = [
+        k => (ndims(v) == 1 ? v : [v[:, i] for i in 1:size(v, 2)])
+        for (k, v) in pairs]
+    return DataFrame(pairs...)
+end
+
+# Base.Dict(row::DataFrameRow) = Dict(zip(string.(keys(row)), values(row)))
+
