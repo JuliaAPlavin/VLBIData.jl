@@ -35,7 +35,9 @@ function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
         comps = if read_clean
             comps = DataFrame(f["AIPS CC"])
             if ncol(comps) > 3
-                @assert all(comps[!, Symbol("MAJOR AX")] .== 0) && all(comps[!, Symbol("MINOR AX")] .== 0) && all(comps[!, :POSANGLE] .== 0) && all(comps[!, Symbol("TYPE OBJ")] .== 0)
+                if !(all(comps[!, Symbol("MAJOR AX")] .== 0) && all(comps[!, Symbol("MINOR AX")] .== 0) && all(comps[!, :POSANGLE] .== 0) && all(comps[!, Symbol("TYPE OBJ")] .== 0))
+                    @warn "Unexpected component parameters: nonzero major or minor axes, posangle, or type."
+                end
             end
             select!(comps, :FLUX => :flux, :DELTAX => (x->x*3.6e6) => :ra, :DELTAY => (x->x*3.6e6) => :dec)
         else
