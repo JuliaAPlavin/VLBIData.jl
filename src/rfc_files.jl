@@ -15,7 +15,7 @@ function fname_parse(fname)
         ((?<band>[A-Z])_)?
         (?<epoch>\d{4}_\d{2}_\d{2})_
         (?<author>[a-z]{2,3})
-        (_(?<suffix>\w*))?
+        (_(?<suffix>[\w-]*))?
         (\.(?<extension>.+))?
         $
     """x, fname)
