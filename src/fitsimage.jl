@@ -56,13 +56,13 @@ function pixel_size(fi::FitsImage)
     ra_step  = axis_dict(fi.header, "RA---SIN")["CDELT"] |> abs
     dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"] |> abs
     @assert ra_step == dec_step
-    return ra_step * u"°" .|> mas
+    return ra_step * u"°" .|> u"mas"
 end
 
 function pixel_area(fi::FitsImage)
     ra_step  = axis_dict(fi.header, "RA---SIN")["CDELT"] |> abs
     dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"] |> abs
-    return (ra_step * u"°" .|> mas) * (dec_step * u"°" .|> mas)
+    return (ra_step * u"°" .|> u"mas") * (dec_step * u"°" .|> u"mas")
 end
 
 @with_kw struct ImageBeam{TU}
@@ -73,8 +73,8 @@ end
 
 function image_beam(fi::FitsImage)
     return ImageBeam(
-        major_axis = fi.header["BMAJ"] * u"°" .|> mas,
-        minor_axis = fi.header["BMIN"] * u"°" .|> mas,
+        major_axis = fi.header["BMAJ"] * u"°" .|> u"mas",
+        minor_axis = fi.header["BMIN"] * u"°" .|> u"mas",
         pa  = fi.header["BPA"] |> deg2rad,
     )
 end
@@ -84,7 +84,7 @@ area(beam::ImageBeam) = π * beam.major_axis/2 * beam.minor_axis/2
 const mul = 4 * log(2)
 
 function (beam::ImageBeam)((ra, dec))
-    @assert beam.major_axis == beam.minor_axis
+#     @assert beam.major_axis == beam.minor_axis # XXXXXX
     beam_ax = beam.major_axis
     return exp(-(hypot(ra / beam_ax, dec / beam_ax))^2 * mul)
 end
