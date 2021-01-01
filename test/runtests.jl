@@ -14,9 +14,9 @@ const VLBI = VLBIData
 let
     artifact_toml = joinpath(@__DIR__, "Artifacts.toml")
     art_hash = artifact_hash("test_data", artifact_toml)
-    if art_hash == nothing || !artifact_exists(art_hash)
+    if art_hash === nothing || !artifact_exists(art_hash)
         @info "Creating artifact"
-        art_hash = create_artifact() do artifact_dir
+        art_hash_new = create_artifact() do artifact_dir
             for url in [
                     "http://astrogeo.org/images/J0000+0248/J0000+0248_C_2016_01_03_pet_map.fits",
                     "http://astrogeo.org/images/J0000+0248/J0000+0248_C_2016_01_03_pet_vis.fits",
@@ -24,7 +24,11 @@ let
                 download(url, joinpath(artifact_dir, basename(url)))
             end
         end
-        bind_artifact!(artifact_toml, "test_data", art_hash, force=true)
+        if art_hash === nothing
+            bind_artifact!(artifact_toml, "test_data", art_hash_new, force=true)
+        else
+            @assert art_hash == art_hash_new
+        end
     end
 end
 
