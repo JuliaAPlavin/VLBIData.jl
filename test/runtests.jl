@@ -6,6 +6,9 @@ using Unitful
 using Dates
 import VLBIData; const VLBI = VLBIData
 
+import CompatHelperLocal
+CompatHelperLocal.@check()
+
 
 @testset "utils" begin
     @test VLBI.fname_parse("J0000+0248_C_2016_01_03_pet_map.fits") == (J2000 = "J0000+0248", band = "C", epoch = "2016_01_03", author = "pet", suffix = "map", extension = "fits", directory=nothing)
