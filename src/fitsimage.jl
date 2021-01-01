@@ -5,6 +5,7 @@ using DataFrames: select!, ncol
 import StatsBase: mad
 using AxisKeys
 using Utils
+using StaticArrays
 
 
 @with_kw struct FitsImage{TD, TCC}
@@ -59,6 +60,13 @@ function pixel_size(fi::FitsImage)
     dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"] |> abs
     @assert ra_step == dec_step
     return ra_step * u"°" .|> u"mas"
+end
+
+function pixel_steps(fi::FitsImage)
+    ra_step  = axis_dict(fi.header, "RA---SIN")["CDELT"]
+    dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"]
+    @assert abs(ra_step) == abs(dec_step)
+    return SVector(ra_step, dec_step) .* u"°" .|> u"mas"
 end
 
 function pixel_area(fi::FitsImage)
