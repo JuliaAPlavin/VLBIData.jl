@@ -5,8 +5,7 @@ using Unitful
 using Parameters: @with_kw
 using DataFrames: DataFrame
 using AxisKeys
-
-macro S_str(str) :(Symbol($str)) end
+using Utils
 
 
 @with_kw struct FrequencyWindow
