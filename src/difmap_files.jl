@@ -3,8 +3,8 @@ using DataFrames
 
 struct DifmapModel end
 
-function load(::Type{DifmapModel}, path)
-    df = CSV.read(path, comment="!", delim=" ", ignorerepeated=true, header=["flux", "radius", "theta", "major", "ratio", "phi", "T", "freq", "specindex"])
+function load(::Type{DifmapModel}, source)
+    df = CSV.read(source, DataFrame, comment="!", delim=" ", ignorerepeated=true, header=["flux", "radius", "theta", "major", "ratio", "phi", "T"])
     df = mapcols(df) do col
         map(col) do x
             ismissing(x) ? missing : parse(Float64, strip(string(x), 'v'))
