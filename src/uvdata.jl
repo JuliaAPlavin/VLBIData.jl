@@ -81,7 +81,7 @@ end
 function read_freqs(uvh, fq_table)
     df = DataFrame(fq_table)
     @assert size(df, 1) == 1
-    fq = Dict(pairs(df[1, :]))
+    fq = df[1, :]
     @assert !haskey(fq, :SIDEBAND) || all(fq[:SIDEBAND] .== 1)
     @assert all(fq[S"CH WIDTH"] .== fq[S"TOTAL BANDWIDTH"])  (fq[S"CH WIDTH"], fq[S"TOTAL BANDWIDTH"])
     res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq[S"IF FREQ"].*u"Hz", fq[S"CH WIDTH"].*u"Hz", fq[:SIDEBAND])
