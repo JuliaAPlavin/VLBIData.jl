@@ -2,6 +2,7 @@ using FormatInterp
 using Utils
 import SplitApplyCombine
 
+
 @deprecate parse_fits_fname(fname) fname_parse(fname) false
 function fname_parse(fname)
     m = match(r"""
@@ -19,7 +20,8 @@ function fname_parse(fname)
         (\.(?<extension>.+))?
         $
     """x, fname)
-    return (; [k => m[k] for k in [:J2000, :band, :epoch, :author, :suffix, :extension, :directory]]...)
+    keys = (:J2000, :band, :epoch, :author, :suffix, :extension, :directory)
+    return NamedTuple{keys, NTuple{length(keys), Union{Nothing, String}}}(map(k -> m[k], keys))
 end
 
 @deprecate build_fits_fname(fname) fname_build(fname) false
@@ -29,13 +31,13 @@ function fname_build(params)
         for k in [:J2000, :band, :epoch, :author, :suffix]
     ]
     fname = join(filter(!isnothing, parts), "_")
-    if get(params, :extension, nothing) != nothing
+    if get(params, :extension, nothing) !== nothing
         if startswith(params.extension, ".")
             @warn "Provided extensions starts with '.' but probably shouldn't." params.extension
         end
         fname *= ".$(params.extension)"
     end
-    if get(params, :directory, nothing) != nothing
+    if get(params, :directory, nothing) !== nothing
         @assert endswith(params.directory, "/")
         fname = joinpath(params.directory, fname)
     end
@@ -48,11 +50,16 @@ function fname_replace(fname; kwargs...)
     replace(old, new) = new
 
     parsed = fname_parse(fname)
-    for (k, v) in kwargs
-        new_v = replace(get(parsed, k, nothing), v)
-        parsed = merge(parsed, (k => new_v,))
+    merged = if valtype(kwargs) <: Union{Nothing, AbstractString, Symbol}
+        merge(parsed, kwargs)
+    else
+        for (k, v) in kwargs
+            new_v = replace(get(parsed, k, nothing), v)
+            parsed = merge(parsed, NamedTuple{(k,), Tuple{Union{String, Nothing}}}((new_v,)))
+        end
+        parsed
     end
-    return fname_build(parsed)
+    return fname_build(merged)
 end
 
 rfc_fname_swap_mapvis(fname::String) = if endswith(fname, "_vis.fits")
