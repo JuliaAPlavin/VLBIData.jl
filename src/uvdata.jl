@@ -1,12 +1,3 @@
-using PyCall
-using Dates
-using FITSIO: FITSHeader, FITS, TableHDU, read_header
-using Unitful
-using Parameters: @with_kw
-using DataFrames: DataFrame
-using AxisKeys
-
-
 @with_kw struct FrequencyWindow
     freq::typeof(1f0u"Hz")
     width::typeof(1f0u"Hz")
@@ -47,8 +38,8 @@ end
 end
 
 function Antenna(hdu_row)
-    @assert isempty(hdu_row["ORBPARM"])
-    Antenna(; name=Symbol(hdu_row["ANNAME"]), id=hdu_row["NOSTA"])
+    @assert isempty(hdu_row.ORBPARM)
+    Antenna(; name=Symbol(hdu_row.ANNAME), id=hdu_row.NOSTA)
 end
 
 @with_kw struct AntArray
@@ -62,7 +53,7 @@ strfloat_to_float(x::String) = parse(Float64, replace(x, "D" => "E"))
 
 function AntArray(hdu::TableHDU)
     header = read_header(hdu)
-    antennas = map(Antenna, DataFrame(hdu) |> eachrow)
+    antennas = map(Antenna, rowtable(hdu))
     AntArray(;
         name=header["ARRNAM"],
         freq=strfloat_to_float(header["FREQ"]) * u"Hz",
@@ -78,12 +69,10 @@ end
 end
 
 function read_freqs(uvh, fq_table)
-    df = DataFrame(fq_table)
-    @assert size(df, 1) == 1
-    fq = df[1, :]
-    @assert !haskey(fq, :SIDEBAND) || all(fq[:SIDEBAND] .== 1)
-    @assert all(fq[Symbol("CH WIDTH")] .== fq[Symbol("TOTAL BANDWIDTH")])
-    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq[Symbol("IF FREQ")].*u"Hz", fq[Symbol("CH WIDTH")].*u"Hz", fq[:SIDEBAND])
+    fq = only(Tables.rows(fq_table))
+    @assert !haskey(fq, :SIDEBAND) || all(fq.SIDEBAND .== 1)
+    @assert all(fq.var"CH WIDTH" .== fq.var"TOTAL BANDWIDTH")
+    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq.var"IF FREQ" .* u"Hz", fq.var"CH WIDTH" .* u"Hz", fq.SIDEBAND)
     return isa(res, FrequencyWindow) ? [res] : res  # XXX: 1-sized array turn out as scalars
 end
 
@@ -138,7 +127,7 @@ function read_data_arrays(uvdata::UVData)
     return data
 end
 
-function read_data_dataframe(uvdata::UVData)
+function read_data_table(uvdata::UVData)
     data = read_data_arrays(uvdata)
     @assert ndims(data.visibility) == 3
     df = map(Iterators.product(axiskeys.(Ref(data.visibility), [:IX, :IF, :STOKES])...)) do (ix, iif, stokes)
@@ -160,7 +149,7 @@ function read_data_dataframe(uvdata::UVData)
             weight=data.weight(IX=ix, IF=iif, STOKES=stokes),
         )
     end
-    df = filter(x -> x.weight > 0, df) |> DataFrame
+    df = filter(x -> x.weight > 0, df)
     return df
 end
 
