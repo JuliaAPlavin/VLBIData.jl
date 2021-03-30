@@ -11,22 +11,6 @@ import CompatHelperLocal
 CompatHelperLocal.@check()
 
 
-@testset "utils" begin
-    @test VLBI.fname_parse("J0000+0248_C_2016_01_03_pet_map.fits") == (J2000 = "J0000+0248", band = "C", epoch = "2016_01_03", author = "pet", suffix = "map", extension = "fits", directory=nothing)
-    @test VLBI.fname_parse("J0000+0248_2016_01_03_pet") == (J2000 = "J0000+0248", band = nothing, epoch = "2016_01_03", author = "pet", suffix = nothing, extension = nothing, directory=nothing)
-    @test VLBI.fname_parse("/home/J0000+0248_2016_01_03_pet") == (J2000 = "J0000+0248", band = nothing, epoch = "2016_01_03", author = "pet", suffix = nothing, extension = nothing, directory="/home/")
-    @test VLBI.fname_build((J2000 = "J0000+0248", band = "C", epoch = "2016_01_03", author = "pet", suffix = "map", extension = "fits")) == "J0000+0248_C_2016_01_03_pet_map.fits"
-    @test VLBI.fname_build((J2000 = "J0000+0248", band = "C", epoch = "2016_01_03", author = "pet")) == "J0000+0248_C_2016_01_03_pet"
-    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="vis") == "J0000+0248_C_2016_01_03_pet_vis.fits"
-    @test VLBI.fname_replace("/home/J0000+0248_C_2016_01_03_pet_map.fits", suffix="vis") == "/home/J0000+0248_C_2016_01_03_pet_vis.fits"
-    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="vis", extension=nothing) == "J0000+0248_C_2016_01_03_pet_vis"
-    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="map"=>"vis") == "J0000+0248_C_2016_01_03_pet_vis.fits"
-    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="map"=>"vis", extension=nothing) == "J0000+0248_C_2016_01_03_pet_vis"
-    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="map"=>"vis", extension="fits.png") == "J0000+0248_C_2016_01_03_pet_vis.fits.png"
-    @test VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits-1.png", suffix="map"=>"vis", extension="fits-1.png" => "fits-2.png") == "J0000+0248_C_2016_01_03_pet_vis.fits-2.png"
-    @test_throws AssertionError VLBI.fname_replace("J0000+0248_C_2016_01_03_pet_map.fits", suffix="vis"=>"map")
-end
-
 @testset "fits image" begin
     @testset "read nothing" begin
         img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=false)
