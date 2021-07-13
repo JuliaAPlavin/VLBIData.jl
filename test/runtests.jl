@@ -20,9 +20,9 @@ using Tables
         @test VLBI.frequency(img) ≈ 4.344u"GHz"
         beam = VLBI.image_beam(img)
         @test VLBI.area(beam) ≈ 4.54146231u"mas^2"  rtol=1e-5
-        @test beam.major_axis ≈ 1u"mas"  rtol=1e-5
-        @test beam.minor_axis ≈ 1u"mas"  rtol=1e-5
-        @test beam.pa ≈ 0  rtol=1e-5
+        @test beam.major_axis ≈ 4.02887356u"mas"  rtol=1e-5
+        @test beam.minor_axis ≈ 1.43523228u"mas"  rtol=1e-5
+        @test beam.pa ≈ -0.046499863  rtol=1e-5
         @test beam([0.5u"mas", 0u"mas"]) ≈ 0.714721  rtol=1e-5
     end
     
