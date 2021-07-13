@@ -53,7 +53,7 @@ strfloat_to_float(x::String) = parse(Float64, replace(x, "D" => "E"))
 
 function AntArray(hdu::TableHDU)
     header = read_header(hdu)
-    antennas = map(Antenna, rowtable(hdu))
+    antennas = map(Antenna, hdu |> columntable |> rowtable)
     AntArray(;
         name=header["ARRNAM"],
         freq=strfloat_to_float(header["FREQ"]) * u"Hz",
@@ -69,7 +69,7 @@ end
 end
 
 function read_freqs(uvh, fq_table)
-    fq = only(Tables.rows(fq_table))
+    fq = only(fq_table |> columntable |> Tables.rows)
     @assert !haskey(fq, :SIDEBAND) || all(fq.SIDEBAND .== 1)
     @assert all(fq.var"CH WIDTH" .== fq.var"TOTAL BANDWIDTH")
     res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq.var"IF FREQ" .* u"Hz", fq.var"CH WIDTH" .* u"Hz", fq.SIDEBAND)
