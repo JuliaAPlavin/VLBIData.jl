@@ -1,7 +1,7 @@
 using Test
 using Statistics
 using AxisKeys
-using Unitful
+using Unitful, UnitfulAstro, MyUnitful
 using Dates
 import VLBIData as VLBI
 using Tables
