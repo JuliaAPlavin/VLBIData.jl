@@ -19,7 +19,7 @@ Utils = "2e7d9420-a934-49d6-aef3-a4152ec1ce09"
 
 [compat]
 AxisKeys = "0.1"
-FITSIO = "0.15"
+FITSIO = "0.15, 0.16"
 Parameters = "0.12"
 PyCall = "1.92"
 StaticArrays = "1.0"

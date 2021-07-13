@@ -163,7 +163,7 @@ function load(::Type{UVData}, path)
         hdu = try
             fits["AIPS AN", i]
         catch err
-            err == ErrorException("illegal HDU number") && break
+            occursin("illegal HDU number", string(err)) && break
             rethrow()
         end
         push!(ant_arrays, AntArray(hdu))
