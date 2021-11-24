@@ -12,8 +12,9 @@ function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
         header = read_header(primary)
 
         data = if read_data
-            ra_vals  = axis_vals(header, "RA---SIN", zero_reference=true) .* u"°" .|> u"mas"
-            dec_vals = axis_vals(header, "DEC--SIN", zero_reference=true) .* u"°" .|> u"mas"
+            mul = 1u"°" |> u"mas"
+            ra_vals  = axis_vals(header, "RA---SIN", zero_reference=true) * mul
+            dec_vals = axis_vals(header, "DEC--SIN", zero_reference=true) * mul
 
             @assert header["BSCALE"] == 1 && header["BZERO"] == 0 && header["BUNIT"] == "JY/BEAM"
             data = read(primary)
