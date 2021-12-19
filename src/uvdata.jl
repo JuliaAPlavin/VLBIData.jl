@@ -114,12 +114,20 @@ function read_data_arrays(uvdata::UVData)
 
     count = size(raw["DATA"], 1)
     n_if = length(uvdata.freq_windows)
+    n_chan = map(fw -> fw.nchan, uvdata.freq_windows) |> unique |> only
     axarr = KeyedArray(raw["DATA"],
         IX=1:count,
         DEC=[1], RA=[1],
-        IF=1:n_if, FREQ=[1], STOKES=uvdata.header.stokes,
+        IF=1:n_if,
+        FREQ=1:n_chan,
+        STOKES=uvdata.header.stokes,
         COMPLEX=[:re, :im, :wt])
-    axarr = axarr[DEC=1, RA=1, FREQ=1]  # drop always-singleton axes
+    # drop always-singleton axes
+    axarr = if size(axarr, :FREQ) == 1
+        axarr[DEC=1, RA=1, FREQ=1]
+    else
+        axarr[DEC=1, RA=1]
+    end
 
     uvw = [kk => Float32.(raw[k]) .* (u"c" * u"s") .|> u"m"
         for (kk, k) in zip([:u, :v, :w], uvw_keys)]
@@ -139,9 +147,11 @@ end
 
 function read_data_table(uvdata::UVData)
     data = read_data_arrays(uvdata)
-    @assert ndims(data.visibility) == 3
-    df = map(Iterators.product(axiskeys.(Ref(data.visibility), [:IX, :IF, :STOKES])...)) do (ix, iif, stokes)
-        if_spec = uvdata.freq_windows[iif]
+    @assert ndims(data.visibility) ∈ (3, 4)
+    # `|> columntable |> rowtable` is faster than `|> rowtable` alone
+    df = map(data.visibility |> columntable |> rowtable) do r
+        ix = r.IX
+        if_spec = uvdata.freq_windows[r.IF]
         uvw = (data.u[ix], data.v[ix], data.w[ix])
         uvw_wl = (uvw ./ if_spec.wavelen)
         (
@@ -150,16 +160,16 @@ function read_data_table(uvdata::UVData)
             ant2_ix=data.ant2_ix[ix],
             date=data.date[ix],
             date_0=data.date_0[ix],
-            stokes=stokes,
-            iif=Int8(iif),
+            stokes=r.STOKES,
+            iif=Int8(r.IF),
             if_spec=if_spec,
             u=uvw[1], v=uvw[2], w=uvw[3],
             u_wl=uvw_wl[1], v_wl=uvw_wl[2], w_wl=uvw_wl[3],
-            visibility=data.visibility(IX=ix, IF=iif, STOKES=stokes),
-            weight=data.weight(IX=ix, IF=iif, STOKES=stokes),
+            visibility=r.value,
+            weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
         )
     end
-    df = filter(x -> x.weight > 0, df)
+    filter!(x -> x.weight > 0, df)
     return df
 end
 
