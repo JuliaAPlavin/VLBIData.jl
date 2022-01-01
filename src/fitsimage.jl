@@ -24,7 +24,7 @@ function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
         end
 
         comps = if read_clean
-            comps = Tables.rowtable(f["AIPS CC"])
+            comps = f["AIPS CC"] |> columntable |> rowtable
             if length(Tables.schema(comps).names) > 3
                 if !all(c -> c.var"MAJOR AX" == 0 && c.var"MINOR AX" == 0 && c.POSANGLE == 0 && c.var"TYPE OBJ" == 0, comps)
                     @warn "Unexpected component parameters: nonzero major or minor axes, posangle, or type."

@@ -13,7 +13,6 @@ using StaticArrays
 using DelimitedFiles: readdlm
 
 
-include("fitstables.jl")
 include("fitsutils.jl")
 include("uvdata.jl")
 include("fitsimage.jl")
