@@ -60,28 +60,35 @@ using Tables
 end
 
 @testset "uvfits" begin
-    uv = VLBI.load(VLBI.UVData, "./data/vis.fits")
-    @test uv.header.object == "J0000+0248"
-    @test uv.header.date_obs === Date(2016, 1, 3)
-    @test uv.header.stokes == [:RR]
-    @test uv.header.frequency ≈ 4.128u"GHz"
-    @test length(uv.freq_windows) == 8
-    @test length(uv.ant_arrays) == 1
-    antarr = only(uv.ant_arrays)
-    @test antarr.name == "VLBA Correlator"
-    @test map(a -> a.id, antarr.antennas) == 1:9
-    @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
+    @testset "simple" begin
+        uv = VLBI.load(VLBI.UVData, "./data/vis.fits")
+        @test uv.header.object == "J0000+0248"
+        @test uv.header.date_obs === Date(2016, 1, 3)
+        @test uv.header.stokes == [:RR]
+        @test uv.header.frequency ≈ 4.128u"GHz"
+        @test length(uv.freq_windows) == 8
+        @test length(uv.ant_arrays) == 1
+        antarr = only(uv.ant_arrays)
+        @test antarr.name == "VLBA Correlator"
+        @test map(a -> a.id, antarr.antennas) == 1:9
+        @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
 
-    df = VLBI.read_data_table(uv)
-    @test Tables.rowaccess(df)
-    @test length(df) == 896
-    @test length(Tables.schema(df).names) == 16
-    @test all(∈(Tables.schema(df).names), [:u, :v, :w, :visibility, :iif])
-    @test all(isconcretetype, Tables.schema(df).types)
-    df_cols = Tables.columntable(df)
-    @test mean(df_cols.u) ≈ 298060.56u"m"
-    @test mean(df_cols.v_wl) ≈ -5.2631365e6
-    @test mean(df_cols.visibility) ≈ 0.021919968 + 0.00062215974im
+        df = VLBI.read_data_table(uv)
+        @test Tables.rowaccess(df)
+        @test length(df) == 896
+        @test length(Tables.schema(df).names) == 16
+        @test all(∈(Tables.schema(df).names), [:u, :v, :w, :visibility, :iif])
+        @test all(isconcretetype, Tables.schema(df).types)
+        df_cols = Tables.columntable(df)
+        @test mean(df_cols.u) ≈ 298060.56u"m"
+        @test mean(df_cols.v_wl) ≈ -5.2631365e6
+        @test mean(df_cols.visibility) ≈ 0.021919968 + 0.00062215974im
+    end
+
+    @testset "multichannel" begin
+        uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
+        @test length(uv.freq_windows) == 8
+    end
 end
 
 @testset "difmap_files" begin
