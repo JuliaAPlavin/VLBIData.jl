@@ -72,9 +72,16 @@ end
 end
 
 @testset "difmap_files" begin
-    df = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
+    df = @inferred VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
     @test length(df) == 3
     @test map(x -> x.flux, df) ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
+    @test df[1].radec == [-0.09183782420814114, 0.13039751573060954]
+
+    df_t = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod"; radec_type=NTuple{2, Float64})
+
+    df_e = @inferred VLBI.load(VLBI.DifmapModel, "./data/difmap_model_empty.mod")
+    @test isempty(df_e)
+    @test typeof(df_e) == typeof(df)
 end
 
 
