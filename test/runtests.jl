@@ -5,6 +5,7 @@ using Unitful, UnitfulAstro, MyUnitful
 using Dates
 import VLBIData as VLBI
 using Tables
+using AstroRFC
 
 
 @testset "fits image" begin
@@ -102,6 +103,41 @@ end
     df_e = @inferred VLBI.load(VLBI.DifmapModel, "./data/difmap_model_empty.mod")
     @test isempty(df_e)
     @test typeof(df_e) == typeof(df)
+end
+
+@testset "RFC vis" begin
+    rfci = try
+        RFC.Files()
+    catch exc
+        @warn "Skipping RFC tests" exc
+        return
+    end
+    for f in RFC.files(rfci, suffix="vis") .|> abspath
+        try
+            uv = VLBI.load(VLBI.UVData, f)
+            df = VLBI.read_data_table(uv)
+        catch e
+            @show f e
+            rethrow()
+        end
+    end
+end
+
+@testset "RFC maps" begin
+    rfci = try
+        RFC.Files()
+    catch exc
+        @warn "Skipping RFC tests" exc
+        return
+    end
+    for f in RFC.files(rfci, suffix="map", extension="fits") .|> abspath
+        try
+            VLBI.load(VLBI.FitsImage, f, read_data=true, read_clean=true)
+        catch e
+            @show f e
+            rethrow()
+        end
+    end
 end
 
 
