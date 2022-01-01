@@ -89,6 +89,7 @@ end
     @testset "multichannel" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
         @test length(uv.freq_windows) == 8
+        df = VLBI.read_data_table(uv)
     end
 end
 
