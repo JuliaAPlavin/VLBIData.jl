@@ -7,10 +7,6 @@ import VLBIData as VLBI
 using Tables
 
 
-import CompatHelperLocal
-CompatHelperLocal.@check()
-
-
 @testset "fits image" begin
     @testset "read nothing" begin
         img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=false)
@@ -80,6 +76,10 @@ end
     @test length(df) == 3
     @test map(x -> x.flux, df) ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
 end
+
+
+import CompatHelperLocal
+CompatHelperLocal.@check()
 
 import Aqua
 @testset "Aqua" begin
