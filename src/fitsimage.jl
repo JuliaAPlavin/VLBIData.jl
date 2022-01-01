@@ -1,13 +1,3 @@
-using Unitful, UnitfulAstro
-using FITSIO: FITSHeader, FITS, read_header
-using Parameters: @with_kw
-using DataFrames: select!, ncol
-import StatsBase: mad
-using AxisKeys
-using Utils  # for u"mas"
-using StaticArrays
-
-
 @with_kw struct FitsImage{TD, TCC}
     path::String
     header::FITSHeader
@@ -34,13 +24,15 @@ function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
         end
 
         comps = if read_clean
-            comps = DataFrame(f["AIPS CC"])
-            if ncol(comps) > 3
-                if !(all(comps[!, Symbol("MAJOR AX")] .== 0) && all(comps[!, Symbol("MINOR AX")] .== 0) && all(comps[!, :POSANGLE] .== 0) && all(comps[!, Symbol("TYPE OBJ")] .== 0))
+            comps = Tables.rowtable(f["AIPS CC"])
+            if length(Tables.schema(comps).names) > 3
+                if !all(c -> c.var"MAJOR AX" == 0 && c.var"MINOR AX" == 0 && c.POSANGLE == 0 && c.var"TYPE OBJ" == 0, comps)
                     @warn "Unexpected component parameters: nonzero major or minor axes, posangle, or type."
                 end
             end
-            select!(comps, :FLUX => :flux, :DELTAX => (x->x*3.6e6) => :ra, :DELTAY => (x->x*3.6e6) => :dec)
+            map(comps) do c
+                (flux=c.FLUX, radec=(c.DELTAX*3.6e6, c.DELTAY*3.6e6))
+            end
         else
             nothing
         end

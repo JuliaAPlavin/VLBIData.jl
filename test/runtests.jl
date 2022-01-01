@@ -1,10 +1,11 @@
 using Test
-using DataFrames
 using Statistics
 using AxisKeys
 using Unitful
 using Dates
-import VLBIData; const VLBI = VLBIData
+import VLBIData as VLBI
+using Tables
+
 
 import CompatHelperLocal
 CompatHelperLocal.@check()
@@ -38,12 +39,12 @@ end
         img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=true)
         @test img.data === nothing
         @test img.noise === nothing
-        @test names(img.clean_components) == ["flux", "ra", "dec"]
-        @test (<:).(eltype.(eachcol(img.clean_components)), AbstractFloat) |> all
-        @test nrow(img.clean_components) == 361
-        @test sum(img.clean_components[!, :flux]) ≈ 0.038659f0
-        @test mean(img.clean_components[!, :ra]) ≈ -0.913573508654587
-        @test mean(img.clean_components[!, :dec]) ≈ 8.145706523588233
+        @test all(∈(Tables.schema(img.clean_components).names), [:flux, :radec])
+        @test all(isconcretetype, Tables.schema(img.clean_components).types)
+        @test length(img.clean_components) == 361
+        @test sum(c -> c.flux, img.clean_components) ≈ 0.038659f0
+        @test mean(c -> c.radec[1], img.clean_components) ≈ -0.913573508654587
+        @test mean(c -> c.radec[2], img.clean_components) ≈ 8.145706523588233
     end
     
     @testset "read data" begin
@@ -78,20 +79,22 @@ end
     @test map(a -> a.id, antarr.antennas) == 1:9
     @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
 
-    df = VLBI.read_data_dataframe(uv)
-    @test nrow(df) == 896
-    @test ncol(df) == 16
-    @test all(["u", "v", "w", "visibility", "iif"] .∈ Ref(names(df)))
-    @test isconcretetype.(eltype.(eachcol(df))) |> all
-    @test mean(df[!, :u]) ≈ 298060.56u"m"
-    @test mean(df[!, :v_wl]) ≈ -5.2631365e6
-    @test mean(df[!, :visibility]) ≈ 0.021919968 + 0.00062215974im
+    df = VLBI.read_data_table(uv)
+    @test Tables.rowaccess(df)
+    @test length(df) == 896
+    @test length(Tables.schema(df).names) == 16
+    @test all(∈(Tables.schema(df).names), [:u, :v, :w, :visibility, :iif])
+    @test all(isconcretetype, Tables.schema(df).types)
+    df_cols = Tables.columntable(df)
+    @test mean(df_cols.u) ≈ 298060.56u"m"
+    @test mean(df_cols.v_wl) ≈ -5.2631365e6
+    @test mean(df_cols.visibility) ≈ 0.021919968 + 0.00062215974im
 end
 
 @testset "difmap_files" begin
     df = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
-    @test nrow(df) == 3
-    @test df[!, :flux] ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
+    @test length(df) == 3
+    @test map(x -> x.flux, df) ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
 end
 
 import Aqua

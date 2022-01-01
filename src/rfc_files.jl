@@ -1,7 +1,3 @@
-using FormatInterp
-import SplitApplyCombine
-
-
 @deprecate parse_fits_fname(fname) fname_parse(fname) false
 function fname_parse(fname)
     m = match(r"""
@@ -65,38 +61,4 @@ rfc_fname_swap_mapvis(fname::String) = if endswith(fname, "_vis.fits")
     strip_suffix(fname, "_vis.fits") * "_map.fits"
 else
     strip_suffix(fname, "_map.fits") * "_vis.fits"
-end
-
-function match_fits_files(
-        files_a::Vector{<:AbstractString}, files_b::Vector{<:AbstractString};
-        by, check_same=nothing, check_unique::Bool, check_allmatch::Bool
-    )
-    get_key(by::Symbol, parsed_fname::NamedTuple) = getfield(parsed_fname, by)
-    get_key(by::NTuple{N, Symbol}, parsed_fname::NamedTuple) where {N} = getfield.(Ref(parsed_fname), by)
-    get_key(by::Function, parsed_fname::NamedTuple) = by(parsed_fname)
-    get_key(by, fname::String) = get_key(by, fname_parse(fname))
-
-    for fs in [files_a, files_b]
-        parsed = fname_parse.(fs)
-        @assert !any(isnothing.(parsed))
-        if check_same != nothing
-            @assert get_key.(Ref(check_same), parsed) |> unique |> length == 1
-        end
-        if check_unique
-            @assert allunique(get_key.(Ref(by), parsed))
-        end
-    end
-
-    ab_pairs = SplitApplyCombine.innerjoin(
-        f -> get_key(by, f),
-        f -> get_key(by, f),
-        (vf, mf) -> (vf, mf),
-        files_a,
-        files_b,
-    )
-    @info "Fits files matching:" files_a=length(files_a) files_b=length(files_b) pairs=length(ab_pairs)
-    if check_allmatch
-        @assert length(ab_pairs) == min(length(files_a), length(files_b)) (length(files_a), length(files_b), length(ab_pairs))
-    end
-    return ab_pairs
 end
