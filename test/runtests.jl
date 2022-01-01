@@ -13,6 +13,14 @@ using Tables
         @test img.clean_components === nothing
         @test img.data === nothing
         @test img.noise === nothing
+
+        @test VLBI.pixel_size(img) ≈ 0.2u"mas"  rtol=1e-5
+        @test VLBI.pixel_steps(img) ≈ [-0.2u"mas", 0.2u"mas"]  rtol=1e-5
+        @test VLBI.pixel_area(img) ≈ 0.04u"mas^2"  rtol=1e-5
+        @test VLBI.frequency(img) ≈ 4.344u"GHz"
+        beam = VLBI.image_beam(img)
+        @test VLBI.area(beam) ≈ 4.54146231u"mas^2"  rtol=1e-5
+        @test beam([0.5u"mas", 0u"mas"]) ≈ 0.714721  rtol=1e-5
     end
     
     @testset "read clean" begin
