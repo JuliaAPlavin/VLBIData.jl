@@ -1,7 +1,7 @@
 name = "VLBIData"
 uuid = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
 authors = ["Alexander Plavin <alexander@plav.in>"]
-version = "0.2.0-dev"
+version = "0.2.0"
 
 [deps]
 AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
@@ -27,5 +27,5 @@ StatsBase = "0.33"
 Tables = "1.4"
 Unitful = "1.5"
 UnitfulAstro = "1.0"
-Utils = "0.1.7, 0.2"
+Utils = "0.1.7, 0.2, 0.3"
 julia = "1.6"
