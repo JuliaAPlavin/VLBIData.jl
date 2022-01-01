@@ -48,6 +48,8 @@ using Tables
         @test img.data[123, 456] ≈ -7.372097f-5
         @test axiskeys(img.data, :ra)  .|> ustrip ≈ 51:-0.2:-51.2  atol=1e-3
         @test axiskeys(img.data, :dec) .|> ustrip ≈ -51.2:0.2:51   atol=1e-3
+        @test axiskeys(img.data, :ra) isa AbstractRange
+        @test axiskeys(img.data, :dec) isa AbstractRange
     end
     
     @testset "read both" begin
