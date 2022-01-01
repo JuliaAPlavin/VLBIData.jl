@@ -1,6 +1,7 @@
 @with_kw struct FrequencyWindow
     freq::typeof(1f0u"Hz")
     width::typeof(1f0u"Hz")
+    nchan::Int
     wavelen::typeof(1f0u"m") = u"c" / freq
     sideband::Int32
 end
@@ -69,11 +70,20 @@ end
 end
 
 function read_freqs(uvh, fq_table)
-    fq = only(fq_table |> columntable |> Tables.rows)
-    @assert !haskey(fq, :SIDEBAND) || all(fq.SIDEBAND .== 1)
-    @assert all(fq.var"CH WIDTH" .== fq.var"TOTAL BANDWIDTH")
-    res = ((a, b, c) -> FrequencyWindow(freq=a, width=b, sideband=c)).(uvh.frequency .+ fq.var"IF FREQ" .* u"Hz", fq.var"CH WIDTH" .* u"Hz", fq.SIDEBAND)
-    return isa(res, FrequencyWindow) ? [res] : res  # XXX: 1-sized array turn out as scalars
+    fq_row = fq_table |> rowtable |> only
+    fq_row = fq_row[Symbol.(["IF FREQ", "CH WIDTH", "TOTAL BANDWIDTH", "SIDEBAND"])]
+    fq_row = map(fq_row) do x
+        isa(x, Real) ? [x] : x
+    end
+    res = map(fq_row |> rowtable) do r
+        nchan = Int(r.var"TOTAL BANDWIDTH" / r.var"CH WIDTH")
+        FrequencyWindow(;
+            freq=uvh.frequency + r.var"IF FREQ" * u"Hz",
+            width=r.var"TOTAL BANDWIDTH" * u"Hz",
+            nchan,
+            sideband=r.SIDEBAND,
+        )
+    end
 end
 
 function read_data_raw(uvdata::UVData)
