@@ -5,11 +5,10 @@ import FITSIO
 using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
 using PyCall
 using Dates
-using Unitful, UnitfulAstro
+using Unitful, UnitfulAstro, MyUnitful
 using Parameters: @with_kw
 using AxisKeys
 import StatsBase: mad
-using Utils  # for u"mas"
 using StaticArrays
 using DelimitedFiles: readdlm
 
