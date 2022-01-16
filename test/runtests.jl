@@ -20,7 +20,7 @@ end
 
 @testset "fits image" begin
     @testset "read nothing" begin
-        img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=false)
+        img = VLBI.load("./data/map.fits", read_data=false, read_clean=false)
         @test img.clean_components === nothing
         @test img.data === nothing
         @test img.noise === nothing
@@ -38,7 +38,7 @@ end
     end
     
     @testset "read clean" begin
-        img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=true)
+        img = VLBI.load("./data/map.fits", read_data=false, read_clean=true)
         @test img.data === nothing
         @test img.noise === nothing
         @test all(∈(Tables.schema(img.clean_components).names), [:flux, :radec])
@@ -47,10 +47,16 @@ end
         @test sum(c -> c.flux, img.clean_components) ≈ 0.038659f0
         @test mean(c -> c.radec[1], img.clean_components) ≈ -0.913573508654587
         @test mean(c -> c.radec[2], img.clean_components) ≈ 8.145706523588233
+
+        mod = VLBI.load(MultiComponentModel, "./data/map.fits")
+        @test length(components(mod)) == 361
+        @test sum(flux, components(mod)) ≈ 0.038659f0
+        @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587
+        @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233
     end
     
     @testset "read data" begin
-        img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=true, read_clean=false)
+        img = VLBI.load("./data/map.fits", read_data=true, read_clean=false)
         @test img.clean_components === nothing
         @test img.noise ≈ 9.5605465f-5
         @test size(img.data) == (512, 512)
@@ -64,9 +70,9 @@ end
     end
     
     @testset "read both" begin
-        img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=true, read_clean=true)
-        @test img.clean_components == VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=true).clean_components
-        @test img.data == VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=true, read_clean=false).data
+        img = VLBI.load("./data/map.fits", read_data=true, read_clean=true)
+        @test img.clean_components == VLBI.load("./data/map.fits", read_data=false, read_clean=true).clean_components
+        @test img.data == VLBI.load("./data/map.fits", read_data=true, read_clean=false).data
     end
 end
 

@@ -18,7 +18,13 @@ function load(::Type{DifmapModel}, src)
     end
 end
 
-function load(::Type{MultiComponentModel}, src)
+load(T::Type{MultiComponentModel}, src) = if startswith(first(eachline(src)), "! Center")
+    load(T, src, Val(:mod))
+else
+    load(T, src, Val(:fits))
+end
+
+function load(::Type{MultiComponentModel}, src, ::Val{:mod})
     mat = try
         readdlm(src, String, comments=true, comment_char='!')::Matrix{String}
     catch err
@@ -46,5 +52,19 @@ function load(::Type{MultiComponentModel}, src)
             end
         end
         MultiComponentModel(Tuple(__))
+    end
+end
+
+function load(::Type{MultiComponentModel}, src, ::Val{:fits})
+    FITS(src) do f
+        @p f["AIPS CC"] |>
+            columntable |>
+            rowtable |>
+            map() do c
+                @assert c.var"TYPE OBJ" == 0
+                Point(flux=c.FLUX, coords=SVector(c.DELTAX, c.DELTAY) * 3.6e6)
+            end |>
+            @aside(@assert isconcretetype(eltype(__))) |>
+            MultiComponentModel
     end
 end
