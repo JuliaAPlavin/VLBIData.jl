@@ -1,3 +1,10 @@
+axis_types(fh::FITSHeader) = @p begin
+    pairs(fh)
+    filtermap() do (k, v)
+        occursin(r"^CTYPE\d+$", k) ? v : nothing
+    end
+end
+
 function axis_ind(fh::FITSHeader, ctype::String)
     matching_cards = [k => v for (k, v) in pairs(fh) if v == ctype]
     @assert length(matching_cards) == 1
