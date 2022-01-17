@@ -68,29 +68,15 @@ function pixel_area(fi::FitsImage)
     return (ra_step * u"°" .|> u"mas") * (dec_step * u"°" .|> u"mas")
 end
 
-@with_kw struct ImageBeam{TU}
-    major_axis::TU
-    minor_axis::TU
-    pa::Float64
-    sincos::NTuple{2, Float64} = sincos(pa)
-    rotmat::SMatrix{2, 2, Float64, 4} = (sincos[2], -sincos[1], -sincos[1], -sincos[2])
+InterferometricModels.beam(src::AbstractString) = FITS(src) do f
+    header = read_header(f[1])
+    beam(header)
 end
-
-function image_beam(fi::FitsImage)
-    return ImageBeam(
-        major_axis = fi.header["BMAJ"] * u"°" .|> u"mas",
-        minor_axis = fi.header["BMIN"] * u"°" .|> u"mas",
-        pa  = fi.header["BPA"] |> deg2rad,
-    )
-end
-
-area(beam::ImageBeam) = π * beam.major_axis/2 * beam.minor_axis/2
-
-const mul = 4 * log(2)
-
-function (beam::ImageBeam)(radec)
-    y, x = beam.rotmat * radec
-    return exp(-(hypot(x / beam.major_axis, y / beam.minor_axis))^2 * mul)
-end
+InterferometricModels.beam(fi::FitsImage) = beam(fi.header)
+InterferometricModels.beam(fh::FITSHeader) = beam(EllipticGaussian,
+    σ_major = InterferometricModels.fwhm_to_σ(fh["BMAJ"] * u"°" .|> u"mas"),
+    ratio_minor_major = fh["BMIN"] / fh["BMAJ"],
+    pa_major = fh["BPA"] |> deg2rad,
+)
 
 frequency(fi::FitsImage) = axis_val(fi.header, "FREQ") * u"Hz" |> u"GHz"
