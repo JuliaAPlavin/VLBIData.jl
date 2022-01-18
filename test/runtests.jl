@@ -7,7 +7,7 @@ using Dates
 using Tables
 using AstroRFC
 using VLBIData
-using VLBIData: flux, coords
+using VLBIData: flux, coords, frequency
 
 
 @testset "generic loading" begin
@@ -27,7 +27,7 @@ end
         @test VLBI.pixel_size(img) ≈ 0.2u"mas"  rtol=1e-5
         @test VLBI.pixel_steps(img) ≈ [-0.2u"mas", 0.2u"mas"]  rtol=1e-5
         @test VLBI.pixel_area(img) ≈ 0.04u"mas^2"  rtol=1e-5
-        @test VLBI.frequency(img) ≈ 4.344u"GHz"
+        @test frequency(img) ≈ 4.344u"GHz"
 
         bm = beam(img)
         @test beam("./data/map.fits") === bm
@@ -63,9 +63,9 @@ end
     @testset "simple" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis.fits")
         @test uv.header.object == "J0000+0248"
-        @test uv.header.date_obs === Date(2016, 1, 3)
+        @test Date(uv.header) === Date(2016, 1, 3)
         @test uv.header.stokes == [:RR]
-        @test uv.header.frequency ≈ 4.128u"GHz"
+        @test frequency(uv.header) ≈ 4.128u"GHz"
         @test length(uv.freq_windows) == 8
         @test length(uv.ant_arrays) == 1
         antarr = only(uv.ant_arrays)
@@ -76,12 +76,12 @@ end
         df = rowtable(uv)
         @test Tables.rowaccess(df)
         @test length(df) == 896
-        @test all(∈(Tables.schema(df).names), [:uv, :visibility, :iif, :date])
+        @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
         @test all(isconcretetype, Tables.schema(df).types)
-        @test df[1].uv === SVector(3.0883878f7, 1.6280775f7)
+        @test df[1].uv === VLBI.UV(3.0883878f7, 1.6280775f7)
         df_cols = Tables.columntable(df)
         @test mean(df_cols.uv_m) ≈ SVector(298060.56u"m", -363224.78u"m")
-        @test mean(df_cols.uv) === SVector(4.318903f6, -5.2631365f6)
+        @test mean(df_cols.uv) === VLBI.UV(4.318903f6, -5.2631365f6)
         @test mean(df_cols.visibility) ≈ 0.021919968 + 0.00062215974im
     end
 

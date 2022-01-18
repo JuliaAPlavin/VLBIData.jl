@@ -5,6 +5,8 @@ Base.@kwdef struct FrequencyWindow
     sideband::Int32
 end
 
+frequency(fw::FrequencyWindow) = fw.freq
+
 Base.@kwdef struct UVHeader
     fits::FITSHeader
     object::String
@@ -12,6 +14,9 @@ Base.@kwdef struct UVHeader
     stokes::Vector{Symbol}
     frequency::typeof(1.0u"Hz")
 end
+
+frequency(h::UVHeader) = h.frequency
+Dates.Date(h::UVHeader) = h.date_obs
 
 function UVHeader(fh::FITSHeader)
     @assert fh["CTYPE6"] == "RA" && fh["CTYPE7"] == "DEC"
@@ -76,7 +81,7 @@ function read_freqs(uvh, fq_table)
     res = map(fq_row |> rowtable) do r
         nchan = Int(r.var"TOTAL BANDWIDTH" / r.var"CH WIDTH")
         FrequencyWindow(;
-            freq=uvh.frequency + r.var"IF FREQ" * u"Hz",
+            freq=frequency(uvh) + r.var"IF FREQ" * u"Hz",
             width=r.var"TOTAL BANDWIDTH" * u"Hz",
             nchan,
             sideband=r.SIDEBAND,
@@ -102,19 +107,36 @@ function read_data_raw(uvdata::UVData)
     return raw
 end
 
+struct UVW{T} <: FieldVector{3, T}
+    u::T
+    v::T
+    w::T
+end
+
+struct UV{T} <: FieldVector{2, T}
+    u::T
+    v::T
+end
+
+struct Baseline
+    array_ix::Int8
+    ants_ix::NTuple{2, Int8}
+end
+
 function read_data_arrays(uvdata::UVData)
     raw = read_data_raw(uvdata)
 
-    uvw_keys = [("UU", "VV", "WW"), ("UU--", "VV--", "WW--"), ("UU---SIN", "VV---SIN", "WW---SIN")]
-    matching_keys = [keys for keys in uvw_keys if all(haskey(raw, k) for k in keys)]
-    @assert length(matching_keys) == 1
-    uvw_keys = first(matching_keys)
+    uvw_keys = @p begin
+        [("UU", "VV", "WW"), ("UU--", "VV--", "WW--"), ("UU---SIN", "VV---SIN", "WW---SIN")]
+        filter(_ ⊆ keys(raw))
+        only()
+    end
 
     count = size(raw["DATA"], 1)
     n_if = length(uvdata.freq_windows)
     n_chan = map(fw -> fw.nchan, uvdata.freq_windows) |> unique |> only
     axarr = KeyedArray(raw["DATA"],
-        IX=1:count,
+        _=1:count,
         DEC=[1], RA=[1],
         IF=1:n_if,
         FREQ=1:n_chan,
@@ -127,39 +149,41 @@ function read_data_arrays(uvdata::UVData)
         axarr[DEC=1, RA=1]
     end
 
-    uvw = [kk => Float32.(raw[k]) .* (u"c" * u"s") .|> u"m"
-        for (kk, k) in zip([:u, :v, :w], uvw_keys)]
-    data = (
-        uvw...,
-        array_ix = (raw["BASELINE"] .% 1) .* 100 .|> x->round(Int8, x),
-        ant1_ix = round.(Int, raw["BASELINE"]) .÷ 256 .|> Int8,
-        ant2_ix = round.(Int, raw["BASELINE"]) .% 256 .|> Int8,
-        # int_time = raw["INTTIM"] .* u"s",
-        date = KeyedArray(Float64.(raw["DATE"]) .+ raw["_DATE"], IX=1:count),
-        visibility = map((r, i) -> r + im * i, axarr(COMPLEX=:re), axarr(COMPLEX=:im)),
+    uvw_m = UVW.([Float32.(raw[k]) .* (u"c" * u"s") .|> u"m" for k in uvw_keys]...)
+    baseline = map(raw["BASELINE"]) do b
+        bi = floor(Int, b)
+        Baseline((b % 1) * 100 + 1, (bi ÷ 256, bi % 256))
+    end
+    data = (;
+        uvw_m,
+        baseline,
+        datetime = julian_day.(Float64.(raw["DATE"]) .+ raw["_DATE"]),
+        visibility = complex.(axarr(COMPLEX=:re), axarr(COMPLEX=:im)),
         weight = axarr(COMPLEX=:wt),
     )
+    if haskey(raw, "INTTIM")
+        data = merge(data, (int_time = raw["INTTIM"] .* u"s",))
+    end
     return data
 end
 
-function Tables.rowtable(uvdata::UVData)
+function Tables.rows(uvdata::UVData)
     data = read_data_arrays(uvdata)
     @assert ndims(data.visibility) ∈ (3, 4)
     # `|> columntable |> rowtable` is faster than `|> rowtable` alone
     df = map(data.visibility |> columntable |> rowtable) do r
-        ix = r.IX
+        ix = r._
         if_spec = uvdata.freq_windows[r.IF]
-        uvw = (data.u[ix], data.v[ix], data.w[ix])
-        uvw_wl = ustrip.(Unitful.NoUnits, uvw ./ (u"c" / if_spec.freq))
+        uvw_m = data.uvw_m[ix]
+        uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec)))
         (
-            array_ix=data.array_ix[ix],
-            ant_ix=(data.ant1_ix[ix], data.ant2_ix[ix]),
-            date=julian_day(data.date[ix]),
+            baseline=data.baseline[ix],
+            datetime=data.datetime[ix],
             stokes=r.STOKES,
-            iif=Int8(r.IF),
+            if_ix=Int8(r.IF),
             if_spec=if_spec,
-            uv_m=SVector(uvw[1:2]), w_m=uvw[3],
-            uv=SVector(uvw_wl[1:2]), w=uvw_wl[3],
+            uv_m=UV(uvw_m[1:2]), w_m=uvw_m[3],
+            uv=UV(uvw_wl[1:2]), w=uvw_wl[3],
             visibility=r.value,
             weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
         )
