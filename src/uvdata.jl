@@ -1,8 +1,8 @@
 Base.@kwdef struct FrequencyWindow
     freq::typeof(1f0u"Hz")
     width::typeof(1f0u"Hz")
-    nchan::Int
-    sideband::Int32
+    nchan::Int16
+    sideband::Int8
 end
 
 frequency(fw::FrequencyWindow) = fw.freq
