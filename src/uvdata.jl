@@ -148,7 +148,7 @@ function read_data_arrays(uvdata::UVData)
     uvw_m = UVW.([Float32.(raw[k]) .* (u"c" * u"s") .|> u"m" for k in uvw_keys]...)
     baseline = map(raw["BASELINE"]) do b
         bi = floor(Int, b)
-        Baseline((b % 1) * 100 + 1, (bi ÷ 256, bi % 256))
+        Baseline(round(Int, (b % 1) * 100) + 1, (bi ÷ 256, bi % 256))
     end
     data = (;
         uvw_m,
