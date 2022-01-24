@@ -37,15 +37,30 @@ function load(::Type{MultiComponentModel}, src, ::Val{:mod})
 end
 
 function load(::Type{MultiComponentModel}, src, ::Val{:fits})
-    FITS(src) do f
+    mod = FITS(src) do f
         @p f["AIPS CC"] |>
             columntable |>
             rowtable |>
             map() do c
-                @assert c.var"TYPE OBJ" == 0
-                Point(flux=c.FLUX*u"Jy", coords=SVector(c.DELTAX, c.DELTAY) * 3.6e6u"mas")
+                ctype = get(c, Symbol("TYPE OBJ"), 0)
+                common = (flux = c.FLUX*u"Jy", coords=SVector(c.DELTAX, c.DELTAY) * 3.6e6u"mas")
+                if ctype == 0
+                    Point(; common...)
+                elseif ctype == 1
+                    σ_major = InterferometricModels.fwhm_to_σ(c.var"MAJOR AX") * 3.6e6u"mas"
+                    if c.var"MAJOR AX" == c.var"MINOR AX"
+                        CircularGaussian(; common..., σ=σ_major)
+                    else
+                        EllipticGaussian(; common..., σ_major, ratio_minor_major=c.var"MINOR AX" / c.var"MAJOR AX", pa_major=deg2rad(c.var"POSANGLE"))
+                    end
+                else
+                    error("Unsupported component type: `TYPE OBJ == $ctype`.")
+                end
             end |>
-            @aside(@assert isconcretetype(eltype(__))) |>
             MultiComponentModel
     end
+    if all(c -> c isa Point, components(mod))
+        @assert isconcretetype(eltype(components(mod)))
+    end
+    return mod
 end
