@@ -1,7 +1,7 @@
 using Test
 using Statistics
 using AxisKeys
-using Unitful, UnitfulAstro, MyUnitful
+using Unitful, UnitfulAstro, UnitfulAngles
 using StaticArrays
 using Dates
 using Tables
