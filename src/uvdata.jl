@@ -5,7 +5,15 @@ Base.@kwdef struct FrequencyWindow
     sideband::Int8
 end
 
-frequency(fw::FrequencyWindow) = fw.freq
+frequency(fw::FrequencyWindow, kind::Symbol=:reference) = if kind == :reference
+	fw.freq
+elseif kind == :average
+	@assert fw.sideband == 1
+	@assert fw.nchan > 0
+	fw.freq + fw.width / 2
+else
+	error("Unsupported kind: $kind")
+end
 
 Base.@kwdef struct UVHeader
     fits::FITSHeader
@@ -174,7 +182,7 @@ function table(uvdata::UVData)
             ix = r._
             if_spec = uvdata.freq_windows[r.IF]
             uvw_m = data.uvw_m[ix]
-            uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec)))
+            uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec, :average)))
             (;
                 baseline=data.baseline[ix],
                 datetime=data.datetime[ix],
