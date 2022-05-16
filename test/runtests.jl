@@ -58,6 +58,18 @@ end
         @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587u"mas"
         @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233u"mas"
     end
+
+    @testset "stacked image" begin
+        img = VLBI.load("./data/map_stacked.fits", read_data=true)
+        @test size(img.data) == (512, 512)
+        @test maximum(img.data) ≈ 0.5073718945185344
+        @test img.data[123, 456] ≈ -1.0848011697817128e-5
+        @test axiskeys(img.data, :ra)  .|> ustrip ≈ 25.5:-0.1:-25.6  atol=1e-3
+        bm = beam(img)
+        @test fwhm_min(bm) == fwhm_max(bm)
+
+        @test_broken mod = VLBI.load(MultiComponentModel, "./data/map_stacked.fits")
+    end
 end
 
 @testset "uvfits" begin
