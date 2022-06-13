@@ -1,5 +1,5 @@
 function guess_type(src)
-    if startswith(first(eachline(src)), "! Center")
+    if startswith(first(eachline(src)), r"! \w+")
         MultiComponentModel
     else
         ctypes = try
