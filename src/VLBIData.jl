@@ -5,6 +5,7 @@ export VLBI, table
 
 using Reexport
 using DataPipes
+using FlexiMaps: filtermap
 using Tables
 import Tables: table
 using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
