@@ -45,14 +45,8 @@ convolve(VLBI.load(MultiComponentModel, "./data/map.fits"), beam("./data/map.fit
 # ╔═╡ 406e4220-608c-45f8-8562-3b3970c306dd
 VLBI.load(MultiComponentModel, "./data/map.fits")
 
-# ╔═╡ 63a29fce-a345-4418-b68f-3ac9b1a668e7
-raw = @p VLBI.load("./data/vis.fits") |> VLBI.read_data_raw();
-
 # ╔═╡ ce74a7f5-06be-44c9-9b45-f64dc83e14a8
-@p VLBI.load("./data/vis.fits") |> VLBI.read_data_arrays() |> map(AsText)
-
-# ╔═╡ cc10c449-be9b-429d-a195-7631b440f9d3
-@p VLBI.load("./data/vis.fits") |> Tables.rowtable() |> __[1].uv
+@p VLBI.load("./data/vis.fits") |> Tables.rows()
 
 # ╔═╡ 5848e406-18cf-4f36-922b-104d6edd2cf5
 VLBI.load("./data/difmap_model.mod")
@@ -719,9 +713,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═b4e14571-a3fa-41d2-98da-cff594f88202
 # ╠═0d973937-7a88-4910-8013-0f93c2ac74ff
 # ╠═406e4220-608c-45f8-8562-3b3970c306dd
-# ╠═63a29fce-a345-4418-b68f-3ac9b1a668e7
 # ╠═ce74a7f5-06be-44c9-9b45-f64dc83e14a8
-# ╠═cc10c449-be9b-429d-a195-7631b440f9d3
 # ╠═5848e406-18cf-4f36-922b-104d6edd2cf5
 # ╠═d486df81-8a1b-4785-ba8e-481384b10083
 # ╠═6d58f33c-c83e-4052-be6a-0e3865b2d106
