@@ -16,7 +16,7 @@ UnitfulAstro = "6112ee07-acf9-5e0f-b108-d242c714bf9f"
 [compat]
 Aqua = "0.5"
 AstroRFC = "0.1.3"
-AxisKeys = "0.1"
+AxisKeys = "0.1, 0.2"
 CompatHelperLocal = "0.1.4"
 ProgressMeter = "1.7"
 StaticArrays = "1.3.2"
