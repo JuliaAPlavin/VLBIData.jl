@@ -8,6 +8,15 @@ using Tables
 using AstroRFC
 
 
+@testset "generic loading" begin
+    @test VLBI.guess_type("./data/map.fits") == VLBI.FitsImage
+    @test VLBI.guess_type("./data/vis.fits") == VLBI.UVData
+    @test VLBI.guess_type("./data/vis_multichan.vis") == VLBI.UVData
+    @test VLBI.guess_type("./data/difmap_model.mod") == MultiComponentModel
+    @test VLBI.guess_type("./data/difmap_model_empty.mod") == MultiComponentModel
+end
+
+
 @testset "fits image" begin
     @testset "read nothing" begin
         img = VLBI.load(VLBI.FitsImage, "./data/map.fits", read_data=false, read_clean=false)
