@@ -1,23 +1,3 @@
-struct DifmapModel end
-
-# don't use: keeping for backwards compatibility
-function load(::Type{DifmapModel}, src)
-    @p begin
-        load(MultiComponentModel, src)
-        components()
-        map() do c
-            (;
-                flux=flux(c),
-                radec=coords(c),
-                major=fwhm_max(c),
-                ratio=fwhm_min(c) / fwhm_max(c),
-                phi=applicable(position_angle, c) ? position_angle(c) : 0.0,
-            )
-        end
-        collect()
-    end
-end
-
 load(T::Type{MultiComponentModel}, src) = if startswith(first(eachline(src)), "! Center")
     load(T, src, Val(:mod))
 else

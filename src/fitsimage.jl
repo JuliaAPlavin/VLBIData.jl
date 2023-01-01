@@ -1,12 +1,10 @@
-@with_kw struct FitsImage{TD, TCC}
+Base.@kwdef struct FitsImage{TD}
     path::String
     header::FITSHeader
-    clean_components::TCC
     data::TD
-    noise::Union{Nothing, Float32}
 end
 
-function load(::Type{FitsImage}, path; read_data=true, read_clean=false)
+function load(::Type{FitsImage}, path; read_data=true)
     FITS(path) do f
         primary = f[1]
         header = read_header(primary)
@@ -24,27 +22,7 @@ function load(::Type{FitsImage}, path; read_data=true, read_clean=false)
             nothing
         end
 
-        comps = if read_clean
-            comps = f["AIPS CC"] |> columntable |> rowtable
-            if length(Tables.schema(comps).names) > 3
-                if !all(c -> c.var"MAJOR AX" == 0 && c.var"MINOR AX" == 0 && c.POSANGLE == 0 && c.var"TYPE OBJ" == 0, comps)
-                    @warn "Unexpected component parameters: nonzero major or minor axes, posangle, or type."
-                end
-            end
-            map(comps) do c
-                (flux=c.FLUX, radec=(c.DELTAX*3.6e6, c.DELTAY*3.6e6))
-            end
-        else
-            nothing
-        end
-
-        return FitsImage(
-            path=path,
-            header=header,
-            clean_components=comps,
-            data=data,
-            noise=read_data ? mad(data, normalize=true, center=0) : nothing,
-        )
+        return FitsImage(; path, header, data)
     end
 end
 
