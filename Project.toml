@@ -1,7 +1,7 @@
 name = "VLBIData"
 uuid = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
 authors = ["Alexander Plavin <alexander@plav.in>"]
-version = "0.3.3"
+version = "0.3.4"
 
 [deps]
 AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
