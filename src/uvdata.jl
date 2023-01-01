@@ -139,11 +139,10 @@ function read_data_arrays(uvdata::UVData)
         visibility = map((r, i) -> r + im * i, axarr(COMPLEX=:re), axarr(COMPLEX=:im)),
         weight = axarr(COMPLEX=:wt),
     )
-    data = merge(data, (date_0 = Float32.(data.date .- minimum(data.date)),))
     return data
 end
 
-function read_data_table(uvdata::UVData)
+function Tables.rowtable(uvdata::UVData)
     data = read_data_arrays(uvdata)
     @assert ndims(data.visibility) ∈ (3, 4)
     # `|> columntable |> rowtable` is faster than `|> rowtable` alone
@@ -151,18 +150,16 @@ function read_data_table(uvdata::UVData)
         ix = r.IX
         if_spec = uvdata.freq_windows[r.IF]
         uvw = (data.u[ix], data.v[ix], data.w[ix])
-        uvw_wl = uvw ./ (u"c" / if_spec.freq)
+        uvw_wl = ustrip.(Unitful.NoUnits, uvw ./ (u"c" / if_spec.freq))
         (
             array_ix=data.array_ix[ix],
-            ant1_ix=data.ant1_ix[ix],
-            ant2_ix=data.ant2_ix[ix],
-            date=data.date[ix],
-            date_0=data.date_0[ix],
+            ant_ix=(data.ant1_ix[ix], data.ant2_ix[ix]),
+            date=julian_day(data.date[ix]),
             stokes=r.STOKES,
             iif=Int8(r.IF),
             if_spec=if_spec,
-            u=uvw[1], v=uvw[2], w=uvw[3],
-            u_wl=uvw_wl[1], v_wl=uvw_wl[2], w_wl=uvw_wl[3],
+            uv_m=SVector(uvw[1:2]), w_m=uvw[3],
+            uv=SVector(uvw_wl[1:2]), w=uvw_wl[3],
             visibility=r.value,
             weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
         )
