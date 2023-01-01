@@ -143,11 +143,7 @@ function read_data_arrays(uvdata::UVData)
         STOKES=uvdata.header.stokes,
         COMPLEX=[:re, :im, :wt])
     # drop always-singleton axes
-    axarr = if size(axarr, :FREQ) == 1
-        axarr[DEC=1, RA=1, FREQ=1]
-    else
-        axarr[DEC=1, RA=1]
-    end
+    axarr = axarr[DEC=1, RA=1]
 
     uvw_m = UVW.([Float32.(raw[k]) .* (u"c" * u"s") .|> u"m" for k in uvw_keys]...)
     baseline = map(raw["BASELINE"]) do b
@@ -167,29 +163,33 @@ function read_data_arrays(uvdata::UVData)
     return data
 end
 
-function Tables.rows(uvdata::UVData)
+function table(uvdata::UVData)
     data = read_data_arrays(uvdata)
-    @assert ndims(data.visibility) ∈ (3, 4)
-    # `|> columntable |> rowtable` is faster than `|> rowtable` alone
-    df = map(data.visibility |> columntable |> rowtable) do r
-        ix = r._
-        if_spec = uvdata.freq_windows[r.IF]
-        uvw_m = data.uvw_m[ix]
-        uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec)))
-        (
-            baseline=data.baseline[ix],
-            datetime=data.datetime[ix],
-            stokes=r.STOKES,
-            if_ix=Int8(r.IF),
-            if_spec=if_spec,
-            uv_m=UV(uvw_m[1:2]), w_m=uvw_m[3],
-            uv=UV(uvw_wl[1:2]), w=uvw_wl[3],
-            visibility=r.value,
-            weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
-        )
+    @assert ndims(data.visibility) == 4
+    
+    @p begin
+        data.visibility
+        # `|> columntable |> rowtable` is faster than `|> rowtable` alone
+        map(__ |> columntable |> rowtable) do r
+            ix = r._
+            if_spec = uvdata.freq_windows[r.IF]
+            uvw_m = data.uvw_m[ix]
+            uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec)))
+            (;
+                baseline=data.baseline[ix],
+                datetime=data.datetime[ix],
+                stokes=r.STOKES,
+                if_ix=Int8(r.IF),
+                if_spec=if_spec,
+                uv_m=UV(uvw_m[1:2]), w_m=uvw_m[3],
+                uv=UV(uvw_wl[1:2]), w=uvw_wl[3],
+                visibility=r.value,
+                weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
+            )
+        end
+        StructArray()
+        filter!(_.weight > 0)
     end
-    filter!(x -> x.weight > 0, df)
-    return df
 end
 
 function load(::Type{UVData}, path)

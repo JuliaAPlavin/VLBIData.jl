@@ -73,7 +73,7 @@ end
         @test map(a -> a.id, antarr.antennas) == 1:9
         @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
 
-        df = rowtable(uv)
+        df = VLBI.table(uv)
         @test Tables.rowaccess(df)
         @test length(df) == 896
         @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
@@ -88,7 +88,7 @@ end
     @testset "multichannel" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
         @test length(uv.freq_windows) == 8
-        df = rowtable(uv)
+        df = VLBI.table(uv)
     end
 end
 
