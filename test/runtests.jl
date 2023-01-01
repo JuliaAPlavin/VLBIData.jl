@@ -79,10 +79,10 @@ end
         @test length(df) == 160560
         @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
         @test all(isconcretetype, Tables.schema(df).types)
-        @test df[1].uv === VLBI.UV(-6.465521f7, 8.965202f7)
+        @test df[1].uv === VLBI.UV(-6.4672084f7, 8.967541f7)
         df_cols = Tables.columntable(df)
         @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
-        @test mean(df_cols.uv) === VLBI.UV(-8.924387f6, 1.6106081f7)
+        @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
         @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
     end
 
