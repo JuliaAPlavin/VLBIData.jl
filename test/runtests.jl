@@ -51,9 +51,9 @@ end
 
         mod = VLBI.load(MultiComponentModel, "./data/map.fits")
         @test length(components(mod)) == 361
-        @test sum(flux, components(mod)) ≈ 0.038659f0
-        @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587
-        @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233
+        @test sum(flux, components(mod)) ≈ 0.038659f0u"Jy"
+        @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587u"mas"
+        @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233u"mas"
     end
     
     @testset "read data" begin
@@ -114,9 +114,9 @@ end
     @testset "modern" begin
         mod = VLBI.load("./data/difmap_model.mod")
         @test length(components(mod)) == 3
-        @test map(flux, components(mod)) |> collect ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
-        @test map(fwhm_max, components(mod)) |> collect ≈ [2.30, 6.04, 323e3]  rtol=0.01
-        @test coords(components(mod)[1]) == [-0.09183782420814114, 0.13039751573060954]
+    @test map(flux, components(mod)) |> collect ≈ [0.64, -0.01, 1.32e9]u"Jy"  rtol=0.01
+    @test map(fwhm_max, components(mod)) |> collect ≈ [2.30, 6.04, 323e3]u"mas"  rtol=0.01
+    @test coords(components(mod)[1]) == [-0.09183782420814114, 0.13039751573060954]u"mas"
 
         mod = VLBI.load("./data/difmap_model_empty.mod")
         @test isempty(components(mod))
