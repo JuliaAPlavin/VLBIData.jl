@@ -5,9 +5,9 @@ using Unitful, UnitfulAstro, MyUnitful
 using StaticArrays
 using Dates
 using Tables
-using AstroRFC
+using AstroRFC: RFC
 using VLBIData
-using VLBIData: flux, coords, frequency
+using VLBIData: frequency
 
 
 @testset "generic loading" begin
