@@ -8,6 +8,7 @@ using Tables
 using AstroRFC: RFC
 using VLBIData
 using VLBIData: frequency
+using ProgressMeter
 
 
 @testset "generic loading" begin
@@ -108,10 +109,10 @@ end
 
     @testset "vis" begin
         rfci = RFC.Files()
-        for f in RFC.files(rfci, suffix="vis") .|> abspath
+        @showprogress for f in RFC.files(rfci, suffix="vis") .|> abspath
             try
-                uv = VLBI.load(VLBI.UVData, f)
-                df = VLBI.read_data_table(uv)
+                uv = VLBI.load(f)
+                df = VLBI.table(uv)
             catch e
                 @show f e
                 rethrow()
@@ -121,9 +122,15 @@ end
 
     @testset "maps" begin
         rfci = RFC.Files()
-        for f in RFC.files(rfci, suffix="map", extension="fits") .|> abspath
+        @showprogress for f in RFC.files(rfci, suffix="map", extension="fits") .|> abspath
             try
-                VLBI.load(VLBI.FitsImage, f, read_data=true, read_clean=true)
+                VLBI.load(f)
+            catch e
+                @show f e
+                rethrow()
+            end
+            try
+                VLBI.load(MultiComponentModel, f)
             catch e
                 @show f e
                 rethrow()
