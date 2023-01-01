@@ -1,7 +1,7 @@
 module VLBIData
 
 const VLBI = VLBIData
-export VLBI, rowtable
+export VLBI, Tables
 
 using Reexport
 using DataPipes

@@ -19,11 +19,14 @@ begin
 	pyplot_style!()
 end
 
+# ╔═╡ 7a4e96c8-8ab0-4338-82b5-e07f0afdaae5
+using DataPipes
+
+# ╔═╡ 9c6efe8c-385e-4446-acdf-bd19cffe31e2
+using DisplayAs: Text as AsText
+
 # ╔═╡ 34004188-d3a5-4468-9f23-da7d48f31ec7
 using RectiGrids, StaticArrays, Unitful, MyUnitful
-
-# ╔═╡ 3fdea22b-3a22-4a50-8413-44d774b28a35
-using DateFormats
 
 # ╔═╡ 04c814f2-90b3-4ee6-8570-f14cdeeaf2c8
 map(readdir("./data", join=true)) do f
@@ -42,14 +45,14 @@ convolve(VLBI.load(MultiComponentModel, "./data/map.fits"), beam("./data/map.fit
 # ╔═╡ 406e4220-608c-45f8-8562-3b3970c306dd
 VLBI.load(MultiComponentModel, "./data/map.fits")
 
-# ╔═╡ ed9ee974-3fc4-42e0-8162-519489e610ec
-julian_day(2.45739e6)
+# ╔═╡ 63a29fce-a345-4418-b68f-3ac9b1a668e7
+raw = @p VLBI.load("./data/vis.fits") |> VLBI.read_data_raw();
 
-# ╔═╡ f62b5356-0129-4d16-8df1-30efd992c60a
-VLBI.load("./data/vis.fits") |> VLBI.read_data_table
+# ╔═╡ ce74a7f5-06be-44c9-9b45-f64dc83e14a8
+@p VLBI.load("./data/vis.fits") |> VLBI.read_data_arrays() |> map(AsText)
 
 # ╔═╡ cc10c449-be9b-429d-a195-7631b440f9d3
-VLBI.load("./data/vis.fits") |> rowtable
+@p VLBI.load("./data/vis.fits") |> Tables.rowtable() |> __[1].uv
 
 # ╔═╡ 5848e406-18cf-4f36-922b-104d6edd2cf5
 VLBI.load("./data/difmap_model.mod")
@@ -86,7 +89,8 @@ end
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-DateFormats = "44557152-fe0a-4de1-8405-416d90313ce6"
+DataPipes = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
+DisplayAs = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
 MyUnitful = "be63a33b-ca4d-43a5-8045-b0b8c6209429"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PyPlotUtils = "5384e752-6c47-47b3-86ac-9d091b110b31"
@@ -97,14 +101,15 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 VLBIData = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
 
 [compat]
-DateFormats = "~0.1.12"
+DataPipes = "~0.2.5"
+DisplayAs = "~0.1.2"
 MyUnitful = "~0.1.0"
 PyPlotUtils = "~0.1.2"
 RectiGrids = "~0.1.6"
 Revise = "~3.3.1"
 StaticArrays = "~1.3.2"
 Unitful = "~1.10.1"
-VLBIData = "~0.2.5"
+VLBIData = "~0.3.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -167,9 +172,9 @@ version = "3.49.1+0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "926870acb6cbcf029396f2f2de030282b6bc1941"
+git-tree-sha1 = "6e39c91fb4b84dcb870813c91674bdebb9145895"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.11.4"
+version = "1.11.5"
 
 [[deps.ChangesOfVariables]]
 deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
@@ -275,6 +280,11 @@ git-tree-sha1 = "66bde31636301f4d217a161cabe42536fa754ec8"
 uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 version = "0.3.17"
 
+[[deps.DisplayAs]]
+git-tree-sha1 = "44e8d47bc0b56ec09115056a692e5fa0976bfbff"
+uuid = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
+version = "0.1.2"
+
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -336,7 +346,7 @@ uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[deps.InterferometricModels]]
 deps = ["IntervalSets", "LinearAlgebra", "StaticArrays", "Unitful", "UnitfulAstro"]
-path = "../../home/aplavin/.julia/dev/InterferometricModels.jl"
+git-tree-sha1 = "a33da56b7c4a292fb83638a26ef8b2ef9aa5d065"
 uuid = "b395d269-c2ec-4df6-b679-36919ad600ca"
 version = "0.1.0"
 
@@ -668,7 +678,7 @@ version = "1.1.1"
 deps = ["AxisKeys", "DataPipes", "DateFormats", "Dates", "DelimitedFiles", "FITSIO", "InterferometricModels", "MyUnitful", "PyCall", "Reexport", "StaticArrays", "Tables", "Unitful", "UnitfulAstro"]
 path = "../../home/aplavin/.julia/dev/VLBIData"
 uuid = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
-version = "0.2.10"
+version = "0.3.0"
 
 [[deps.VersionParsing]]
 git-tree-sha1 = "e575cf85535c7c3292b4d89d89cc29e8c3098e47"
@@ -701,15 +711,16 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╔═╡ Cell order:
 # ╠═4eb97406-7713-11ec-00ca-8be6bef77030
 # ╠═5529a3e2-c874-4a21-b349-3984349b1db6
+# ╠═7a4e96c8-8ab0-4338-82b5-e07f0afdaae5
+# ╠═9c6efe8c-385e-4446-acdf-bd19cffe31e2
 # ╠═34004188-d3a5-4468-9f23-da7d48f31ec7
 # ╠═04c814f2-90b3-4ee6-8570-f14cdeeaf2c8
 # ╠═6bf4ae14-33d7-4faa-a664-80889ece70b7
 # ╠═b4e14571-a3fa-41d2-98da-cff594f88202
 # ╠═0d973937-7a88-4910-8013-0f93c2ac74ff
 # ╠═406e4220-608c-45f8-8562-3b3970c306dd
-# ╠═3fdea22b-3a22-4a50-8413-44d774b28a35
-# ╠═ed9ee974-3fc4-42e0-8162-519489e610ec
-# ╠═f62b5356-0129-4d16-8df1-30efd992c60a
+# ╠═63a29fce-a345-4418-b68f-3ac9b1a668e7
+# ╠═ce74a7f5-06be-44c9-9b45-f64dc83e14a8
 # ╠═cc10c449-be9b-429d-a195-7631b440f9d3
 # ╠═5848e406-18cf-4f36-922b-104d6edd2cf5
 # ╠═d486df81-8a1b-4785-ba8e-481384b10083
