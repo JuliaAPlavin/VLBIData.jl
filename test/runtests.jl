@@ -3,9 +3,10 @@ using Statistics
 using AxisKeys
 using Unitful, UnitfulAstro, MyUnitful
 using Dates
-using VLBIData
 using Tables
 using AstroRFC
+using VLBIData
+using VLBIData: flux, coords
 
 
 @testset "generic loading" begin
@@ -103,16 +104,27 @@ end
 end
 
 @testset "difmap_files" begin
-    df = @inferred VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
-    @test length(df) == 3
-    @test map(x -> x.flux, df) ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
-    @test df[1].radec == [-0.09183782420814114, 0.13039751573060954]
+    @testset "modern" begin
+        mod = VLBI.load("./data/difmap_model.mod")
+        @test length(components(mod)) == 3
+        @test map(flux, components(mod)) |> collect ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
+        @test map(fwhm_max, components(mod)) |> collect ≈ [2.30, 6.04, 323e3]  rtol=0.01
+        @test coords(components(mod)[1]) == [-0.09183782420814114, 0.13039751573060954]
 
-    df_t = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod"; radec_type=NTuple{2, Float64})
+        mod = VLBI.load("./data/difmap_model_empty.mod")
+        @test isempty(components(mod))
+    end
 
-    df_e = @inferred VLBI.load(VLBI.DifmapModel, "./data/difmap_model_empty.mod")
-    @test isempty(df_e)
-    @test typeof(df_e) == typeof(df)
+    @testset "deprecated" begin
+        df = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
+        @test length(df) == 3
+        @test map(x -> x.flux, df) ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
+        @test df[1].radec == [-0.09183782420814114, 0.13039751573060954]
+
+        df_e = VLBI.load(VLBI.DifmapModel, "./data/difmap_model_empty.mod")
+        @test isempty(df_e)
+        @test_broken typeof(df_e) == typeof(df)
+    end
 end
 
 @testset "RFC" begin
