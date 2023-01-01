@@ -1,23 +1,23 @@
 ### A Pluto.jl notebook ###
-# v0.17.5
+# v0.18.0
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 4eb97406-7713-11ec-00ca-8be6bef77030
 begin
-	using Revise
-	import Pkg
-	Pkg.develop(path="..")
-	Pkg.resolve()
+	# using Revise
+	# import Pkg
+	# eval(:(Pkg.develop(path="..")))
+	# Pkg.resolve()
 	using VLBIData
 end
 
 # ╔═╡ 5529a3e2-c874-4a21-b349-3984349b1db6
-begin
-	using PyPlotUtils
-	pyplot_style!()
-end
+using PyPlotUtils; pyplot_style!()
+
+# ╔═╡ 17a5e5ad-c3a7-41a0-bf56-410675e95475
+using VLBIPlots
 
 # ╔═╡ 7a4e96c8-8ab0-4338-82b5-e07f0afdaae5
 using DataPipes
@@ -25,282 +25,291 @@ using DataPipes
 # ╔═╡ 9c6efe8c-385e-4446-acdf-bd19cffe31e2
 using DisplayAs: Text as AsText
 
-# ╔═╡ 34004188-d3a5-4468-9f23-da7d48f31ec7
-using RectiGrids, StaticArrays, Unitful, MyUnitful
+# ╔═╡ be208a3e-9a03-4194-8be7-05547d9871a7
+using RectiGrids
 
-# ╔═╡ ee286acc-4797-481e-ab14-e91f91510751
-using StatsBase
+# ╔═╡ 4e7278e0-0d12-4762-8ace-e7cbe8eb371c
+using StaticArrays
 
-# ╔═╡ 94e40db8-6aed-4770-b126-7122aca9b495
-using Dates
+# ╔═╡ dc179b8b-a5b7-4d2d-bf86-afc0fc5a376b
+using Unitful, UnitfulAngles
 
-# ╔═╡ 01ea27f2-e96a-4b5a-b44b-f61731c3708c
-using IntervalSets
-
-# ╔═╡ 80bb2a26-89fe-4722-829a-e07e8ae6eb0b
-using StructArrays
-
-# ╔═╡ 19d92205-59d2-4592-b4dc-a1a1c3c5ea74
-using SplitApplyCombine
-
-# ╔═╡ 4d50fe5c-0d73-4ff6-bd19-937fa213e6b7
-using LinearAlgebra
-
-# ╔═╡ 70b24dbe-21ff-4375-804d-4cfb808d8f1f
-using Altair
-
-# ╔═╡ a203c15a-2473-4a4d-8914-c78ca86fcadb
+# ╔═╡ f3898d40-517d-421b-b551-00d8ce1f64dd
 using AxisKeys
 
-# ╔═╡ 04c814f2-90b3-4ee6-8570-f14cdeeaf2c8
-map(readdir("./data", join=true)) do f
-	f => VLBI.guess_type(f)
-end
+# ╔═╡ 3ba32828-9266-4427-b396-a9c44d81f02b
+using HypertextLiteral
+
+# ╔═╡ 5491a70e-8aea-42bc-b449-a56fd120d3fd
+md"""
+__`VLBIData` reads a range of data formats typically used in very long baseline interferometry (VLBI).__
+
+For convenience, it exports itself as `VLBI`: non-exported functions are accessed as `VLBI.load`.
+
+The proper file format is guessed automatically, and typically one just needs the `VLBI.load(file)` method.
+
+Some formats, such as "image FITS", may actually contain multiple datasets of different kinds (eg image + model). In such cases, `VLBI.load(file)` reads the main dataset (image) by default. Use `VLBI.load(type, file)` to read the dataset of `type` from the `file`: see examples below.
+"""
+
+# ╔═╡ 6cb0d385-5b13-4afe-bf8c-015938efc91d
+md"""
+`VLBIData` is well-tested. It is regularly confirmed to read all files in the [Astrogeo](http://astrogeo.org/vlbi_images/) database successfully.
+"""
+
+# ╔═╡ b685e8e4-efa5-453c-a27b-4453946a0839
+md"""
+# Image FITS
+"""
+
+# ╔═╡ 9af33a02-67f8-4233-93f5-4797ecf702d9
+md"""
+## Read image itself
+"""
+
+# ╔═╡ 3df0333d-734c-4d4b-bdec-49cac59f4681
+md"""
+Load the image data from a FITS file:
+"""
 
 # ╔═╡ 6bf4ae14-33d7-4faa-a664-80889ece70b7
-VLBI.load("./data/map.fits")
+fimg = VLBI.load("./data/map.fits");
 
-# ╔═╡ b4e14571-a3fa-41d2-98da-cff594f88202
-VLBI.load(MultiComponentModel, "./data/map.fits")
+# ╔═╡ 50c8dfe9-db54-4239-a14d-c8e047eab443
+md"""
+The returned object contains both the header information, and the image data as an array:
+"""
 
-# ╔═╡ 0d973937-7a88-4910-8013-0f93c2ac74ff
-convolve(VLBI.load(MultiComponentModel, "./data/map.fits"), beam("./data/map.fits"))
+# ╔═╡ 8b722ca5-3198-4c6c-94b1-4daf8fd2e718
+fimg.header["OBJECT"]
 
-# ╔═╡ 406e4220-608c-45f8-8562-3b3970c306dd
-VLBI.load(MultiComponentModel, "./data/map.fits")
+# ╔═╡ fd52ba81-f515-4388-b677-72ad9bfb4f6b
+fimg.data |> AsText
 
-# ╔═╡ ce74a7f5-06be-44c9-9b45-f64dc83e14a8
-@p VLBI.load("./data/vis.fits") |> VLBI.table(stokes=:PI)
+# ╔═╡ 8742d582-8bea-4fcf-a2ea-cf2ae28b8008
+@htl("""
+<details>
+	<summary>Inspect the whole object</summary>
+	$(embed_display(fimg))
+</details>
+""")
 
-# ╔═╡ 5b6f8190-b3d0-403d-92a1-e504db9d6a8f
-@p VLBI.load("./data/vis_multichan.vis") |> VLBI.table(stokes=:PI)
+# ╔═╡ b104bdf4-cdee-4743-a4e7-31844f5338e7
+md"""
+As you see, the image data is a `KeyedArray`. It contains information about axes and their units for convenient look up, indexing, plotting, ...:
+"""
 
-# ╔═╡ b89a56a3-b94e-4e34-af11-594d4dcab143
-Hour(2)..Hour(4) |> typeof |> supertypes
-
-# ╔═╡ 4854b4e1-131c-4aeb-a06f-c9873e1ea5f6
-TimePeriod |> subtypes
-
-# ╔═╡ 75c2edab-75d7-405a-81af-c355b32f03e1
-ess(w::AbstractWeights) = sum(w)^2 / sum(w .^ 2)
-
-# ╔═╡ 7a476b7d-713a-4be6-85b7-7a2ee637e8aa
-@p VLBI.load("./data/vis_multichan.vis") |>
-	VLBI.table()
-
-# ╔═╡ 01ca3ad8-4041-4b99-a7f0-9a3994a4f192
-Base.@kwdef struct AverageSpec
-	time::ClosedInterval{<:TimePeriod}
-	uvspread::ClosedInterval{Float64}
-	ess::ClosedInterval{Float64}
-end
-
-# ╔═╡ 678f32f6-fe7f-4bcf-bbf1-c2e70b2663c6
-function is_too_long(data, rng, spec)
-	a, b = data[first(rng)], data[last(rng)]
-	b.datetime - a.datetime > maximum(spec.time) && return true
-	norm(b.uv - a.uv) > maximum(spec.uvspread) && return true
-	# ess(weights(map(:weight, @view(data[rng])))) > maximum(spec.ess) && return true
-	return false
-end
-
-# ╔═╡ e6004624-93d8-4b25-a2fa-8cfdcbb7972d
-function is_too_short(data, rng, spec)
-	isempty(rng) && return true
-	a, b = data[first(rng)], data[last(rng)]
-	b.datetime - a.datetime < minimum(spec.time) && return true
-	norm(b.uv - a.uv) < minimum(spec.uvspread) && return true
-	# ess(weights(map(:weight, @view(data[rng])))) < minimum(spec.ess) && return true
-	return false
-end
-
-# ╔═╡ bad8f84e-8d3c-42f8-a8fe-1e806fe5b2a1
-begin
-	last_ifany(x) = isempty(x) ? nothing : last(x)
-	first_ifany(x) = isempty(x) ? nothing : first(x)
-end
-
-# ╔═╡ d47f2596-d97f-42e7-9237-4b6f7984b062
-function aggregate_obs(X)
-	wts = weights(X.weight)
-	(
-		datetime=unix2datetime(mean(datetime2unix.(X.datetime), wts)),
-		timerange=last(X).datetime - first(X).datetime,
-		uv=mean(X.uv, wts),
-		visibility=mean(X.visibility, wts),
-		weight=sum(X.weight, wts),
-		ess=ess(wts),
-		cnt=length(X),
-	)
-end
-
-# ╔═╡ b2f030ec-136c-45ee-9068-90885bf0b200
-function uvaverage_singlebase(data::AbstractArray, spec::AverageSpec)
-	data = sort(data; by=x -> x.datetime)
-	res = []
-	i_start_a = 1
-	while true
-		i_end_a = first_ifany(filter(i -> is_too_long(data, i_start_a:i, spec), i_start_a:length(data)))
-		i_end_a = something(i_end_a, length(data) + 1) - 1
-		if i_end_a == length(data)
-			push!(res, aggregate_obs(view(data, i_start_a:i_end_a)))
-			i_start_a = i_end_a + 1
-		else
-			i_end_b = first_ifany(filter(i -> is_too_long(data, (i_end_a + 1):i, spec), (i_end_a + 1):length(data)))
-			i_end_b = something(i_end_b, length(data) + 1) - 1
-			if is_too_short(data, (i_end_a + 1):i_end_b, spec)
-				i_start_b = last_ifany(filter(i -> !is_too_short(data, (i + 1):i_end_b, spec), i_start_a:i_end_a))
-				if isnothing(i_start_b)
-					push!(res, aggregate_obs(view(data, i_start_a:i_end_a)))
-				elseif is_too_short(data, i_start_a:(i_start_b - 1), spec)
-					push!(res, aggregate_obs(view(data, i_start_a:i_end_a)))
-				else
-					push!(res, aggregate_obs(view(data, i_start_a:(i_start_b-1))))
-					push!(res, aggregate_obs(view(data, i_start_b:i_end_b)))
-				end
-			else
-				push!(res, aggregate_obs(view(data, i_start_a:i_end_a)))
-				push!(res, aggregate_obs(view(data, (i_end_a+1):i_end_b)))
-			end
-			i_start_a = i_end_b + 1
-		end
-		i_start_a > length(data) && break
-	end
-	return res
-end
-
-# ╔═╡ 7fd2efb7-fbd8-4cb8-86b1-21f213808a11
-function uvaverage(data::AbstractArray, spec::AverageSpec)
-	@p begin
-		data
-		groupview((;_.baseline))
-		map() do __
-			uvaverage_singlebase(__, spec)
-		end
-		pairs
-		mapmany(_[2], (;_[1]..., _2...))
-		map(identity)
-	end
-end
-
-# ╔═╡ 6a65ce8a-7551-4640-9391-81380e413d8f
-@p VLBI.load("./data/vis_multichan.vis") |>
-	VLBI.table() |>
-	# filter(_.stokes == :LL && _.if_ix == 1) |>
-	uvaverage(__, AverageSpec(time=Minute(1)..Minute(4), uvspread=0..Inf, ess=0..Inf))
-
-# ╔═╡ 50668cfa-173e-43d2-bc86-53fac4db43f1
-smearing(uvspread, imdist) = sin(π*uvspread*imdist) / (π*uvspread*imdist)
-
-# ╔═╡ fa226e0a-4cd1-43f0-9f11-9ff669e27c44
-uvspread(uvdist, mins) = mins * (π*uvdist)/(12*60)
-
-# ╔═╡ a9e71043-e412-45e4-b7ba-2ab5df60887d
-maxuvdist(ν) = 6400u"km" / (u"c" / ν)
-
-# ╔═╡ 90ce174d-a85e-404b-8fd5-ef545c04f911
-let
-	df = @p map(grid(uvspread=[1e3, 1e4, 1e5, 3e5, 5e5, 1e6], imdist=0:50)) do p
-		(;p..., smearing=smearing(p.uvspread, p.imdist*u"mas") |> upreferred)
-	end |> vec
-	ch = altChart(df)
-	ch = ch.mark_line().encode(alt.X(:imdist), alt.Y(:smearing, scale=alt.Scale(domain=[0.9, 1]; clamp=true)), alt.Color(:uvspread; type=:nominal))
-	altVLSpec(ch)
-end
-
-# ╔═╡ ca2a4a92-2d21-4622-ac15-7362d5072d80
-let
-	df = @p map(grid(uvdist=[1e6, 1e7, 1e8], mins=[0.5, 1, 2, 5], imdist=0:100)) do p
-		(;p..., smearing=smearing(uvspread(p.uvdist, p.mins), p.imdist*u"mas") |> upreferred)
-		end |> mutate(c="|UV|=$(_.uvdist), $(_.mins) min") |> vec
-	ch = altChart(df)
-	ch = ch.mark_line().encode(alt.X(:imdist), alt.Y(:smearing, scale=alt.Scale(domain=[0.9, 1]; clamp=true)), alt.StrokeDash(:uvdist; type=:nominal), alt.Color(:mins; type=:nominal))
-	altVLSpec(ch)
-end
-
-# ╔═╡ e00a2be6-e842-4be6-aeaf-26a7a82a553a
-let
-	df = @p map(grid(ν=[2, 8, 22], mins=[0.5, 1, 2, 5], imdist=0:100)) do p
-		(;p..., smearing=smearing(uvspread(maxuvdist(p.ν*u"GHz")/2, p.mins), p.imdist*u"mas") |> upreferred)
-		end |> vec
-	ch = altChart(df)
-	ch = ch.mark_line().encode(alt.X(:imdist), alt.Y(:smearing, scale=alt.Scale(domain=[0.9, 1]; clamp=true)), alt.StrokeDash(:mins; type=:nominal), alt.Color(:ν; type=:nominal))
-	altVLSpec(ch)
-end
-
-# ╔═╡ 498bf9cc-ef4b-475f-bab4-abf1287f6f59
-smearing(1e6, 50u"mas")|>upreferred
-
-# ╔═╡ 5848e406-18cf-4f36-922b-104d6edd2cf5
-VLBI.load("./data/difmap_model.mod")
-
-# ╔═╡ d486df81-8a1b-4785-ba8e-481384b10083
-intensity_peak.(components(VLBI.load("./data/difmap_model.mod")))
-
-# ╔═╡ 6d58f33c-c83e-4052-be6a-0e3865b2d106
-VLBI.load("./data/difmap_model_empty.mod")
-
-# ╔═╡ beace2b9-4273-4a8f-94e0-a349f3d6edb8
-let
-	mod = VLBI.load(MultiComponentModel, "./data/map.fits")
-	b = beam("./data/map.fits")
-
-	n = 200
-	img = intensity(convolve(mod, b)).(grid(SVector, ra=range(30, -30, length=n)u"mas", dec=range(-30, 30, length=n)u"mas")) .|> ustrip
-	plt.figure()
-	imshow_ax(img, ColorBar(unit="Jy/b"); norm=SymLog(linthresh=5e-4), cmap=:inferno)
-	xylabels(img; inline=true)
-	plt.gcf()
-end
+# ╔═╡ dcd07de0-148d-4641-9cfc-79926e1ba3b1
+fimg.data(dec=Near(5u"mas")) |> AsText
 
 # ╔═╡ b8e07154-a609-459d-bc00-6ff61220cd4a
 let
-	img = VLBI.load("./data/map.fits").data
 	plt.figure()
-	imshow_ax(img, ColorBar(unit="Jy/b"); norm=SymLog(linthresh=5e-4), cmap=:inferno)
-	xylabels(img; inline=true)
+	imshow_ax(fimg.data, ColorBar(unit="Jy/b"); norm=SymLog(linthresh=5e-4), cmap=:inferno)
+	xylabels(fimg.data; inline=true)
 	set_xylims((0±30)^2; inv=:x)
 	plt.gcf()
 end
 
+# ╔═╡ 3075f803-d583-4764-a7d4-1bc14d8e441b
+md"""
+Access the so-called "image beam" - the effective point spread function:
+"""
+
+# ╔═╡ b32c9639-c2c3-4a67-8554-57aefea9d196
+beam(fimg)
+
+# ╔═╡ 6d0bf04e-51ee-43b6-8b7c-912fd051dfb5
+md"""
+## Read source model
+"""
+
+# ╔═╡ c4b58f30-e7db-459e-9d26-2d4bc57e5fbd
+md"""
+FITS image files commonly contain the source model itself, often as a set of delta functions - "CLEAN components". Components are stored in the `AIPS CC` FITS table.
+
+To load this model instead of the image array, pass the corresponding type to `VLBI.load`:
+"""
+
+# ╔═╡ b4e14571-a3fa-41d2-98da-cff594f88202
+fimg_mod = VLBI.load(MultiComponentModel, "./data/map.fits")
+
+# ╔═╡ c8510200-f820-4b2a-8260-d21e8f7f7880
+md"""
+The `MultiComponentModel` type, as well as components themselves, are defined in the `InterferometricModels.jl` package. See its help for more details on how to use these models.
+"""
+
+# ╔═╡ ebcabc9f-0487-4cad-b7f7-fff448fcf203
+md"""
+For example, we can convolve the CLEAN model with the image beam:
+"""
+
+# ╔═╡ 7994f45f-6e01-4a62-ae3b-3031b46f2d7b
+fimg_mod_convolved = convolve(fimg_mod, beam(fimg))
+
+# ╔═╡ 9db795b2-2d79-45b6-a51c-bc09f4d05150
+md"""
+Convolution turned each delta component into an `EllipticGaussian` component. We can use this model to compute an image: the result should be similar to the image array stored in the FITS file, but without adding residual noise:
+"""
+
+# ╔═╡ e06baedf-8689-43e0-aa7d-4cd251879049
+fimg_mod_img = intensity(fimg_mod_convolved).(
+	grid(SVector,
+		ra=range(30, -30, length=200)u"mas",
+		dec=range(-30, 30, length=200)u"mas"
+	)
+);
+
+# ╔═╡ 145c1010-c0e3-4a7a-ace5-cbec71d455f9
+fimg_mod_img |> AsText
+
+# ╔═╡ beace2b9-4273-4a8f-94e0-a349f3d6edb8
+let
+	plt.figure()
+	imshow_ax(fimg_mod_img .|> ustrip, ColorBar(unit="Jy/b"); norm=SymLog(linthresh=5e-4), cmap=:inferno)
+	xylabels(fimg_mod_img; inline=true)
+	plt.gcf()
+end
+
+# ╔═╡ 7014ff5c-8975-4219-bae2-b434bbe8441f
+md"""
+# Visibility or UV FITS
+"""
+
+# ╔═╡ b0f8bdd5-131d-43a2-845d-5785ca6274f5
+md"""
+Another common file format in VLBI is "uvfits": it contains interferometric visibilities.
+
+`VLBI.load` can read such files:
+"""
+
+# ╔═╡ aad0d6b7-a58e-45f5-83b4-f73a23e5c559
+uvfile = VLBI.load("./data/vis.fits");
+
+# ╔═╡ 9ae2c18c-84fe-46e2-b19f-0abb1eccac40
+md"""
+The `uvfile` object only contains metadata extracted from the FITS header and from auxilary tables:
+"""
+
+# ╔═╡ d8f74ef4-fc37-4450-87ec-ef7d55075488
+uvfile.ant_arrays
+
+# ╔═╡ d971425a-785e-4424-8630-ded6bba69809
+uvfile.freq_windows
+
+# ╔═╡ 442febcb-b7de-4fc4-9a1d-53bb67204092
+uvfile.header.stokes
+
+# ╔═╡ 141f6f69-04ce-4bce-b053-3c14791347f8
+md"""
+... and more. Dump the object to see all fields:
+"""
+
+# ╔═╡ aa1d8bd5-e86e-4c56-8fbd-8b8f5dfc7bc8
+@htl("""
+<details>
+	<summary>Inspect the whole object</summary>
+	$(embed_display(uvfile))
+</details>
+""")
+
+# ╔═╡ 546825e2-5f27-47ad-b03a-546a082cd250
+md"""
+The actual visibility data can be retrieved in several formats. The most useful is likely the table format:
+"""
+
+# ╔═╡ ce74a7f5-06be-44c9-9b45-f64dc83e14a8
+uvtbl = VLBI.table(uvfile)
+
+# ╔═╡ 81db478c-1185-41a8-ab16-154778c964d4
+let
+	_, ax = plt.subplots(2, 1, gridspec_kw=Dict(:height_ratios => [3, 1]))
+	radplot([abs, angle], uvtbl; ax)
+	plt.gcf()
+end
+
+# ╔═╡ faf6e8e0-b79d-4e01-94fc-433817c83fd4
+md"""
+This gives a `Tables.jl`-compatible table. For now it's a `StructArray`, but the concrete type may potentially change.
+
+Fields should be self-explanatory.
+"""
+
+# ╔═╡ 77237980-eda9-4e7c-a3ef-25a0425d0149
+md"""
+# Source model files
+"""
+
+# ╔═╡ f946e665-fce7-4b90-a0a0-283ce60eb14b
+md"""
+Source models, typically consisting of several circular or elliptical Gaussians, can be stored in `.mod` files produced by software such as `difmap`.
+
+They are loaded with `VLBI.load` as well:
+"""
+
+# ╔═╡ 5848e406-18cf-4f36-922b-104d6edd2cf5
+dmod = VLBI.load("./data/difmap_model.mod")
+
+# ╔═╡ b2a45d8a-c0d6-4e27-8f57-0ff9db75ecc8
+md"""
+The `MultiComponentModel` type, as well as components themselves, are defined in the `InterferometricModels.jl` package. See its help for more details on how to use these models.
+"""
+
+# ╔═╡ bd6255c9-fe17-4a29-8a5c-d9b734ae7c5c
+md"""
+For now we just plot amplitude and phase envelopes for each component:
+"""
+
+# ╔═╡ f2495e21-6d30-404e-810f-f9a26501eb12
+let
+	_, ax = plt.subplots(2, 1, gridspec_kw=Dict(:height_ratios => [3, 1]))
+	for c in components(dmod)
+		radplot([abs, angle], c, 0..1e9; ax)
+	end
+	plt.gcf()
+end
+
+# ╔═╡ ebf1c8c4-d5c4-425b-baff-42252c0d52cf
+
+
+# ╔═╡ 47da1b40-3624-4dfd-a965-d2fe2286d7c1
+
+
+# ╔═╡ 90b8e37c-1def-438d-981b-e488cc87a3e7
+
+
+# ╔═╡ 8eb67d05-95f1-47cc-b9b5-1fced799a73a
+
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
-Altair = "b5d8985d-ff0a-46fa-83e6-c6893fdbcf16"
 AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
 DataPipes = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DisplayAs = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
-IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
-LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-MyUnitful = "be63a33b-ca4d-43a5-8045-b0b8c6209429"
+HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PyPlotUtils = "5384e752-6c47-47b3-86ac-9d091b110b31"
 RectiGrids = "8ac6971d-971d-971d-971d-971d5ab1a71a"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
-SplitApplyCombine = "03a91e81-4c3e-53e1-a0a4-9c0c8f19dd66"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
-StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+UnitfulAngles = "6fb2a4bd-7999-5318-a3b2-8ad61056cd98"
 VLBIData = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
+VLBIPlots = "0260e397-8112-41bf-b55a-6b4577718f00"
 
 [compat]
-Altair = "~0.1.1"
 AxisKeys = "~0.1.25"
 DataPipes = "~0.2.5"
 DisplayAs = "~0.1.2"
-IntervalSets = "~0.5.3"
-MyUnitful = "~0.1.0"
+HypertextLiteral = "~0.9.3"
 PyPlotUtils = "~0.1.2"
 RectiGrids = "~0.1.6"
 Revise = "~3.3.1"
-SplitApplyCombine = "~1.2.1"
-StaticArrays = "~1.3.2"
-StatsBase = "~0.33.14"
-StructArrays = "~0.6.4"
+StaticArrays = "~1.3.4"
 Unitful = "~1.10.1"
+UnitfulAngles = "~0.6.2"
 VLBIData = "~0.3.0"
+VLBIPlots = "~0.1.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -318,9 +327,9 @@ version = "1.1.0"
 
 [[deps.Accessors]]
 deps = ["Compat", "CompositionsBase", "ConstructionBase", "Future", "LinearAlgebra", "MacroTools", "Requires", "Test"]
-git-tree-sha1 = "2e427a6196c7aad4ee35054a9a90e9cb5df5c607"
+git-tree-sha1 = "0fa53d25794bf1c754f909ee4b0ac31eabff952f"
 uuid = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
-version = "0.1.7"
+version = "0.1.8"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -328,20 +337,14 @@ git-tree-sha1 = "af92965fb30777147966f58acb05da51c5616b5f"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 version = "3.3.3"
 
-[[deps.Altair]]
-deps = ["JSON", "Pandas", "PyCall", "VegaLite"]
-git-tree-sha1 = "46fbac54bc17f3f0a07a808451ab6814e0b49a4d"
-uuid = "b5d8985d-ff0a-46fa-83e6-c6893fdbcf16"
-version = "0.1.1"
-
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
 [[deps.ArrayInterface]]
 deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
-git-tree-sha1 = "ffc6588e17bcfcaa79dfa5b4f417025e755f83fc"
+git-tree-sha1 = "1bdcc02836402d104a46f7843b6e6730b1948264"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "4.0.1"
+version = "4.0.2"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -357,21 +360,21 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[deps.CFITSIO]]
 deps = ["CFITSIO_jll"]
-git-tree-sha1 = "4379a2dac795014534b9895a45889aa658fca213"
+git-tree-sha1 = "8425c47db102577eefb93cb37b4480e750116b0d"
 uuid = "3b1b4be9-1499-4b22-8d78-7db3344d1961"
-version = "1.4.0"
+version = "1.4.1"
 
 [[deps.CFITSIO_jll]]
-deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "Pkg"]
-git-tree-sha1 = "2fabb5fc48d185d104ca7ed7444b475705993447"
+deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "9c91a9358de42043c3101e3a29e60883345b0b39"
 uuid = "b3e40c51-02ae-5482-8a39-3ace5868dcf4"
-version = "3.49.1+0"
+version = "4.0.0+0"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "6e39c91fb4b84dcb870813c91674bdebb9145895"
+git-tree-sha1 = "f9982ef575e19b0e5c7a98c6e75ee496c0f73a93"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.11.5"
+version = "1.12.0"
 
 [[deps.ChangesOfVariables]]
 deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
@@ -442,9 +445,9 @@ version = "1.9.0"
 
 [[deps.DataPipes]]
 deps = ["Accessors", "SplitApplyCombine"]
-git-tree-sha1 = "6da546248579d3084c06d1babd1431c64f981441"
+git-tree-sha1 = "e4b24a30eae6ad440ef909ef48d183a7950d6017"
 uuid = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
-version = "0.2.5"
+version = "0.2.7"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -456,12 +459,6 @@ version = "0.18.11"
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
 uuid = "e2d170a0-9d28-54be-80f0-106bbe20a464"
 version = "1.0.0"
-
-[[deps.DataValues]]
-deps = ["DataValueInterfaces", "Dates"]
-git-tree-sha1 = "d88a19299eba280a6d062e135a43f00323ae70bf"
-uuid = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
-version = "0.4.13"
 
 [[deps.DateFormats]]
 deps = ["Dates", "DocStringExtensions"]
@@ -484,9 +481,9 @@ uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 version = "0.3.17"
 
 [[deps.DisplayAs]]
-git-tree-sha1 = "44e8d47bc0b56ec09115056a692e5fa0976bfbff"
+git-tree-sha1 = "0cb6c7a4c30a8185cd2a67fdb0d21301bbebbaec"
 uuid = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
-version = "0.1.2"
+version = "0.1.4"
 
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -520,24 +517,6 @@ git-tree-sha1 = "e6033823834ec0070125120d4d4a1234f1826a47"
 uuid = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
 version = "0.16.12"
 
-[[deps.FileIO]]
-deps = ["Pkg", "Requires", "UUIDs"]
-git-tree-sha1 = "67551df041955cc6ee2ed098718c8fcd7fc7aebe"
-uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.12.0"
-
-[[deps.FilePaths]]
-deps = ["FilePathsBase", "MacroTools", "Reexport", "Requires"]
-git-tree-sha1 = "919d9412dbf53a2e6fe74af62a73ceed0bce0629"
-uuid = "8fc22ac5-c921-52a6-82fd-178b2807b824"
-version = "0.8.3"
-
-[[deps.FilePathsBase]]
-deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
-git-tree-sha1 = "04d13bfa8ef11720c24e4d840c0033d145537df7"
-uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
-version = "0.9.17"
-
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
@@ -551,11 +530,10 @@ version = "0.8.4"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
-[[deps.HTTP]]
-deps = ["Base64", "Dates", "IniFile", "Logging", "MbedTLS", "NetworkOptions", "Sockets", "URIs"]
-git-tree-sha1 = "0fa77022fe4b511826b39c894c90daf5fce3334a"
-uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "0.9.17"
+[[deps.HypertextLiteral]]
+git-tree-sha1 = "2b078b5a615c6c0396c77810d92ee8c6f470d238"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.3"
 
 [[deps.IfElse]]
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
@@ -567,21 +545,15 @@ git-tree-sha1 = "ce1566720fd6b19ff3411404d4b977acd4814f9f"
 uuid = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
 version = "1.1.1"
 
-[[deps.IniFile]]
-deps = ["Test"]
-git-tree-sha1 = "098e4d2c533924c921f9f9847274f2ad89e018b8"
-uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
-version = "0.5.0"
-
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[deps.InterferometricModels]]
-deps = ["IntervalSets", "LinearAlgebra", "StaticArrays", "Unitful", "UnitfulAstro"]
-git-tree-sha1 = "a33da56b7c4a292fb83638a26ef8b2ef9aa5d065"
+deps = ["Accessors", "IntervalSets", "LinearAlgebra", "StaticArrays", "Unitful", "UnitfulAstro"]
+git-tree-sha1 = "1d0382d02cbc26e4d4dcdb7f91ecd6dd105ab1dc"
 uuid = "b395d269-c2ec-4df6-b679-36919ad600ca"
-version = "0.1.0"
+version = "0.1.1"
 
 [[deps.IntervalSets]]
 deps = ["Dates", "EllipsisNotation", "Statistics"]
@@ -612,9 +584,9 @@ version = "1.0.0"
 
 [[deps.JLLWrappers]]
 deps = ["Preferences"]
-git-tree-sha1 = "22df5b96feef82434b07327e2d3c770a9b21e023"
+git-tree-sha1 = "abc9885a7ca2052a736a600f7fa66209f96506e1"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-version = "1.4.0"
+version = "1.4.1"
 
 [[deps.JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -622,28 +594,16 @@ git-tree-sha1 = "8076680b162ada2a031f707ac7b4953e30667a37"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.2"
 
-[[deps.JSONSchema]]
-deps = ["HTTP", "JSON", "URIs"]
-git-tree-sha1 = "2f49f7f86762a0fbbeef84912265a1ae61c4ef80"
-uuid = "7d188eb4-7ad8-530c-ae41-71a32a6d4692"
-version = "0.3.4"
-
 [[deps.JuliaInterpreter]]
 deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "3cbe45f4871e60fc142154252322bcf9638c2c1d"
+git-tree-sha1 = "b55aae9a2bf436fc797d9c253a900913e0e90178"
 uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.9.1"
+version = "0.9.3"
 
 [[deps.LaTeXStrings]]
 git-tree-sha1 = "f2355693d6778a178ade15952b7ac47a4ff97996"
 uuid = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 version = "1.3.0"
-
-[[deps.Lazy]]
-deps = ["MacroTools"]
-git-tree-sha1 = "1370f8202dac30758f3c345f9909b97f53d87d3f"
-uuid = "50d2b5c4-7a5e-59d5-8109-a42b560f39c0"
-version = "0.15.1"
 
 [[deps.LazyStack]]
 deps = ["LinearAlgebra", "NamedDims", "OffsetArrays", "Test", "ZygoteRules"]
@@ -685,9 +645,9 @@ uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.LoweredCodeUtils]]
 deps = ["JuliaInterpreter"]
-git-tree-sha1 = "f46e8f4e38882b32dcc11c8d31c131d556063f39"
+git-tree-sha1 = "6b0440822974cab904c8b14d79743565140567f6"
 uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
-version = "2.2.0"
+version = "2.2.1"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -698,17 +658,6 @@ version = "0.5.9"
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
-
-[[deps.Match]]
-git-tree-sha1 = "1d9bc5c1a6e7ee24effb93f175c9342f9154d97f"
-uuid = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
-version = "1.2.0"
-
-[[deps.MbedTLS]]
-deps = ["Dates", "MbedTLS_jll", "Random", "Sockets"]
-git-tree-sha1 = "1c38e51c3d08ef2278062ebceade0e46cefc96fe"
-uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.0.3"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -726,12 +675,6 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 
-[[deps.MyUnitful]]
-deps = ["Unitful", "UnitfulAstro"]
-git-tree-sha1 = "9f983d23f225276098e1828e8dd75719a2aafd3f"
-uuid = "be63a33b-ca4d-43a5-8045-b0b8c6209429"
-version = "0.1.0"
-
 [[deps.NamedDims]]
 deps = ["AbstractFFTs", "ChainRulesCore", "CovarianceEstimation", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
 git-tree-sha1 = "af6febbfede908c04e19bed954350ac687d892b2"
@@ -741,11 +684,11 @@ version = "0.2.45"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
-[[deps.NodeJS]]
-deps = ["Pkg"]
-git-tree-sha1 = "905224bbdd4b555c69bb964514cfa387616f0d3a"
-uuid = "2bd173c7-0d6d-553b-b6af-13a54713934c"
-version = "1.3.0"
+[[deps.NonNegLeastSquares]]
+deps = ["Distributed", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "1271344271ffae97e2855b0287356e6ea5c221cc"
+uuid = "b7351bd1-99d9-5c5d-8786-f205a815c4d7"
+version = "0.4.0"
 
 [[deps.OffsetArrays]]
 deps = ["Adapt"]
@@ -762,17 +705,11 @@ git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.4.1"
 
-[[deps.Pandas]]
-deps = ["Compat", "DataValues", "Dates", "IteratorInterfaceExtensions", "Lazy", "OrderedCollections", "Pkg", "PyCall", "Statistics", "TableTraits", "TableTraitsUtils", "Tables"]
-git-tree-sha1 = "beefaeb19a644d5166c7b2dff9084ee0e63934a0"
-uuid = "eadc2687-ae89-51f9-a5d9-86b5a6373a9c"
-version = "1.5.3"
-
 [[deps.Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "92f91ba9e5941fc781fecf5494ac1da87bdac775"
+git-tree-sha1 = "0b5cfbb704034b5b4c1869e36634438a047df065"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.2.0"
+version = "2.2.1"
 
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
@@ -801,10 +738,10 @@ uuid = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 version = "2.10.0"
 
 [[deps.PyPlotUtils]]
-deps = ["AxisKeys", "DomainSets", "IntervalSets", "OffsetArrays", "PyCall", "PyPlot", "StatsBase", "Unitful"]
-git-tree-sha1 = "92b6cb3d131d20ed9c59804ecc3aee2b7a1c03be"
+deps = ["Accessors", "AxisKeys", "Colors", "DataPipes", "DomainSets", "IntervalSets", "LinearAlgebra", "NonNegLeastSquares", "OffsetArrays", "PyCall", "PyPlot", "StatsBase", "Unitful"]
+git-tree-sha1 = "803be2153093049a12907fae6a44616b101fcbf6"
 uuid = "5384e752-6c47-47b3-86ac-9d091b110b31"
-version = "0.1.2"
+version = "0.1.6"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -843,12 +780,6 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
-[[deps.Setfield]]
-deps = ["ConstructionBase", "Future", "MacroTools", "Requires"]
-git-tree-sha1 = "fca29e68c5062722b5b4435594c3d1ba557072a3"
-uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
-version = "0.7.1"
-
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
@@ -874,15 +805,15 @@ version = "1.2.1"
 
 [[deps.Static]]
 deps = ["IfElse"]
-git-tree-sha1 = "b4912cd034cdf968e06ca5f943bb54b17b97793a"
+git-tree-sha1 = "d4da8b728580709d736704764e55d6ef38cb7c87"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.5.1"
+version = "0.5.3"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "2ae4fe21e97cd13efd857462c1869b73c9f61be3"
+git-tree-sha1 = "a635a9333989a094bddc9f940c04c549cd66afcf"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.3.2"
+version = "1.3.4"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -915,12 +846,6 @@ git-tree-sha1 = "c06b2f539df1c6efa794486abfb6ed2022561a39"
 uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 version = "1.0.1"
 
-[[deps.TableTraitsUtils]]
-deps = ["DataValues", "IteratorInterfaceExtensions", "Missings", "TableTraits"]
-git-tree-sha1 = "78fecfe140d7abb480b53a44f3f85b6aa373c293"
-uuid = "382cd787-c1b6-5bf2-a167-d5b971a19bda"
-version = "1.0.2"
-
 [[deps.Tables]]
 deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "TableTraits", "Test"]
 git-tree-sha1 = "bb1064c9a84c52e277f1096cf41434b675cd368b"
@@ -934,17 +859,6 @@ uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[[deps.URIParser]]
-deps = ["Unicode"]
-git-tree-sha1 = "53a9f49546b8d2dd2e688d216421d050c9a31d0d"
-uuid = "30578b45-9adc-5946-b283-645ec420af67"
-version = "0.4.1"
-
-[[deps.URIs]]
-git-tree-sha1 = "97bbe755a53fe859669cd907f2d96aee8d2c1355"
-uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
-version = "1.3.0"
 
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
@@ -961,9 +875,9 @@ version = "1.10.1"
 
 [[deps.UnitfulAngles]]
 deps = ["Dates", "Unitful"]
-git-tree-sha1 = "dd21b5420bf6e9b76a8c6e56fb575319e7b1f895"
+git-tree-sha1 = "d6cfdb6ddeb388af1aea38d2b9905fa014d92d98"
 uuid = "6fb2a4bd-7999-5318-a3b2-8ad61056cd98"
-version = "0.6.1"
+version = "0.6.2"
 
 [[deps.UnitfulAstro]]
 deps = ["Unitful", "UnitfulAngles"]
@@ -971,34 +885,22 @@ git-tree-sha1 = "c4e1c470a94063b911fd1b1a204cd2bb34a8cd15"
 uuid = "6112ee07-acf9-5e0f-b108-d242c714bf9f"
 version = "1.1.1"
 
-[[deps.Utils]]
-deps = ["AxisKeys", "DocStringExtensions", "LinearAlgebra", "Match", "NamedDims", "SplitApplyCombine", "Statistics", "StatsBase"]
-git-tree-sha1 = "8d2898067bb18b26d66b3e1e02ded14f6e8ebc34"
-uuid = "2e7d9420-a934-49d6-aef3-a4152ec1ce09"
-version = "0.4.2"
-
 [[deps.VLBIData]]
-deps = ["AxisKeys", "DataPipes", "DateFormats", "Dates", "DelimitedFiles", "FITSIO", "InterferometricModels", "MyUnitful", "PyCall", "Reexport", "SplitApplyCombine", "StaticArrays", "StatsBase", "StructArrays", "Tables", "Unitful", "UnitfulAstro", "Utils"]
+deps = ["AxisKeys", "DataPipes", "DateFormats", "Dates", "DelimitedFiles", "FITSIO", "InterferometricModels", "PyCall", "Reexport", "StaticArrays", "StructArrays", "Tables", "Unitful", "UnitfulAngles", "UnitfulAstro"]
 path = "../../home/aplavin/.julia/dev/VLBIData"
 uuid = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
-version = "0.3.1"
+version = "0.3.5"
 
-[[deps.Vega]]
-deps = ["DataStructures", "DataValues", "Dates", "FileIO", "FilePaths", "IteratorInterfaceExtensions", "JSON", "JSONSchema", "MacroTools", "NodeJS", "Pkg", "REPL", "Random", "Setfield", "TableTraits", "TableTraitsUtils", "URIParser"]
-git-tree-sha1 = "43f83d3119a868874d18da6bca0f4b5b6aae53f7"
-uuid = "239c3e63-733f-47ad-beb7-a12fde22c578"
-version = "2.3.0"
-
-[[deps.VegaLite]]
-deps = ["Base64", "DataStructures", "DataValues", "Dates", "FileIO", "FilePaths", "IteratorInterfaceExtensions", "JSON", "MacroTools", "NodeJS", "Pkg", "REPL", "Random", "TableTraits", "TableTraitsUtils", "URIParser", "Vega"]
-git-tree-sha1 = "3e23f28af36da21bfb4acef08b144f92ad205660"
-uuid = "112f6efa-9a02-5b7d-90c0-432ed331239a"
-version = "2.6.0"
+[[deps.VLBIPlots]]
+deps = ["Colors", "DataPipes", "InterferometricModels", "IntervalSets", "LinearAlgebra", "PyPlotUtils", "Unitful"]
+git-tree-sha1 = "f2a51d9775b53ff2378848d7c02ccbbb303f11dd"
+uuid = "0260e397-8112-41bf-b55a-6b4577718f00"
+version = "0.1.0"
 
 [[deps.VersionParsing]]
-git-tree-sha1 = "e575cf85535c7c3292b4d89d89cc29e8c3098e47"
+git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
 uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
-version = "1.2.1"
+version = "1.3.0"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
@@ -1024,49 +926,63 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 """
 
 # ╔═╡ Cell order:
+# ╟─5491a70e-8aea-42bc-b449-a56fd120d3fd
+# ╟─6cb0d385-5b13-4afe-bf8c-015938efc91d
+# ╟─b685e8e4-efa5-453c-a27b-4453946a0839
+# ╟─9af33a02-67f8-4233-93f5-4797ecf702d9
+# ╟─3df0333d-734c-4d4b-bdec-49cac59f4681
+# ╠═6bf4ae14-33d7-4faa-a664-80889ece70b7
+# ╟─50c8dfe9-db54-4239-a14d-c8e047eab443
+# ╠═8b722ca5-3198-4c6c-94b1-4daf8fd2e718
+# ╠═fd52ba81-f515-4388-b677-72ad9bfb4f6b
+# ╟─8742d582-8bea-4fcf-a2ea-cf2ae28b8008
+# ╟─b104bdf4-cdee-4743-a4e7-31844f5338e7
+# ╠═dcd07de0-148d-4641-9cfc-79926e1ba3b1
+# ╠═b8e07154-a609-459d-bc00-6ff61220cd4a
+# ╟─3075f803-d583-4764-a7d4-1bc14d8e441b
+# ╠═b32c9639-c2c3-4a67-8554-57aefea9d196
+# ╟─6d0bf04e-51ee-43b6-8b7c-912fd051dfb5
+# ╟─c4b58f30-e7db-459e-9d26-2d4bc57e5fbd
+# ╠═b4e14571-a3fa-41d2-98da-cff594f88202
+# ╟─c8510200-f820-4b2a-8260-d21e8f7f7880
+# ╟─ebcabc9f-0487-4cad-b7f7-fff448fcf203
+# ╠═7994f45f-6e01-4a62-ae3b-3031b46f2d7b
+# ╟─9db795b2-2d79-45b6-a51c-bc09f4d05150
+# ╟─145c1010-c0e3-4a7a-ace5-cbec71d455f9
+# ╠═e06baedf-8689-43e0-aa7d-4cd251879049
+# ╠═beace2b9-4273-4a8f-94e0-a349f3d6edb8
+# ╟─7014ff5c-8975-4219-bae2-b434bbe8441f
+# ╟─b0f8bdd5-131d-43a2-845d-5785ca6274f5
+# ╠═aad0d6b7-a58e-45f5-83b4-f73a23e5c559
+# ╟─9ae2c18c-84fe-46e2-b19f-0abb1eccac40
+# ╠═d8f74ef4-fc37-4450-87ec-ef7d55075488
+# ╠═d971425a-785e-4424-8630-ded6bba69809
+# ╠═442febcb-b7de-4fc4-9a1d-53bb67204092
+# ╟─141f6f69-04ce-4bce-b053-3c14791347f8
+# ╟─aa1d8bd5-e86e-4c56-8fbd-8b8f5dfc7bc8
+# ╟─546825e2-5f27-47ad-b03a-546a082cd250
+# ╠═ce74a7f5-06be-44c9-9b45-f64dc83e14a8
+# ╠═81db478c-1185-41a8-ab16-154778c964d4
+# ╟─faf6e8e0-b79d-4e01-94fc-433817c83fd4
+# ╟─77237980-eda9-4e7c-a3ef-25a0425d0149
+# ╟─f946e665-fce7-4b90-a0a0-283ce60eb14b
+# ╠═5848e406-18cf-4f36-922b-104d6edd2cf5
+# ╟─b2a45d8a-c0d6-4e27-8f57-0ff9db75ecc8
+# ╟─bd6255c9-fe17-4a29-8a5c-d9b734ae7c5c
+# ╠═f2495e21-6d30-404e-810f-f9a26501eb12
+# ╠═ebf1c8c4-d5c4-425b-baff-42252c0d52cf
+# ╠═47da1b40-3624-4dfd-a965-d2fe2286d7c1
+# ╠═90b8e37c-1def-438d-981b-e488cc87a3e7
 # ╠═4eb97406-7713-11ec-00ca-8be6bef77030
 # ╠═5529a3e2-c874-4a21-b349-3984349b1db6
+# ╠═17a5e5ad-c3a7-41a0-bf56-410675e95475
 # ╠═7a4e96c8-8ab0-4338-82b5-e07f0afdaae5
 # ╠═9c6efe8c-385e-4446-acdf-bd19cffe31e2
-# ╠═34004188-d3a5-4468-9f23-da7d48f31ec7
-# ╠═04c814f2-90b3-4ee6-8570-f14cdeeaf2c8
-# ╠═6bf4ae14-33d7-4faa-a664-80889ece70b7
-# ╠═b4e14571-a3fa-41d2-98da-cff594f88202
-# ╠═0d973937-7a88-4910-8013-0f93c2ac74ff
-# ╠═406e4220-608c-45f8-8562-3b3970c306dd
-# ╠═ce74a7f5-06be-44c9-9b45-f64dc83e14a8
-# ╠═ee286acc-4797-481e-ab14-e91f91510751
-# ╠═5b6f8190-b3d0-403d-92a1-e504db9d6a8f
-# ╠═94e40db8-6aed-4770-b126-7122aca9b495
-# ╠═b89a56a3-b94e-4e34-af11-594d4dcab143
-# ╠═4854b4e1-131c-4aeb-a06f-c9873e1ea5f6
-# ╠═01ea27f2-e96a-4b5a-b44b-f61731c3708c
-# ╠═80bb2a26-89fe-4722-829a-e07e8ae6eb0b
-# ╠═19d92205-59d2-4592-b4dc-a1a1c3c5ea74
-# ╠═4d50fe5c-0d73-4ff6-bd19-937fa213e6b7
-# ╠═75c2edab-75d7-405a-81af-c355b32f03e1
-# ╠═7a476b7d-713a-4be6-85b7-7a2ee637e8aa
-# ╠═6a65ce8a-7551-4640-9391-81380e413d8f
-# ╠═01ca3ad8-4041-4b99-a7f0-9a3994a4f192
-# ╠═678f32f6-fe7f-4bcf-bbf1-c2e70b2663c6
-# ╠═e6004624-93d8-4b25-a2fa-8cfdcbb7972d
-# ╠═bad8f84e-8d3c-42f8-a8fe-1e806fe5b2a1
-# ╠═d47f2596-d97f-42e7-9237-4b6f7984b062
-# ╠═b2f030ec-136c-45ee-9068-90885bf0b200
-# ╠═7fd2efb7-fbd8-4cb8-86b1-21f213808a11
-# ╠═50668cfa-173e-43d2-bc86-53fac4db43f1
-# ╠═fa226e0a-4cd1-43f0-9f11-9ff669e27c44
-# ╠═a9e71043-e412-45e4-b7ba-2ab5df60887d
-# ╠═70b24dbe-21ff-4375-804d-4cfb808d8f1f
-# ╠═90ce174d-a85e-404b-8fd5-ef545c04f911
-# ╠═ca2a4a92-2d21-4622-ac15-7362d5072d80
-# ╠═e00a2be6-e842-4be6-aeaf-26a7a82a553a
-# ╠═498bf9cc-ef4b-475f-bab4-abf1287f6f59
-# ╠═a203c15a-2473-4a4d-8914-c78ca86fcadb
-# ╠═5848e406-18cf-4f36-922b-104d6edd2cf5
-# ╠═d486df81-8a1b-4785-ba8e-481384b10083
-# ╠═6d58f33c-c83e-4052-be6a-0e3865b2d106
-# ╠═beace2b9-4273-4a8f-94e0-a349f3d6edb8
-# ╠═b8e07154-a609-459d-bc00-6ff61220cd4a
+# ╠═be208a3e-9a03-4194-8be7-05547d9871a7
+# ╠═4e7278e0-0d12-4762-8ace-e7cbe8eb371c
+# ╠═dc179b8b-a5b7-4d2d-bf86-afc0fc5a376b
+# ╠═f3898d40-517d-421b-b551-00d8ce1f64dd
+# ╠═3ba32828-9266-4427-b396-a9c44d81f02b
+# ╠═8eb67d05-95f1-47cc-b9b5-1fced799a73a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
