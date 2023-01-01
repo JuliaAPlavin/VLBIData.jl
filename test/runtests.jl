@@ -3,7 +3,7 @@ using Statistics
 using AxisKeys
 using Unitful, UnitfulAstro, MyUnitful
 using Dates
-import VLBIData as VLBI
+using VLBIData
 using Tables
 using AstroRFC
 

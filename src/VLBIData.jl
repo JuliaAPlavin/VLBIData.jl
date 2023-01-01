@@ -1,5 +1,8 @@
 module VLBIData
 
+const VLBI = VLBIData
+export VLBI
+
 using Tables
 import FITSIO
 using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
