@@ -175,6 +175,11 @@ md"""
 # Visibility or UV FITS
 """
 
+# ╔═╡ 5536507f-12d8-4f49-b163-3df60abea161
+md"""
+> Note: reading visibilities from UV FITS files currently relies on `astropy`. The Julia `FITSIO.jl` package doesn't support random groups data yet.
+"""
+
 # ╔═╡ b0f8bdd5-131d-43a2-845d-5785ca6274f5
 md"""
 Another common file format in VLBI is "uvfits": it contains interferometric visibilities.
@@ -952,6 +957,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═e06baedf-8689-43e0-aa7d-4cd251879049
 # ╠═beace2b9-4273-4a8f-94e0-a349f3d6edb8
 # ╟─7014ff5c-8975-4219-bae2-b434bbe8441f
+# ╟─5536507f-12d8-4f49-b163-3df60abea161
 # ╟─b0f8bdd5-131d-43a2-845d-5785ca6274f5
 # ╠═aad0d6b7-a58e-45f5-83b4-f73a23e5c559
 # ╟─9ae2c18c-84fe-46e2-b19f-0abb1eccac40
