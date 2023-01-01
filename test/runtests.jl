@@ -63,27 +63,27 @@ end
 @testset "uvfits" begin
     @testset "simple" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis.fits")
-        @test uv.header.object == "J0000+0248"
-        @test Date(uv.header) === Date(2016, 1, 3)
-        @test uv.header.stokes == [:RR]
-        @test frequency(uv.header) ≈ 4.128u"GHz"
+        @test uv.header.object == "J1033+6051"
+        @test Date(uv.header) === Date(2010, 12, 24)
+        @test uv.header.stokes == [:RR, :LL, :RL, :LR]
+        @test frequency(uv.header) ≈ 15.33u"GHz" rtol=1e-2
         @test length(uv.freq_windows) == 8
         @test length(uv.ant_arrays) == 1
         antarr = only(uv.ant_arrays)
-        @test antarr.name == "VLBA Correlator"
-        @test map(a -> a.id, antarr.antennas) == 1:9
-        @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
+        @test antarr.name == "VLBA"
+        @test map(a -> a.id, antarr.antennas) == 1:10
+        @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :PT, :SC]
 
         df = VLBI.table(uv)
         @test Tables.rowaccess(df)
-        @test length(df) == 896
+        @test length(df) == 160560
         @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
         @test all(isconcretetype, Tables.schema(df).types)
-        @test df[1].uv === VLBI.UV(3.0883878f7, 1.6280775f7)
+        @test df[1].uv === VLBI.UV(-6.465521f7, 8.965202f7)
         df_cols = Tables.columntable(df)
-        @test mean(df_cols.uv_m) ≈ SVector(298060.56u"m", -363224.78u"m")
-        @test mean(df_cols.uv) === VLBI.UV(4.318903f6, -5.2631365f6)
-        @test mean(df_cols.visibility) ≈ 0.021919968 + 0.00062215974im
+        @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
+        @test mean(df_cols.uv) === VLBI.UV(-8.924387f6, 1.6106081f7)
+        @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
     end
 
     @testset "multichannel" begin
