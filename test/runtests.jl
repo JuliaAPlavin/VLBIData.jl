@@ -106,37 +106,31 @@ end
     @test typeof(df_e) == typeof(df)
 end
 
-@testset "RFC vis" begin
-    rfci = try
-        RFC.Files()
-    catch exc
-        @warn "Skipping RFC tests" exc
-        return
-    end
-    for f in RFC.files(rfci, suffix="vis") .|> abspath
-        try
-            uv = VLBI.load(VLBI.UVData, f)
-            df = VLBI.read_data_table(uv)
-        catch e
-            @show f e
-            rethrow()
+@testset "RFC" begin
+    return
+
+    @testset "vis" begin
+        rfci = RFC.Files()
+        for f in RFC.files(rfci, suffix="vis") .|> abspath
+            try
+                uv = VLBI.load(VLBI.UVData, f)
+                df = VLBI.read_data_table(uv)
+            catch e
+                @show f e
+                rethrow()
+            end
         end
     end
-end
 
-@testset "RFC maps" begin
-    rfci = try
-        RFC.Files()
-    catch exc
-        @warn "Skipping RFC tests" exc
-        return
-    end
-    for f in RFC.files(rfci, suffix="map", extension="fits") .|> abspath
-        try
-            VLBI.load(VLBI.FitsImage, f, read_data=true, read_clean=true)
-        catch e
-            @show f e
-            rethrow()
+    @testset "maps" begin
+        rfci = RFC.Files()
+        for f in RFC.files(rfci, suffix="map", extension="fits") .|> abspath
+            try
+                VLBI.load(VLBI.FitsImage, f, read_data=true, read_clean=true)
+            catch e
+                @show f e
+                rethrow()
+            end
         end
     end
 end
