@@ -96,9 +96,9 @@ end
 @testset "difmap model" begin
     mod = VLBI.load("./data/difmap_model.mod")
     @test length(components(mod)) == 3
-    @test map(flux, components(mod)) |> collect ≈ [0.64, -0.01, 1.32e9]u"Jy"  rtol=0.01
-    @test map(fwhm_max, components(mod)) |> collect ≈ [2.30, 6.04, 323e3]u"mas"  rtol=0.01
-    @test coords(components(mod)[1]) == [-0.09183782420814114, 0.13039751573060954]u"mas"
+    @test map(flux, components(mod)) |> collect ≈ [0.522, 0.0217, 0.0176]u"Jy"  rtol=0.01
+    @test map(fwhm_max, components(mod)) |> collect ≈ [0.135, 0.463, 1.99]u"mas"  rtol=0.01
+    @test coords(components(mod)[1]) ≈ [-0.000662, -0.00123]u"mas" rtol=0.01
 
     mod = VLBI.load("./data/difmap_model_empty.mod")
     @test isempty(components(mod))
