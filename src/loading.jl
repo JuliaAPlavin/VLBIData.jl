@@ -19,4 +19,4 @@ function guess_type(src)
     end
 end
 
-load(src) = load(guess_type(src), src)
+load(src; kwargs...) = load(guess_type(src), src; kwargs...)

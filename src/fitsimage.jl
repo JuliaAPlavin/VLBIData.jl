@@ -6,7 +6,7 @@
     noise::Union{Nothing, Float32}
 end
 
-function load(::Type{FitsImage}, path; read_data = true, read_clean = true)
+function load(::Type{FitsImage}, path; read_data=true, read_clean=false)
     FITS(path) do f
         primary = f[1]
         header = read_header(primary)
