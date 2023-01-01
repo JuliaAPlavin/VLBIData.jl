@@ -10,20 +10,26 @@ function load(::Type{FitsImage}, path; read_data=true)
         header = read_header(primary)
 
         data = if read_data
-            mul = 1u"°" |> u"mas"
-            ra_vals  = axis_vals(header, "RA---SIN", zero_reference=true) * mul
-            dec_vals = axis_vals(header, "DEC--SIN", zero_reference=true) * mul
-
             @assert header["BSCALE"] == 1 && header["BZERO"] == 0 && header["BUNIT"] == "JY/BEAM"
             data = read(primary)
             data = dropdims(data, dims=(3, 4))
-            KeyedArray(data, ra=ra_vals, dec=dec_vals)
+            KeyedArray(data; image_named_axiskeys(header)...)
         else
             nothing
         end
 
         return FitsImage(; path, header, data)
     end
+end
+
+AxisKeys.axiskeys(fi::FitsImage) = image_axiskeys(fi.header)
+AxisKeys.named_axiskeys(fi::FitsImage) = image_named_axiskeys(fi.header)
+image_axiskeys(fh::FITSHeader) = values(image_named_axiskeys(fh))
+function image_named_axiskeys(fh::FITSHeader)
+    mul = 1u"°" |> u"mas"
+    ra  = axis_vals(fh, "RA---SIN", zero_reference=true) * mul
+    dec = axis_vals(fh, "DEC--SIN", zero_reference=true) * mul
+    (; ra, dec)
 end
 
 function pixel_size(fi::FitsImage)
