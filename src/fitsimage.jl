@@ -10,7 +10,9 @@ function load(::Type{FitsImage}, path; read_data=true)
         header = read_header(primary)
 
         data = if read_data
-            @assert header["BSCALE"] == 1 && header["BZERO"] == 0 && header["BUNIT"] == "JY/BEAM"
+            haskey(header, "BSCALE") && @assert header["BSCALE"] == 1
+            haskey(header, "BZERO" ) && @assert header["BZERO" ] == 0
+            @assert header["BUNIT"] == "JY/BEAM"
             data = read(primary)
             data = dropdims(data, dims=(3, 4))
             KeyedArray(data; image_named_axiskeys(header)...)
