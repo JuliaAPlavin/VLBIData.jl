@@ -40,9 +40,16 @@ using AxisKeys
 # ╔═╡ 3ba32828-9266-4427-b396-a9c44d81f02b
 using HypertextLiteral
 
+# ╔═╡ 8f556fb7-c181-4e0f-a42d-1caa85f35f41
+using Difmap
+
+# ╔═╡ 412dc1f1-ea14-40ee-ad3b-28b89990738f
+using Statistics
+
 # ╔═╡ 5491a70e-8aea-42bc-b449-a56fd120d3fd
 md"""
-__`VLBIData` reads a range of data formats typically used in very long baseline interferometry (VLBI).__
+!!! info "VLBIData.jl"
+	`VLBIData` reads a range of data formats typically used in very long baseline interferometry (VLBI).
 
 For convenience, it exports itself as `VLBI`: non-exported functions are accessed as `VLBI.load`.
 
@@ -112,11 +119,23 @@ end
 
 # ╔═╡ 3075f803-d583-4764-a7d4-1bc14d8e441b
 md"""
-Access the so-called "image beam" - the effective point spread function:
+Access the so-called "image beam" - the effective point spread function - and add it to the image:
 """
 
 # ╔═╡ b32c9639-c2c3-4a67-8554-57aefea9d196
 beam(fimg)
+
+# ╔═╡ f1315ff6-59a5-4432-bf0e-ca4b2adaac0f
+let
+	plt.figure()
+	set_xylims((0±20)^2; inv=:x)
+	imshow_ax(fimg.data; norm=SymLog(linthresh=1e-3), cmap=:inferno)
+	xylabels(fimg.data; inline=true)
+	plt.axis(false)
+	plt.gca().add_artist(BeamArtist(beam(fimg)))
+	plt.gca().add_artist(ScalebarArtist([(1, "mas")], loc="lower right", color=:w))
+	plt.gcf()
+end
 
 # ╔═╡ 6d0bf04e-51ee-43b6-8b7c-912fd051dfb5
 md"""
@@ -223,7 +242,17 @@ The actual visibility data can be retrieved in several formats. The most useful 
 """
 
 # ╔═╡ ce74a7f5-06be-44c9-9b45-f64dc83e14a8
-uvtbl = VLBI.table(uvfile)
+uvtbl_full = VLBI.table(uvfile)
+
+# ╔═╡ faf6e8e0-b79d-4e01-94fc-433817c83fd4
+md"""
+This gives a `Tables.jl`-compatible table. For now it's a `StructArray`, but the concrete type may potentially change.
+
+Fields should be self-explanatory. Let's plot total intensity visibilities:
+"""
+
+# ╔═╡ 95c91cc0-5236-42f2-a031-a137313850f4
+uvtbl = @p uvtbl_full |> filter(_.stokes ∈ (:RR, :LL))
 
 # ╔═╡ 81db478c-1185-41a8-ab16-154778c964d4
 let
@@ -231,13 +260,6 @@ let
 	radplot([abs, angle], uvtbl; ax)
 	plt.gcf()
 end
-
-# ╔═╡ faf6e8e0-b79d-4e01-94fc-433817c83fd4
-md"""
-This gives a `Tables.jl`-compatible table. For now it's a `StructArray`, but the concrete type may potentially change.
-
-Fields should be self-explanatory.
-"""
 
 # ╔═╡ 77237980-eda9-4e7c-a3ef-25a0425d0149
 md"""
@@ -273,16 +295,105 @@ let
 	plt.gcf()
 end
 
-# ╔═╡ ebf1c8c4-d5c4-425b-baff-42252c0d52cf
+# ╔═╡ 47d146c8-47f0-45b4-acf7-7e1c080d22f2
+md"""
+Compare amplitudes and phases from this model with the observed visibilities:
+"""
 
+# ╔═╡ b886b6a4-2d65-4d6b-8d46-aa0cc85e9f1d
+let
+	_, ax = plt.subplots(2, 1, gridspec_kw=Dict(:height_ratios => [3, 1]))
+	radplot([abs, angle], uvtbl; ax)
+	radplot([abs, angle], dmod, uvtbl; ax)
+	plt.gcf()
+end
+
+# ╔═╡ e8e64ce0-d4ba-4745-b971-d170169a92db
+md"""
+# Compare with `difmap`
+"""
+
+# ╔═╡ 50863255-5341-4c79-8e91-3e9d3a5b20c2
+md"""
+Visually compare the `VLBIData` plot with the one produced by `difmap`. They are based on the same UV files and models, so should look the same:
+"""
+
+# ╔═╡ 95d32985-b924-43eb-85d2-115c95b3798c
+uvtbl_difmap = @p uvtbl_full |> filter(_.stokes == :RR) |> mutate(
+	_.uv.u >= 0 ?  # difmap puts all uv points into the right semiplane
+		(;_.uv, _.visibility) :
+		(;uv=-_.uv, visibility=conj(_.visibility))
+)
+
+# ╔═╡ 5dae356b-f045-4c75-a38a-d85ff3be7040
+let
+	_, ax = plt.subplots(2, 1)
+	radplot([abs, angle], uvtbl_difmap; ax)
+	radplot([abs, angle], dmod, uvtbl_difmap; ax)
+	plt.gcf()
+end
+
+# ╔═╡ ebf1c8c4-d5c4-425b-baff-42252c0d52cf
+let
+	pltnames = ["radplot", "uvplot"]
+	tdir = mktempdir()
+	dr = Difmap.execute(
+		"""
+		observe vis.fits
+		select RR
+		rmodel mod.mod
+		rflags="m3"
+		device "radplot.ps/VCPS"
+		radplot "", 0, 0, 0, 0, -15, +15
+		device "uvplot.ps/VCPS"
+		uvplot
+		exit
+		""";
+		in_files=[
+			"./data/vis.fits" => "vis.fits",
+			"./data/difmap_model.mod" => "mod.mod",
+		],
+		out_files=["radplot.ps", "uvplot.ps"] .=> tempname.(),
+	)
+	@assert success(dr)
+	Difmap.plots(dr, `-density 70`)[1]
+end
+
+# ╔═╡ 56e2fabb-5671-4405-9933-43e9ea80fada
+md"""
+Compare some visibility statistics to ensure that `VLBIData` reads the same data as `difmap` does:
+"""
 
 # ╔═╡ 47da1b40-3624-4dfd-a965-d2fe2286d7c1
+@p uvtbl_difmap |>
+	map(angle(_.visibility) |> rad2deg) |>
+	(length(__), mean(__), std(__), extrema(__))
+
+# ╔═╡ 25dd465b-7e13-4c20-a2d2-a18c8a6ab11c
+let
+	dr = Difmap.execute(
+		"""
+		observe vis.fits
+		select RR
+		vis_stats amplitude
+		vis_stats phase
+		vis_stats real
+		vis_stats imaginary
+		exit
+		""";
+		in_files=[
+			"./data/vis.fits" => "vis.fits",
+		],
+	)
+	@p Difmap.inout_pairs(dr) |>
+		Dict |>
+		__["vis_stats phase"]
+end
+
+# ╔═╡ 6f4ecab0-2125-4476-bf78-dbe253322233
 
 
 # ╔═╡ 90b8e37c-1def-438d-981b-e488cc87a3e7
-
-
-# ╔═╡ 8eb67d05-95f1-47cc-b9b5-1fced799a73a
 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -290,13 +401,13 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
 DataPipes = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
+Difmap = "697f6f98-b792-4bca-85fe-71b3d053de65"
 DisplayAs = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
-Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PyPlotUtils = "5384e752-6c47-47b3-86ac-9d091b110b31"
 RectiGrids = "8ac6971d-971d-971d-971d-971d5ab1a71a"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulAngles = "6fb2a4bd-7999-5318-a3b2-8ad61056cd98"
 VLBIData = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
@@ -305,23 +416,23 @@ VLBIPlots = "0260e397-8112-41bf-b55a-6b4577718f00"
 [compat]
 AxisKeys = "~0.1.25"
 DataPipes = "~0.2.5"
+Difmap = "~0.1.15"
 DisplayAs = "~0.1.2"
 HypertextLiteral = "~0.9.3"
 PyPlotUtils = "~0.1.2"
 RectiGrids = "~0.1.6"
-Revise = "~3.3.1"
 StaticArrays = "~1.3.4"
 Unitful = "~1.10.1"
 UnitfulAngles = "~0.6.2"
 VLBIData = "~0.3.0"
-VLBIPlots = "~0.1.0"
+VLBIPlots = "~0.1.1"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.1"
+julia_version = "1.7.2"
 manifest_format = "2.0"
 
 [[deps.AbstractFFTs]]
@@ -347,9 +458,9 @@ uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
 [[deps.ArrayInterface]]
 deps = ["Compat", "IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
-git-tree-sha1 = "1bdcc02836402d104a46f7843b6e6730b1948264"
+git-tree-sha1 = "745233d77146ad221629590b6d82fe7f1ddb478f"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "4.0.2"
+version = "4.0.3"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -386,12 +497,6 @@ deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
 git-tree-sha1 = "bf98fa45a0a4cee295de98d4c1462be26345b9a1"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.2"
-
-[[deps.CodeTracking]]
-deps = ["InteractiveUtils", "UUIDs"]
-git-tree-sha1 = "9aa8a5ebb6b5bf469a7e0e2b5202cf6f8c291104"
-uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
-version = "1.0.6"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
@@ -485,6 +590,12 @@ git-tree-sha1 = "66bde31636301f4d217a161cabe42536fa754ec8"
 uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
 version = "0.3.17"
 
+[[deps.Difmap]]
+deps = ["DataPipes", "ImageMagick_jll", "difmap_jll"]
+git-tree-sha1 = "f99d8afba929d2685e485c64079483f0484c4912"
+uuid = "697f6f98-b792-4bca-85fe-71b3d053de65"
+version = "0.1.15"
+
 [[deps.DisplayAs]]
 git-tree-sha1 = "0cb6c7a4c30a8185cd2a67fdb0d21301bbebbaec"
 uuid = "0b91fe84-8a4c-11e9-3e1d-67c38462b6d6"
@@ -522,9 +633,6 @@ git-tree-sha1 = "e6033823834ec0070125120d4d4a1234f1826a47"
 uuid = "525bcba6-941b-5504-bd06-fd0dc1a4d2eb"
 version = "0.16.12"
 
-[[deps.FileWatching]]
-uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
-
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
 git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
@@ -535,6 +643,12 @@ version = "0.8.4"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
+[[deps.Ghostscript_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "78e2c69783c9753a91cdae88a8d432be85a2ab5e"
+uuid = "61579ee1-b43e-5ca0-a5da-69d92c66a64b"
+version = "9.55.0+0"
+
 [[deps.HypertextLiteral]]
 git-tree-sha1 = "2b078b5a615c6c0396c77810d92ee8c6f470d238"
 uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
@@ -544,6 +658,12 @@ version = "0.9.3"
 git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
 uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
 version = "0.1.1"
+
+[[deps.ImageMagick_jll]]
+deps = ["Artifacts", "Ghostscript_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pkg", "Zlib_jll", "libpng_jll"]
+git-tree-sha1 = "f025b79883f361fa1bd80ad132773161d231fd9f"
+uuid = "c73af94c-d91f-53ed-93a7-00f77d67a9d7"
+version = "6.9.12+2"
 
 [[deps.Indexing]]
 git-tree-sha1 = "ce1566720fd6b19ff3411404d4b977acd4814f9f"
@@ -599,11 +719,11 @@ git-tree-sha1 = "8076680b162ada2a031f707ac7b4953e30667a37"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.2"
 
-[[deps.JuliaInterpreter]]
-deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "b55aae9a2bf436fc797d9c253a900913e0e90178"
-uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.9.3"
+[[deps.JpegTurbo_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
+uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
+version = "2.1.2+0"
 
 [[deps.LaTeXStrings]]
 git-tree-sha1 = "f2355693d6778a178ade15952b7ac47a4ff97996"
@@ -635,6 +755,30 @@ uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
+[[deps.Libgcrypt_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgpg_error_jll", "Pkg"]
+git-tree-sha1 = "64613c82a59c120435c067c2b809fc61cf5166ae"
+uuid = "d4300ac3-e22c-5743-9152-c294e39db1e4"
+version = "1.8.7+0"
+
+[[deps.Libgpg_error_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "c333716e46366857753e273ce6a69ee0945a6db9"
+uuid = "7add5ba3-2f88-524e-9cd5-f83b8a55f7b8"
+version = "1.42.0+0"
+
+[[deps.Libiconv_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "42b62845d70a619f063a7da093d995ec8e15e778"
+uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
+version = "1.16.1+1"
+
+[[deps.Libtiff_jll]]
+deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
+git-tree-sha1 = "340e257aada13f95f98ee352d316c3bed37c8ab9"
+uuid = "89763e89-9b03-5906-acba-b20f662cd828"
+version = "4.3.0+0"
+
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -647,12 +791,6 @@ version = "0.3.6"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
-
-[[deps.LoweredCodeUtils]]
-deps = ["JuliaInterpreter"]
-git-tree-sha1 = "6b0440822974cab904c8b14d79743565140567f6"
-uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
-version = "2.2.1"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -686,6 +824,12 @@ git-tree-sha1 = "af6febbfede908c04e19bed954350ac687d892b2"
 uuid = "356022a1-0364-5f58-8944-0da4b18d706f"
 version = "0.2.45"
 
+[[deps.Ncurses_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "e3fb71f3c971fdc8523f9ef3906691124f3048a2"
+uuid = "68e3532b-a499-55ff-9963-d1c0c0748b3a"
+version = "6.2.0+0"
+
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
@@ -709,6 +853,12 @@ uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.4.1"
+
+[[deps.PGPLOT_jll]]
+deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
+git-tree-sha1 = "91bf88f8e171151bdc71e9615159f0a14339f54b"
+uuid = "b11e30b1-63be-5002-9df0-88ee0fe906ff"
+version = "5.2.0+0"
 
 [[deps.Parsers]]
 deps = ["Dates"]
@@ -744,9 +894,9 @@ version = "2.10.0"
 
 [[deps.PyPlotUtils]]
 deps = ["Accessors", "AxisKeys", "Colors", "DataPipes", "DomainSets", "IntervalSets", "LinearAlgebra", "NonNegLeastSquares", "OffsetArrays", "PyCall", "PyPlot", "StatsBase", "Unitful"]
-git-tree-sha1 = "803be2153093049a12907fae6a44616b101fcbf6"
+git-tree-sha1 = "3c36501dd2238b11356cc30f03fe78a8e7643df0"
 uuid = "5384e752-6c47-47b3-86ac-9d091b110b31"
-version = "0.1.6"
+version = "0.1.7"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -772,12 +922,6 @@ deps = ["UUIDs"]
 git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
-
-[[deps.Revise]]
-deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "Requires", "UUIDs", "Unicode"]
-git-tree-sha1 = "2f9d4d6679b5f0394c52731db3794166f49d5131"
-uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
-version = "3.3.1"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -898,18 +1042,72 @@ version = "0.3.5"
 
 [[deps.VLBIPlots]]
 deps = ["Colors", "DataPipes", "InterferometricModels", "IntervalSets", "LinearAlgebra", "PyPlotUtils", "Unitful"]
-git-tree-sha1 = "f2a51d9775b53ff2378848d7c02ccbbb303f11dd"
+git-tree-sha1 = "fc42a5da0aa6939a7c6dd1e790b24179a4aee1a3"
 uuid = "0260e397-8112-41bf-b55a-6b4577718f00"
-version = "0.1.0"
+version = "0.1.1"
 
 [[deps.VersionParsing]]
 git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
 uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
 version = "1.3.0"
 
+[[deps.XML2_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "1acf5bdf07aa0907e0a37d3718bb88d4b687b74a"
+uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
+version = "2.9.12+0"
+
+[[deps.XSLT_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
+git-tree-sha1 = "91844873c4085240b95e795f692c4cec4d805f8a"
+uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
+version = "1.1.34+0"
+
+[[deps.Xorg_libX11_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
+git-tree-sha1 = "5be649d550f3f4b95308bf0183b82e2582876527"
+uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
+version = "1.6.9+4"
+
+[[deps.Xorg_libXau_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "4e490d5c960c314f33885790ed410ff3a94ce67e"
+uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
+version = "1.0.9+4"
+
+[[deps.Xorg_libXdmcp_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "4fe47bd2247248125c428978740e18a681372dd4"
+uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
+version = "1.1.3+4"
+
+[[deps.Xorg_libpthread_stubs_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "6783737e45d3c59a4a4c4091f5f88cdcf0908cbb"
+uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
+version = "0.1.0+3"
+
+[[deps.Xorg_libxcb_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
+git-tree-sha1 = "daf17f441228e7a3833846cd048892861cff16d6"
+uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
+version = "1.13.0+3"
+
+[[deps.Xorg_xtrans_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "79c31e7844f6ecf779705fbc12146eb190b7d845"
+uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
+version = "1.4.0+3"
+
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
+
+[[deps.Zstd_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "e45044cd873ded54b6a5bac0eb5c971392cf1927"
+uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
+version = "1.5.2+0"
 
 [[deps.ZygoteRules]]
 deps = ["MacroTools"]
@@ -917,9 +1115,21 @@ git-tree-sha1 = "8c1a8e4dfacb1fd631745552c8db35d0deb09ea0"
 uuid = "700de1a5-db45-46bc-99cf-38207098b444"
 version = "0.2.2"
 
+[[deps.difmap_jll]]
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Ncurses_jll", "PGPLOT_jll", "Pkg", "Xorg_libX11_jll"]
+git-tree-sha1 = "2c9d61ab9189941639096a9f3dd3396da0d32652"
+uuid = "43cd2700-e54a-5645-adf8-b9b288a87fe6"
+version = "2.5.11+0"
+
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
+
+[[deps.libpng_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "94d180a6d2b5e55e447e2d27a29ed04fe79eb30c"
+uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
+version = "1.6.38+0"
 
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -946,6 +1156,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═b8e07154-a609-459d-bc00-6ff61220cd4a
 # ╟─3075f803-d583-4764-a7d4-1bc14d8e441b
 # ╠═b32c9639-c2c3-4a67-8554-57aefea9d196
+# ╠═f1315ff6-59a5-4432-bf0e-ca4b2adaac0f
 # ╟─6d0bf04e-51ee-43b6-8b7c-912fd051dfb5
 # ╟─c4b58f30-e7db-459e-9d26-2d4bc57e5fbd
 # ╠═b4e14571-a3fa-41d2-98da-cff594f88202
@@ -968,16 +1179,26 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╟─aa1d8bd5-e86e-4c56-8fbd-8b8f5dfc7bc8
 # ╟─546825e2-5f27-47ad-b03a-546a082cd250
 # ╠═ce74a7f5-06be-44c9-9b45-f64dc83e14a8
-# ╠═81db478c-1185-41a8-ab16-154778c964d4
 # ╟─faf6e8e0-b79d-4e01-94fc-433817c83fd4
+# ╠═95c91cc0-5236-42f2-a031-a137313850f4
+# ╠═81db478c-1185-41a8-ab16-154778c964d4
 # ╟─77237980-eda9-4e7c-a3ef-25a0425d0149
 # ╟─f946e665-fce7-4b90-a0a0-283ce60eb14b
 # ╠═5848e406-18cf-4f36-922b-104d6edd2cf5
 # ╟─b2a45d8a-c0d6-4e27-8f57-0ff9db75ecc8
 # ╟─bd6255c9-fe17-4a29-8a5c-d9b734ae7c5c
 # ╠═f2495e21-6d30-404e-810f-f9a26501eb12
+# ╟─47d146c8-47f0-45b4-acf7-7e1c080d22f2
+# ╠═b886b6a4-2d65-4d6b-8d46-aa0cc85e9f1d
+# ╟─e8e64ce0-d4ba-4745-b971-d170169a92db
+# ╟─50863255-5341-4c79-8e91-3e9d3a5b20c2
+# ╠═95d32985-b924-43eb-85d2-115c95b3798c
+# ╠═5dae356b-f045-4c75-a38a-d85ff3be7040
 # ╠═ebf1c8c4-d5c4-425b-baff-42252c0d52cf
+# ╟─56e2fabb-5671-4405-9933-43e9ea80fada
 # ╠═47da1b40-3624-4dfd-a965-d2fe2286d7c1
+# ╠═25dd465b-7e13-4c20-a2d2-a18c8a6ab11c
+# ╠═6f4ecab0-2125-4476-bf78-dbe253322233
 # ╠═90b8e37c-1def-438d-981b-e488cc87a3e7
 # ╠═4eb97406-7713-11ec-00ca-8be6bef77030
 # ╠═5529a3e2-c874-4a21-b349-3984349b1db6
@@ -989,6 +1210,7 @@ uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
 # ╠═dc179b8b-a5b7-4d2d-bf86-afc0fc5a376b
 # ╠═f3898d40-517d-421b-b551-00d8ce1f64dd
 # ╠═3ba32828-9266-4427-b396-a9c44d81f02b
-# ╠═8eb67d05-95f1-47cc-b9b5-1fced799a73a
+# ╠═8f556fb7-c181-4e0f-a42d-1caa85f35f41
+# ╠═412dc1f1-ea14-40ee-ad3b-28b89990738f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
