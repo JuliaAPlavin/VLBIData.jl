@@ -112,8 +112,25 @@ end
     @test map(fwhm_max, components(mod)) |> collect ≈ [0.135, 0.463, 1.99]u"mas"  rtol=0.01
     @test coords(components(mod)[1]) ≈ [-0.000662, -0.00123]u"mas" rtol=0.01
 
-    mod = VLBI.load("./data/difmap_model_empty.mod")
-    @test isempty(components(mod))
+    mod_empty = VLBI.load("./data/difmap_model_empty.mod")
+    @test isempty(components(mod_empty))
+
+    mod_clean = VLBI.load("./data/difmap_model_clean.mod")
+    @test length(components(mod_clean)) == 631
+    @test isconcretetype(eltype(components(mod_clean)))
+    @test eltype(components(mod_clean)) <: Point
+
+    mod_map = VLBI.load(MultiComponentModel, "./data/map.fits")
+
+    tmpf = tempname()
+    VLBI.save(tmpf, mod)
+    @test VLBI.load(tmpf) == mod
+    VLBI.save(tmpf, mod_empty)
+    @test VLBI.load(tmpf) == mod_empty
+    VLBI.save(tmpf, mod_clean)
+    @test VLBI.load(tmpf) == mod_clean
+    VLBI.save(tmpf, mod_map)
+    @test VLBI.load(tmpf) ≈ mod_map  rtol=1e-4  # approx because saving to *.mod involves rounding; also Float32 vs 64
 end
 
 @testset "RFC" begin
