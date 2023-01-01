@@ -1,12 +1,11 @@
-@with_kw struct FrequencyWindow
+Base.@kwdef struct FrequencyWindow
     freq::typeof(1f0u"Hz")
     width::typeof(1f0u"Hz")
     nchan::Int
-    wavelen::typeof(1f0u"m") = u"c" / freq
     sideband::Int32
 end
 
-@with_kw struct UVHeader
+Base.@kwdef struct UVHeader
     fits::FITSHeader
     object::String
     date_obs::Date
@@ -33,7 +32,7 @@ function UVHeader(fh::FITSHeader)
     )
 end
 
-@with_kw struct Antenna
+Base.@kwdef struct Antenna
     name::Symbol
     id::Int
 end
@@ -42,8 +41,7 @@ function Antenna(hdu_row)
     @assert isempty(hdu_row.ORBPARM)
     Antenna(; name=Symbol(hdu_row.ANNAME), id=hdu_row.NOSTA)
 end
-
-@with_kw struct AntArray
+Base.@kwdef struct AntArray
     name::String
     freq::typeof(1f0u"Hz")
     antennas::Vector{Antenna}
@@ -62,7 +60,7 @@ function AntArray(hdu::TableHDU)
     )
 end
 
-@with_kw struct UVData
+Base.@kwdef struct UVData
     path::String
     header::UVHeader
     freq_windows::Vector{FrequencyWindow}
@@ -153,7 +151,7 @@ function read_data_table(uvdata::UVData)
         ix = r.IX
         if_spec = uvdata.freq_windows[r.IF]
         uvw = (data.u[ix], data.v[ix], data.w[ix])
-        uvw_wl = (uvw ./ if_spec.wavelen)
+        uvw_wl = uvw ./ (u"c" / if_spec.freq)
         (
             array_ix=data.array_ix[ix],
             ant1_ix=data.ant1_ix[ix],

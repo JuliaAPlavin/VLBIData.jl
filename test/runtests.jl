@@ -21,16 +21,16 @@ end
 
 @testset "fits image" begin
     @testset "read nothing" begin
-        img = VLBI.load("./data/map.fits", read_data=false, read_clean=false)
-        @test img.clean_components === nothing
+        img = VLBI.load("./data/map.fits", read_data=false)
         @test img.data === nothing
-        @test img.noise === nothing
 
         @test VLBI.pixel_size(img) ≈ 0.2u"mas"  rtol=1e-5
         @test VLBI.pixel_steps(img) ≈ [-0.2u"mas", 0.2u"mas"]  rtol=1e-5
         @test VLBI.pixel_area(img) ≈ 0.04u"mas^2"  rtol=1e-5
         @test VLBI.frequency(img) ≈ 4.344u"GHz"
+
         bm = beam(img)
+        @test beam("./data/map.fits") === bm
         @test effective_area(bm) ≈ 6.5519451u"mas^2"  rtol=1e-5
         @test fwhm_max(bm) ≈ 4.02887356u"mas"  rtol=1e-5
         @test fwhm_min(bm) ≈ 1.43523228u"mas"  rtol=1e-5
@@ -38,28 +38,8 @@ end
         @test intensity(bm)(SVector(0.5u"mas", 0u"mas")) ≈ 0.714721  rtol=1e-5
     end
     
-    @testset "read clean" begin
-        img = VLBI.load("./data/map.fits", read_data=false, read_clean=true)
-        @test img.data === nothing
-        @test img.noise === nothing
-        @test all(∈(Tables.schema(img.clean_components).names), [:flux, :radec])
-        @test all(isconcretetype, Tables.schema(img.clean_components).types)
-        @test length(img.clean_components) == 361
-        @test sum(c -> c.flux, img.clean_components) ≈ 0.038659f0
-        @test mean(c -> c.radec[1], img.clean_components) ≈ -0.913573508654587
-        @test mean(c -> c.radec[2], img.clean_components) ≈ 8.145706523588233
-
-        mod = VLBI.load(MultiComponentModel, "./data/map.fits")
-        @test length(components(mod)) == 361
-        @test sum(flux, components(mod)) ≈ 0.038659f0u"Jy"
-        @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587u"mas"
-        @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233u"mas"
-    end
-    
     @testset "read data" begin
-        img = VLBI.load("./data/map.fits", read_data=true, read_clean=false)
-        @test img.clean_components === nothing
-        @test img.noise ≈ 9.5605465f-5
+        img = VLBI.load("./data/map.fits", read_data=true)
         @test size(img.data) == (512, 512)
         @test mean(img.data) ≈ 2.4069064f-5
         @test maximum(img.data) ≈ 0.021357307f0
@@ -70,10 +50,12 @@ end
         @test axiskeys(img.data, :dec) isa AbstractRange
     end
     
-    @testset "read both" begin
-        img = VLBI.load("./data/map.fits", read_data=true, read_clean=true)
-        @test img.clean_components == VLBI.load("./data/map.fits", read_data=false, read_clean=true).clean_components
-        @test img.data == VLBI.load("./data/map.fits", read_data=true, read_clean=false).data
+    @testset "read clean" begin
+        mod = VLBI.load(MultiComponentModel, "./data/map.fits")
+        @test length(components(mod)) == 361
+        @test sum(flux, components(mod)) ≈ 0.038659f0u"Jy"
+        @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587u"mas"
+        @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233u"mas"
     end
 end
 
@@ -110,28 +92,15 @@ end
     end
 end
 
-@testset "difmap_files" begin
-    @testset "modern" begin
-        mod = VLBI.load("./data/difmap_model.mod")
-        @test length(components(mod)) == 3
+@testset "difmap model" begin
+    mod = VLBI.load("./data/difmap_model.mod")
+    @test length(components(mod)) == 3
     @test map(flux, components(mod)) |> collect ≈ [0.64, -0.01, 1.32e9]u"Jy"  rtol=0.01
     @test map(fwhm_max, components(mod)) |> collect ≈ [2.30, 6.04, 323e3]u"mas"  rtol=0.01
     @test coords(components(mod)[1]) == [-0.09183782420814114, 0.13039751573060954]u"mas"
 
-        mod = VLBI.load("./data/difmap_model_empty.mod")
-        @test isempty(components(mod))
-    end
-
-    @testset "deprecated" begin
-        df = VLBI.load(VLBI.DifmapModel, "./data/difmap_model.mod")
-        @test length(df) == 3
-        @test map(x -> x.flux, df) ≈ [0.64, -0.01, 1.32e9]  rtol=0.01
-        @test df[1].radec == [-0.09183782420814114, 0.13039751573060954]
-
-        df_e = VLBI.load(VLBI.DifmapModel, "./data/difmap_model_empty.mod")
-        @test isempty(df_e)
-        @test_broken typeof(df_e) == typeof(df)
-    end
+    mod = VLBI.load("./data/difmap_model_empty.mod")
+    @test isempty(components(mod))
 end
 
 @testset "RFC" begin
