@@ -14,10 +14,12 @@ function load(::Type{MultiComponentModel}, src, ::Val{:mod})
             rethrow()
         end
     end
-    cols = @p mat |>
-        map(parse(Float64, rstrip(_, 'v'))) |>
-        eachcol() |>
-        NamedTuple{(:flux, :radius, :theta_deg, :major, :ratio, :phi_deg, :T, :freq, :specindex)[1:length(__)], NTuple{length(__), Vector{Float64}}}(__)
+    cols = @p begin
+        mat
+        map(isempty(_) ? nothing : parse(Float64, rstrip(_, 'v')))
+        eachcol()
+        NamedTuple{(:flux, :radius, :theta_deg, :major, :ratio, :phi_deg, :T, :freq, :specindex)[1:length(__)]}(__)
+    end
     if length(cols) == 3
         # clean model: many components of the same type (Point)
         @p begin
@@ -38,7 +40,7 @@ function load(::Type{MultiComponentModel}, src, ::Val{:mod})
             map() do r
                 flux = r.flux * u"Jy"
                 coords = r.radius .* SVector(sincosd(r.theta_deg))*u"mas"
-                σ_major = InterferometricModels.fwhm_to_σ(r.major)*u"mas"
+                σ_major = InterferometricModels.fwhm_to_σ(something(r.major, 0.0))*u"mas"
                 if σ_major == 0
                     Point(; flux, coords)
                 elseif r.ratio == 1
