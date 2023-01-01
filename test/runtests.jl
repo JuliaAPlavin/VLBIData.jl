@@ -73,22 +73,22 @@ end
         @test map(a -> a.id, antarr.antennas) == 1:9
         @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :SC]
 
-        df = VLBI.read_data_table(uv)
+        df = rowtable(uv)
         @test Tables.rowaccess(df)
         @test length(df) == 896
-        @test length(Tables.schema(df).names) == 16
-        @test all(∈(Tables.schema(df).names), [:u, :v, :w, :visibility, :iif])
+        @test all(∈(Tables.schema(df).names), [:uv, :visibility, :iif, :date])
         @test all(isconcretetype, Tables.schema(df).types)
+        @test df[1].uv === SVector(3.0883878f7, 1.6280775f7)
         df_cols = Tables.columntable(df)
-        @test mean(df_cols.u) ≈ 298060.56u"m"
-        @test mean(df_cols.v_wl) ≈ -5.2631365e6
+        @test mean(df_cols.uv_m) ≈ SVector(298060.56u"m", -363224.78u"m")
+        @test mean(df_cols.uv) === SVector(4.318903f6, -5.2631365f6)
         @test mean(df_cols.visibility) ≈ 0.021919968 + 0.00062215974im
     end
 
     @testset "multichannel" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
         @test length(uv.freq_windows) == 8
-        df = VLBI.read_data_table(uv)
+        df = rowtable(uv)
     end
 end
 

@@ -1,7 +1,7 @@
 module VLBIData
 
 const VLBI = VLBIData
-export VLBI
+export VLBI, rowtable
 
 using Reexport
 using DataPipes
@@ -13,6 +13,7 @@ using Unitful, UnitfulAstro, MyUnitful
 using AxisKeys
 using StaticArrays
 using DelimitedFiles: readdlm
+using DateFormats: julian_day
 @reexport using InterferometricModels
 
 
