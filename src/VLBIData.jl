@@ -9,7 +9,7 @@ using Tables
 using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
 using PyCall
 using Dates
-using Unitful, UnitfulAstro, MyUnitful
+using Unitful, UnitfulAstro, UnitfulAngles
 using AxisKeys
 using StaticArrays
 using StructArrays
