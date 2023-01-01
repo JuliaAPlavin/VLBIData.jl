@@ -86,7 +86,7 @@ end
         @test map(a -> a.id, antarr.antennas) == 1:10
         @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :PT, :SC]
 
-        df = VLBI.table(uv)
+        df = table(uv)
         @test Tables.rowaccess(df)
         @test length(df) == 160560
         @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
@@ -101,7 +101,7 @@ end
     @testset "multichannel" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
         @test length(uv.freq_windows) == 8
-        df = VLBI.table(uv)
+        df = table(uv)
     end
 end
 
@@ -141,7 +141,7 @@ end
         @showprogress for f in RFC.files(rfci, suffix="vis") .|> abspath
             try
                 uv = VLBI.load(f)
-                df = VLBI.table(uv)
+                df = table(uv)
             catch e
                 @show f e
                 rethrow()

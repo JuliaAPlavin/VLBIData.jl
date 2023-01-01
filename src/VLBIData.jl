@@ -1,11 +1,12 @@
 module VLBIData
 
 const VLBI = VLBIData
-export VLBI
+export VLBI, table
 
 using Reexport
 using DataPipes
 using Tables
+import Tables: table
 using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
 using PyCall
 using Dates
