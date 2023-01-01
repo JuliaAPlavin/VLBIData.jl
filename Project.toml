@@ -19,7 +19,7 @@ UnitfulAstro = "6112ee07-acf9-5e0f-b108-d242c714bf9f"
 
 [compat]
 AxisKeys = "0.1"
-FITSIO = "0.16"
+FITSIO = "0.16.6"
 MyUnitful = "0.1"
 Parameters = "0.12"
 PyCall = "1.92"
