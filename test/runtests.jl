@@ -87,7 +87,7 @@ using PyCall
         @test map(a -> a.id, antarr.antennas) == 1:10
         @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :PT, :SC]
 
-        df = table(uv, pyimport)
+        df = table(uv)
         @test Tables.rowaccess(df)
         @test length(df) == 160560
         @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
@@ -112,14 +112,14 @@ using PyCall
         @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
         @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
         @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
-        # @test first(df) == first(table(uv, pyimport))
-        # @test df == table(uv, pyimport)
+        @test first(df) == first(table(uv, pyimport))
+        @test df == table(uv, pyimport)
     end
 
     @testset "multichannel" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
         @test length(uv.freq_windows) == 8
-        df = table(uv, pyimport)
+        df = table(uv)
         target = (
             baseline = VLBIData.Baseline(1, (3, 5)),
             datetime = DateTime("1996-06-05T19:16:45.001"),
@@ -135,7 +135,7 @@ using PyCall
         )
         @test df[1234] == target
         @test map(typeof, df[1234]) == map(typeof, target)
-        # @test df == table(uv, pyimport)
+        @test df == table(uv, pyimport)
     end
 end
 
