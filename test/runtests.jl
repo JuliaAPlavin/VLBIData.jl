@@ -181,17 +181,18 @@ end
     @test VLBI.load(tmpf) ≈ mod_map  rtol=1e-4  # approx because saving to *.mod involves rounding; also Float32 vs 64
 end
 
-@testset "RFC" begin
-    return
+@testitem "RFC" begin
     using AstroRFC: RFC
     using ProgressMeter
+    using PyCall
 
     @testset "vis" begin
         rfci = RFC.Files()
-        @showprogress for f in rand(RFC.files(rfci, J2000="J1743-0350", suffix="vis"), 10)
+        @showprogress for f in rand(RFC.files(rfci, suffix="vis"), 1000)
             try
                 uv = VLBI.load(f)
                 df = table(uv)
+                @test df == table(uv, pyimport)
             catch e
                 @show f e
                 rethrow()
@@ -201,7 +202,7 @@ end
 
     @testset "maps" begin
         rfci = RFC.Files()
-        @showprogress for f in rand(RFC.files(rfci, J2000="J1743-0350", suffix="map", extension="fits"), 10)
+        @showprogress for f in rand(RFC.files(rfci, suffix="map", extension="fits"), 1000)
             try
                 VLBI.load(f)
             catch e
@@ -217,8 +218,12 @@ end
             try
                 beam(abspath(f))
             catch e
-                @show f e
-                rethrow()
+                if e isa KeyError && e.key == "BMAJ"
+                    @warn "Missing BMAJ" f
+                else
+                    @show f e
+                    rethrow()
+                end
             end
         end
     end
