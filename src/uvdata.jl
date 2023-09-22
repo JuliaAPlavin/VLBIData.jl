@@ -103,7 +103,7 @@ struct GroupedHDU <: FITSIO.HDU
     ext::Int
 end
 
-function read(hdu::GroupedHDU)
+function Base.read(hdu::GroupedHDU)
     FITSIO.assert_open(hdu)
     FITSIO.fits_movabs_hdu(hdu.fitsfile, hdu.ext)
     sz = FITSIO.fits_get_img_size(hdu.fitsfile) |> Tuple
