@@ -9,6 +9,7 @@ using AstroRFC: RFC
 using VLBIData
 using VLBIData: frequency
 using ProgressMeter
+using PyCall
 
 
 @testset "generic loading" begin
@@ -111,12 +112,30 @@ end
         @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
         @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
         @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
+        # @test first(df) == first(table(uv, pyimport))
+        # @test df == table(uv, pyimport)
     end
 
     @testset "multichannel" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis_multichan.vis")
         @test length(uv.freq_windows) == 8
         df = table(uv)
+        target = (
+            baseline = VLBIData.Baseline(1, (3, 5)),
+            datetime = DateTime("1996-06-05T19:16:45.001"),
+            stokes = :LL,
+            if_ix = Int8(3),
+            if_spec = VLBIData.FrequencyWindow(4.84099f9u"Hz", 8.0f6u"Hz", 16, 1),
+            uv_m = VLBIData.UV(2.2424022f6u"m", 794705.06f0u"m"),
+            w_m = -1.838948f6u"m",
+            uv = VLBIData.UV(3.6239796f7, 1.2843347f7),
+            w = -2.9719512f7,
+            visibility = -0.21484283f0 - 0.35979474f0im,
+            weight = 3.0233376f0
+        )
+        @test df[1234] == target
+        @test map(typeof, df[1234]) == map(typeof, target)
+        # @test df == table(uv, pyimport)
     end
 end
 
@@ -175,6 +194,12 @@ end
             end
             try
                 VLBI.load(MultiComponentModel, f)
+            catch e
+                @show f e
+                rethrow()
+            end
+            try
+                beam(abspath(f))
             catch e
                 @show f e
                 rethrow()
