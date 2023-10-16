@@ -26,7 +26,6 @@ function Base.read(hdu::GroupedHDU)
     end
     b_scalezero = h["BSCALE"], h["BZERO"]
 
-    # ptype = NamedTuple{Tuple(Symbol.(pnames)), NTuple{pcount, Float32}}
     ptype = NTuple{pcount, Float32}
     result_grp = NamedTuple{Tuple(Symbol.(pnames))}(ntuple(_ -> Float64[], pcount))
     result_data = Array{Float32}(undef, Base.tail(sz)..., ngroups)
@@ -55,6 +54,7 @@ function _fill_data!(ngroups, hdu, buf_grp, buf_data, result_grp, result_data, :
         )::Cint
         FITSIO.fits_assert_ok(status[])
 
+        anynul = Ref{Cint}(0)
         @ccall FITSIO.libcfitsio.ffgpve(
             hdu.fitsfile.ptr::Ptr{Cvoid},
             groupix::Clong,
@@ -62,9 +62,11 @@ function _fill_data!(ngroups, hdu, buf_grp, buf_data, result_grp, result_data, :
             length(buf_data)::Clong,
             0.0::Cfloat,  # nulval
             buf_data::Ptr{Cfloat},
-            Ref{Cint}(0)::Ref{Cint},  # anynul
+            anynul::Ref{Cint},
             status::Ref{Cint},
         )::Cint
+        @assert anynul[] == 0
+        FITSIO.fits_assert_ok(status[])
         buf_data .= muladd.(buf_data, b_scalezero...)
 
         map(Tuple(result_grp), ptype(buf_grp), ps_scalezero) do vres, val, scalezero
