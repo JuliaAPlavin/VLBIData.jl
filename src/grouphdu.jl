@@ -11,10 +11,6 @@ function Base.read(hdu::GroupedHDU)
     h = FITSIO.read_header(hdu)
     ngroups = h["GCOUNT"]
     pcount = h["PCOUNT"]
-    pfuncs = map(1:pcount) do i
-        x -> muladd(x, h["PSCAL$i"], h["PZERO$i"])
-    end
-    bfunc = x -> muladd(x, h["BSCALE"], h["BZERO"])
 
     pnames = map(1:pcount) do i
         h["PTYPE$i"]
@@ -24,7 +20,14 @@ function Base.read(hdu::GroupedHDU)
             pnames[i] = "_" * pnames[i]
         end
     end
-    ptype = NamedTuple{Tuple(Symbol.(pnames)), NTuple{pcount, Float32}}
+
+    ps_scalezero = ntuple(pcount) do i
+        h["PSCAL$i"], h["PZERO$i"]
+    end
+    b_scalezero = h["BSCALE"], h["BZERO"]
+
+    # ptype = NamedTuple{Tuple(Symbol.(pnames)), NTuple{pcount, Float32}}
+    ptype = NTuple{pcount, Float32}
     result_grp = NamedTuple{Tuple(Symbol.(pnames))}(ntuple(_ -> Float64[], pcount))
     result_data = Array{Float32}(undef, Base.tail(sz)..., ngroups)
 
@@ -34,7 +37,13 @@ function Base.read(hdu::GroupedHDU)
     buf_grp = Array{Cfloat}(undef, pcount)
     buf_data = Array{Cfloat}(undef, Base.tail(sz))
 
-    map(1:ngroups) do groupix
+    _fill_data!(ngroups, hdu, buf_grp, buf_data, result_grp, result_data, ptype, ps_scalezero, b_scalezero)
+
+    return (; result_grp..., DATA=result_data)
+end
+
+function _fill_data!(ngroups, hdu, buf_grp, buf_data, result_grp, result_data, ::Type{ptype}, ps_scalezero, b_scalezero) where {ptype}
+    for groupix in 1:ngroups
         status = Ref{Cint}(0)
         @ccall FITSIO.libcfitsio.ffggpe(
             hdu.fitsfile.ptr::Ptr{Cvoid},
@@ -56,13 +65,11 @@ function Base.read(hdu::GroupedHDU)
             Ref{Cint}(0)::Ref{Cint},  # anynul
             status::Ref{Cint},
         )::Cint
-        buf_data .= bfunc.(buf_data)
+        buf_data .= muladd.(buf_data, b_scalezero...)
 
-        map(result_grp, ptype(buf_grp), pfuncs) do vres, val, func
-            push!(vres, func(val))
+        map(Tuple(result_grp), ptype(buf_grp), ps_scalezero) do vres, val, scalezero
+            push!(vres, muladd(val, scalezero...))
         end
         selectdim(result_data, ndims(result_data), groupix) .= buf_data
-        # return (; ptype(buf_grp)..., DATA=buf_data)
     end
-    return (; result_grp..., DATA=result_data)
 end
