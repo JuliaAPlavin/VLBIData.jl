@@ -24,7 +24,8 @@ function Base.read(hdu::GroupedHDU)
     ps_scalezero = ntuple(pcount) do i
         h["PSCAL$i"], h["PZERO$i"]
     end
-    b_scalezero = h["BSCALE"], h["BZERO"]
+    b_scalezero = h["BSCALE"], get(h, "BZERO", 0.0)
+    haskey(h, "BSZERO") && @warn "FITS header contains BSZERO keyword, probably a typo"
 
     ptype = NTuple{pcount, Float32}
     result_grp = NamedTuple{Tuple(Symbol.(pnames))}(ntuple(_ -> Float64[], pcount))
