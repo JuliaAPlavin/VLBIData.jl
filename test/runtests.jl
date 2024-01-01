@@ -277,7 +277,7 @@ end
 
 @testitem "_" begin
     import Aqua
-    Aqua.test_all(VLBIData; ambiguities=false, piracy=false)
+    Aqua.test_all(VLBIData; ambiguities=false, piracies=false)
     Aqua.test_ambiguities(VLBIData)
 
     import CompatHelperLocal as CHL
