@@ -101,7 +101,7 @@ end
 function read_data_raw(uvdata::UVData, ::typeof(identity)=identity)
     fits = FITS(uvdata.path)
     hdu = GroupedHDU(fits.fitsfile, 1)
-    read(hdu) #|> StructArray
+    read(hdu)
 end
 
 struct UVW{T} <: FieldVector{3, T}
