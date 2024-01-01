@@ -4,12 +4,10 @@ const VLBI = VLBIData
 export VLBI, table
 
 using Reexport
-using DataPipes
-using FlexiMaps: filtermap
+using DataManipulation
 using Tables
 import Tables: table
-using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
-using PyCall
+using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames, FITSIO
 using Dates
 using Unitful, UnitfulAstro, UnitfulAngles
 using AxisKeys

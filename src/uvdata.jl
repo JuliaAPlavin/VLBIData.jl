@@ -97,23 +97,7 @@ function read_freqs(uvh, fq_table)
     end
 end
 
-function read_data_raw(uvdata::UVData)
-    pyimport_conda("numpy", "numpy")
-    pyimport_conda("astropy", "astropy")
-    py"""
-    import numpy as np
-    import astropy.io.fits
-
-    def to_native_byteorder(arr):
-        dt = arr.dtype.newbyteorder('=')
-        return arr.astype(dt)
-
-    with astropy.io.fits.open(open($(uvdata.path), 'rb'), memmap=False) as f:
-        raw = f[0].data
-    """
-    raw = Dict(n => PyArray(py"to_native_byteorder(raw[$n])"o) for n in py"raw.dtype.names")
-    return raw
-end
+function read_data_raw end
 
 struct UVW{T} <: FieldVector{3, T}
     u::T
