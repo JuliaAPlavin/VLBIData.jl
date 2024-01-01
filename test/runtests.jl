@@ -81,6 +81,8 @@ end
     using StaticArrays
     using Tables
 
+    cd(dirname(@__FILE__))
+
     @testset "simple" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis.fits")
         @test uv.header.object == "J1033+6051"
@@ -118,7 +120,7 @@ end
         @test map(typeof, res) == map(typeof, target)
         df_cols = Tables.columntable(df)
         @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
-        # @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
+        @test mean(v->abs.(v), df_cols.uv) ≈ VLBI.UV(1.0778852f8, 7.967933f7)
         @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
         @test first(df) == first(table(uv, pyimport))
         @test df == table(uv, pyimport)
@@ -150,6 +152,7 @@ end
 
 @testitem "difmap model" begin
     using Unitful, UnitfulAstro, UnitfulAngles
+    cd(dirname(@__FILE__))
 
     mod = VLBI.load("./data/difmap_model.mod")
     @test length(components(mod)) == 4
