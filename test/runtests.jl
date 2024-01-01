@@ -1,18 +1,10 @@
-using Test
-using Statistics
-using AxisKeys
-using Unitful, UnitfulAstro, UnitfulAngles
-using StaticArrays
-using Dates
-using Tables
-using AstroRFC: RFC
-using VLBIData
-using VLBIData: frequency
-using ProgressMeter
-using PyCall
+using TestItems
+using TestItemRunner
+@run_package_tests
 
 
-@testset "generic loading" begin
+@testitem "generic loading" begin
+    cd(dirname(@__FILE__))
     @test VLBI.guess_type("./data/map.fits") == VLBI.FitsImage
     @test VLBI.guess_type("./data/vis.fits") == VLBI.UVData
     @test VLBI.guess_type("./data/vis_multichan.vis") == VLBI.UVData
@@ -21,7 +13,14 @@ using PyCall
 end
 
 
-@testset "fits image" begin
+@testitem "fits image" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using StaticArrays
+    using Statistics
+    using AxisKeys
+    using VLBIData: frequency
+
+    cd(dirname(@__FILE__))
     @testset "read nothing" begin
         img = VLBI.load("./data/map.fits", read_data=false)
         @test img.data === nothing
@@ -73,7 +72,15 @@ end
     end
 end
 
-@testset "uvfits" begin
+@testitem "uvfits" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using Dates
+    using PyCall
+    using VLBIData: frequency
+    using Statistics
+    using StaticArrays
+    using Tables
+
     @testset "simple" begin
         uv = VLBI.load(VLBI.UVData, "./data/vis.fits")
         @test uv.header.object == "J1033+6051"
@@ -141,7 +148,9 @@ end
     end
 end
 
-@testset "difmap model" begin
+@testitem "difmap model" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+
     mod = VLBI.load("./data/difmap_model.mod")
     @test length(components(mod)) == 4
     @test map(flux, components(mod)) |> collect ≈ [0.522, 0.0217, 0.0176, 0.2145]u"Jy"  rtol=0.01
@@ -171,6 +180,8 @@ end
 
 @testset "RFC" begin
     return
+    using AstroRFC: RFC
+    using ProgressMeter
 
     @testset "vis" begin
         rfci = RFC.Files()
@@ -210,14 +221,11 @@ end
     end
 end
 
+@testitem "_" begin
+    import Aqua
+    Aqua.test_all(VLBIData; ambiguities=false, piracy=false)
+    Aqua.test_ambiguities(VLBIData)
 
-import CompatHelperLocal
-CompatHelperLocal.@check()
-
-import Aqua
-@testset "Aqua" begin
-    Aqua.test_ambiguities(VLBI, recursive=false)
-    Aqua.test_unbound_args(VLBI)
-    Aqua.test_undefined_exports(VLBI)
-    Aqua.test_stale_deps(VLBI)
+    import CompatHelperLocal as CHL
+    CHL.@check()
 end
