@@ -51,7 +51,9 @@ Base.@kwdef struct Antenna
 end
 
 function Antenna(hdu_row)
-    @assert isempty(hdu_row.ORBPARM)
+    if !isempty(hdu_row.ORBPARM) && hdu_row.ORBPARM != 0
+        @warn "Antennas with ORBPARM detected, be careful" hdu_row.ORBPARM hdu_row.ANNAME
+    end
     Antenna(; name=Symbol(hdu_row.ANNAME), id=hdu_row.NOSTA)
 end
 Base.@kwdef struct AntArray
