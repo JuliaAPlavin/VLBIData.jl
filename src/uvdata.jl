@@ -119,15 +119,14 @@ function read_data_arrays(uvdata::UVData)
     raw = read_data_raw(uvdata)
 
     uvw_keys = @p begin
-        [("UU", "VV", "WW"), ("UU--", "VV--", "WW--"), ("UU---SIN", "VV---SIN", "WW---SIN")]
-        filter(_ ⊆ keys(raw))
-        only()
+        [(S"UU", S"VV", S"WW"), (S"UU--", S"VV--", S"WW--"), (S"UU---SIN", S"VV---SIN", S"WW---SIN")]
+        filteronly(_ ⊆ keys(raw))
     end
 
-    count = size(raw["DATA"], 1)
+    count = size(raw[:DATA], 1)
     n_if = length(uvdata.freq_windows)
     n_chan = map(fw -> fw.nchan, uvdata.freq_windows) |> unique |> only
-    axarr = KeyedArray(raw["DATA"],
+    axarr = KeyedArray(raw[:DATA],
         _=1:count,
         DEC=[1], RA=[1],
         IF=1:n_if,
@@ -138,19 +137,19 @@ function read_data_arrays(uvdata::UVData)
     axarr = axarr[DEC=1, RA=1]
 
     uvw_m = UVW.([Float32.(raw[k]) .* (u"c" * u"s") .|> u"m" for k in uvw_keys]...)
-    baseline = map(raw["BASELINE"]) do b
+    baseline = map(raw[:BASELINE]) do b
         bi = floor(Int, b)
         Baseline(round(Int, (b % 1) * 100) + 1, (bi ÷ 256, bi % 256))
     end
     data = (;
         uvw_m,
         baseline,
-        datetime = julian_day.(Float64.(raw["DATE"]) .+ raw["_DATE"]),
+        datetime = julian_day.(Float64.(raw[:DATE]) .+ raw[:_DATE]),
         visibility = complex.(axarr(COMPLEX=:re), axarr(COMPLEX=:im)),
         weight = axarr(COMPLEX=:wt),
     )
-    if haskey(raw, "INTTIM")
-        data = merge(data, (int_time = raw["INTTIM"] .* u"s",))
+    if haskey(raw, :INTTIM)
+        data = merge(data, (int_time = raw[:INTTIM] .* u"s",))
     end
     return data
 end
