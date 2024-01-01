@@ -5,6 +5,7 @@ Base.@kwdef struct FitsImage{TD}
 end
 
 function load(::Type{FitsImage}, path; read_data=true)
+    path = abspath(path)  # for RFC.File
     FITS(path) do f
         primary = f[1]
         header = read_header(primary)
