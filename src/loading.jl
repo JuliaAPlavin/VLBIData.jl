@@ -1,4 +1,5 @@
 function guess_type(src)
+    src = abspath(src)  # for RFC.File
     if startswith(first(eachline(src)), r"! \w+")
         MultiComponentModel
     else

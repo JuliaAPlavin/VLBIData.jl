@@ -201,6 +201,7 @@ function table(uvdata::UVData)
 end
 
 function load(::Type{UVData}, path)
+    path = abspath(path)  # for RFC.File
     fits = FITS(path)
     fh = read_header(fits[1])
     header = UVHeader(fh)

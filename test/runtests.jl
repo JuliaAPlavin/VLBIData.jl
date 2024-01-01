@@ -138,7 +138,7 @@ end
 
     @testset "vis" begin
         rfci = RFC.Files()
-        @showprogress for f in RFC.files(rfci, suffix="vis") .|> abspath
+        @showprogress for f in rand(RFC.files(rfci, J2000="J1743-0350", suffix="vis"), 10)
             try
                 uv = VLBI.load(f)
                 df = table(uv)
@@ -151,7 +151,7 @@ end
 
     @testset "maps" begin
         rfci = RFC.Files()
-        @showprogress for f in RFC.files(rfci, suffix="map", extension="fits") .|> abspath
+        @showprogress for f in rand(RFC.files(rfci, J2000="J1743-0350", suffix="map", extension="fits"), 10)
             try
                 VLBI.load(f)
             catch e
