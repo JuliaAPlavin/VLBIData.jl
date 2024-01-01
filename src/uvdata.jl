@@ -115,6 +115,8 @@ struct UV{T} <: FieldVector{2, T}
     v::T
 end
 
+UV(uvw::UVW) = UV(uvw.u, uvw.v)
+
 struct Baseline
     array_ix::Int8
     ants_ix::NTuple{2, Int8}
@@ -171,20 +173,20 @@ function table(uvdata::UVData, impl=identity)
             ix = r._
             if_spec = uvdata.freq_windows[r.IF]
             uvw_m = data.uvw_m[ix]
-            uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec, :average)))
+            uvw_wl = UVW(ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec, :average))))
             (;
                 baseline=data.baseline[ix],
                 datetime=data.datetime[ix],
                 stokes=r.STOKES,
                 if_ix=Int8(r.IF),
                 if_spec=if_spec,
-                uv_m=UV(uvw_m[1:2]), w_m=uvw_m[3],
-                uv=UV(uvw_wl[1:2]), w=uvw_wl[3],
+                uv_m=UV(uvw_m), w_m=uvw_m.w,
+                uv=UV(uvw_wl), w=uvw_wl.w,
                 visibility=r.value,
-                weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
             )
         end
         StructArray()
+        @insert __.weight = collect(vec(data.weight))
         filter!(_.weight > 0)
     end
 end
