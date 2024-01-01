@@ -18,6 +18,7 @@ using DateFormats: julian_day
 using PyFormattedStrings
 @reexport using InterferometricModels
 
+include("grouphdu.jl")
 
 include("fitsutils.jl")
 include("uvdata.jl")
