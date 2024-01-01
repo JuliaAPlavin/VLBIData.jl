@@ -3,7 +3,7 @@ module PyCallExt
 using PyCall
 using VLBIData: VLBIData, UVData
 
-function VLBIData.read_data_raw(uvdata::UVData, ::typeof(pyimport)=pyimport)
+function VLBIData.read_data_raw(uvdata::UVData, ::typeof(pyimport))
     pyimport_conda("numpy", "numpy")
     pyimport_conda("astropy", "astropy")
     py"""
