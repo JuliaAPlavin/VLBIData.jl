@@ -115,8 +115,8 @@ struct Baseline
     ants_ix::NTuple{2, Int8}
 end
 
-function read_data_arrays(uvdata::UVData)
-    raw = read_data_raw(uvdata)
+function read_data_arrays(uvdata::UVData, impl=identity)
+    raw = read_data_raw(uvdata, impl)
 
     uvw_keys = @p begin
         [(S"UU", S"VV", S"WW"), (S"UU--", S"VV--", S"WW--"), (S"UU---SIN", S"VV---SIN", S"WW---SIN")]
@@ -154,8 +154,8 @@ function read_data_arrays(uvdata::UVData)
     return data
 end
 
-function table(uvdata::UVData)
-    data = read_data_arrays(uvdata)
+function table(uvdata::UVData, impl=identity)
+    data = read_data_arrays(uvdata, impl)
     @assert ndims(data.visibility) == 4
     
     @p begin
