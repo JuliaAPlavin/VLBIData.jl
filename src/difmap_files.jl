@@ -1,6 +1,7 @@
 function load(T::Type{MultiComponentModel}, src)
     src = abspath(src)  # for RFC.File
-    load(T, src, startswith(first(eachline(src)), r"! \w+") ? Val(:mod) : Val(:fits))
+    line = first(eachline(src))
+    load(T, src, isvalid(line) && startswith(line, r"! \w+") ? Val(:mod) : Val(:fits))
 end
 
 function load(::Type{MultiComponentModel}, src, ::Val{:mod})
