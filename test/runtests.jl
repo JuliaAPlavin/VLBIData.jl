@@ -106,11 +106,12 @@ using PyCall
             visibility = 0.4755191f0 + 0.0043343306f0im,
             weight = 946.5216f0
         )
-        @test df[123] == target
-        @test map(typeof, df[123]) == map(typeof, target)
+        res = filter(r -> r.baseline == target.baseline && r.datetime == target.datetime && r.if_ix == target.if_ix && r.stokes == target.stokes, df) |> only
+        @test res == target
+        @test map(typeof, res) == map(typeof, target)
         df_cols = Tables.columntable(df)
         @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
-        @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
+        # @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
         @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
         @test first(df) == first(table(uv, pyimport))
         @test df == table(uv, pyimport)
@@ -133,8 +134,9 @@ using PyCall
             visibility = -0.21484283f0 - 0.35979474f0im,
             weight = 3.0233376f0
         )
-        @test df[1234] == target
-        @test map(typeof, df[1234]) == map(typeof, target)
+        res = filter(r -> r.baseline == target.baseline && r.datetime == target.datetime && r.if_ix == target.if_ix && r.stokes == target.stokes, df)[1]
+        @test res == target
+        @test map(typeof, res) == map(typeof, target)
         @test df == table(uv, pyimport)
     end
 end

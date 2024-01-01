@@ -164,7 +164,7 @@ function read(hdu::GroupedHDU)
         selectdim(result_data, ndims(result_data), groupix) .= buf_data
         # return (; ptype(buf_grp)..., DATA=buf_data)
     end
-    return (; result_grp..., DATA=permutedims(result_data, reverse(1:ndims(result_data))))
+    return (; result_grp..., DATA=result_data)
 end
 
 function read_data_raw(uvdata::UVData, ::typeof(identity)=identity)
@@ -197,16 +197,17 @@ function read_data_arrays(uvdata::UVData, impl=identity)
         filteronly(_ ⊆ keys(raw))
     end
 
-    count = size(raw[:DATA], 1)
+    count = size(raw[:DATA])[end]
     n_if = length(uvdata.freq_windows)
     n_chan = map(fw -> fw.nchan, uvdata.freq_windows) |> unique |> only
     axarr = KeyedArray(raw[:DATA],
-        _=1:count,
-        DEC=[1], RA=[1],
-        IF=1:n_if,
-        FREQ=1:n_chan,
+        COMPLEX=[:re, :im, :wt],
         STOKES=uvdata.header.stokes,
-        COMPLEX=[:re, :im, :wt])
+        FREQ=1:n_chan,
+        IF=1:n_if,
+        RA=[1], DEC=[1],
+        _=1:count,
+    )
     # drop always-singleton axes
     axarr = axarr[DEC=1, RA=1]
 

@@ -18,7 +18,7 @@ function VLBIData.read_data_raw(uvdata::UVData, ::typeof(pyimport))
         raw = f[0].data
     """
     raw = Dict{Symbol,Any}(Symbol(n) => PyArray(py"to_native_byteorder(raw[$n])"o) for n in py"raw.dtype.names")
-    # raw[:DATA] = permutedims(raw[:DATA], reverse(1:ndims(raw[:DATA])))
+    raw[:DATA] = permutedims(raw[:DATA], reverse(1:ndims(raw[:DATA])))
     return raw
 end
 
