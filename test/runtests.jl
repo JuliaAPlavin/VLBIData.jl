@@ -92,6 +92,21 @@ end
         @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
         @test all(isconcretetype, Tables.schema(df).types)
         @test df[1].uv === VLBI.UV(-6.4672084f7, 8.967541f7)
+        target = (
+            baseline = VLBIData.Baseline(1, (8, 9)),
+            datetime = DateTime("2010-12-24T04:57:34.999"),
+            stokes = :RR,
+            if_ix = Int8(1),
+            if_spec = VLBIData.FrequencyWindow(1.5329522f10u"Hz", 8.0f6u"Hz", 1, 1),
+            uv_m = VLBIData.UV(417953.38f0u"m", 860236.9f0u"m"),
+            w_m = -179245.12f0u"m",
+            uv = VLBIData.UV(2.1377114f7, 4.3998644f7),
+            w = -9.167873f6,
+            visibility = 0.4755191f0 + 0.0043343306f0im,
+            weight = 946.5216f0
+        )
+        @test df[123] == target
+        @test map(typeof, df[123]) == map(typeof, target)
         df_cols = Tables.columntable(df)
         @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
         @test mean(df_cols.uv) === VLBI.UV(-8.926711f6, 1.6110279f7)
