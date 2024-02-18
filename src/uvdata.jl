@@ -5,7 +5,15 @@ Base.@kwdef struct FrequencyWindow
     sideband::Int8
 end
 
-frequency(fw::FrequencyWindow) = fw.freq
+frequency(fw::FrequencyWindow, kind::Symbol=:reference) = if kind == :reference
+	fw.freq
+elseif kind == :average
+	@assert fw.sideband == 1
+	@assert fw.nchan > 0
+	fw.freq + fw.width / 2
+else
+	error("Unsupported kind: $kind")
+end
 
 Base.@kwdef struct UVHeader
     fits::FITSHeader
@@ -43,7 +51,9 @@ Base.@kwdef struct Antenna
 end
 
 function Antenna(hdu_row)
-    @assert isempty(hdu_row.ORBPARM)
+    if !isempty(hdu_row.ORBPARM) && hdu_row.ORBPARM != 0
+        @warn "Antennas with ORBPARM detected, be careful" hdu_row.ORBPARM hdu_row.ANNAME
+    end
     Antenna(; name=Symbol(hdu_row.ANNAME), id=hdu_row.NOSTA)
 end
 Base.@kwdef struct AntArray
@@ -89,22 +99,11 @@ function read_freqs(uvh, fq_table)
     end
 end
 
-function read_data_raw(uvdata::UVData)
-    pyimport_conda("numpy", "numpy")
-    pyimport_conda("astropy", "astropy")
-    py"""
-    import numpy as np
-    import astropy.io.fits
 
-    def to_native_byteorder(arr):
-        dt = arr.dtype.newbyteorder('=')
-        return arr.astype(dt)
-
-    with astropy.io.fits.open(open($(uvdata.path), 'rb'), memmap=False) as f:
-        raw = f[0].data
-    """
-    raw = Dict(n => PyArray(py"to_native_byteorder(raw[$n])"o) for n in py"raw.dtype.names")
-    return raw
+function read_data_raw(uvdata::UVData, ::typeof(identity)=identity)
+    fits = FITS(uvdata.path)
+    hdu = GroupedHDU(fits.fitsfile, 1)
+    read(hdu)
 end
 
 struct UVW{T} <: FieldVector{3, T}
@@ -118,53 +117,55 @@ struct UV{T} <: FieldVector{2, T}
     v::T
 end
 
+UV(uvw::UVW) = UV(uvw.u, uvw.v)
+
 struct Baseline
     array_ix::Int8
     ants_ix::NTuple{2, Int8}
 end
 
-function read_data_arrays(uvdata::UVData)
-    raw = read_data_raw(uvdata)
+function read_data_arrays(uvdata::UVData, impl=identity)
+    raw = read_data_raw(uvdata, impl)
 
     uvw_keys = @p begin
-        [("UU", "VV", "WW"), ("UU--", "VV--", "WW--"), ("UU---SIN", "VV---SIN", "WW---SIN")]
-        filter(_ ⊆ keys(raw))
-        only()
+        [(S"UU", S"VV", S"WW"), (S"UU--", S"VV--", S"WW--"), (S"UU---SIN", S"VV---SIN", S"WW---SIN")]
+        filteronly(_ ⊆ keys(raw))
     end
 
-    count = size(raw["DATA"], 1)
+    count = size(raw[:DATA])[end]
     n_if = length(uvdata.freq_windows)
     n_chan = map(fw -> fw.nchan, uvdata.freq_windows) |> unique |> only
-    axarr = KeyedArray(raw["DATA"],
-        _=1:count,
-        DEC=[1], RA=[1],
-        IF=1:n_if,
-        FREQ=1:n_chan,
+    axarr = KeyedArray(raw[:DATA],
+        COMPLEX=[:re, :im, :wt],
         STOKES=uvdata.header.stokes,
-        COMPLEX=[:re, :im, :wt])
+        FREQ=1:n_chan,
+        IF=1:n_if,
+        RA=[1], DEC=[1],
+        _=1:count,
+    )
     # drop always-singleton axes
     axarr = axarr[DEC=1, RA=1]
 
     uvw_m = UVW.([Float32.(raw[k]) .* (u"c" * u"s") .|> u"m" for k in uvw_keys]...)
-    baseline = map(raw["BASELINE"]) do b
+    baseline = map(raw[:BASELINE]) do b
         bi = floor(Int, b)
         Baseline(round(Int, (b % 1) * 100) + 1, (bi ÷ 256, bi % 256))
     end
     data = (;
         uvw_m,
         baseline,
-        datetime = julian_day.(Float64.(raw["DATE"]) .+ raw["_DATE"]),
+        datetime = julian_day.(Float64.(raw[:DATE]) .+ raw[:_DATE]),
         visibility = complex.(axarr(COMPLEX=:re), axarr(COMPLEX=:im)),
         weight = axarr(COMPLEX=:wt),
     )
-    if haskey(raw, "INTTIM")
-        data = merge(data, (int_time = raw["INTTIM"] .* u"s",))
+    if haskey(raw, :INTTIM)
+        data = merge(data, (int_time = raw[:INTTIM] .* u"s",))
     end
     return data
 end
 
-function table(uvdata::UVData)
-    data = read_data_arrays(uvdata)
+function table(uvdata::UVData, impl=identity)
+    data = read_data_arrays(uvdata, impl)
     @assert ndims(data.visibility) == 4
     
     @p begin
@@ -174,25 +175,26 @@ function table(uvdata::UVData)
             ix = r._
             if_spec = uvdata.freq_windows[r.IF]
             uvw_m = data.uvw_m[ix]
-            uvw_wl = ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec)))
+            uvw_wl = UVW(ustrip.(Unitful.NoUnits, uvw_m ./ (u"c" / frequency(if_spec, :average))))
             (;
                 baseline=data.baseline[ix],
                 datetime=data.datetime[ix],
                 stokes=r.STOKES,
                 if_ix=Int8(r.IF),
                 if_spec=if_spec,
-                uv_m=UV(uvw_m[1:2]), w_m=uvw_m[3],
-                uv=UV(uvw_wl[1:2]), w=uvw_wl[3],
+                uv_m=UV(uvw_m), w_m=uvw_m.w,
+                uv=UV(uvw_wl), w=uvw_wl.w,
                 visibility=r.value,
-                weight=data.weight(; Base.structdiff(r, NamedTuple{(:value,)})...),
             )
         end
         StructArray()
+        @insert __.weight = collect(vec(data.weight))
         filter!(_.weight > 0)
     end
 end
 
 function load(::Type{UVData}, path)
+    path = abspath(path)  # for RFC.File
     fits = FITS(path)
     fh = read_header(fits[1])
     header = UVHeader(fh)
