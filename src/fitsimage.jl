@@ -13,9 +13,12 @@ function load(::Type{FitsImage}, path; read_data=true)
         data = if read_data
             haskey(header, "BSCALE") && @assert header["BSCALE"] == 1
             haskey(header, "BZERO" ) && @assert header["BZERO" ] == 0
-            @assert header["BUNIT"] == "JY/BEAM"
+            header["BUNIT"] ∈ ("JY/BEAM", "JY/PIXEL") || error("Unknown BUNIT: $(header["BUNIT"])")
             data = read(primary)
-            data = dropdims(data, dims=(3, 4))
+            ndims(data) ∈ (2, 4) || error("Unexpected data shape: $(size(data))")
+            if ndims(data) == 4
+                data = dropdims(data, dims=(3, 4))
+            end
             KeyedArray(data; image_named_axiskeys(header)...)
         else
             nothing
