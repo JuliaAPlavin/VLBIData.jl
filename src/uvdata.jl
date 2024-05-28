@@ -68,7 +68,7 @@ strfloat_to_float(x::String) = parse(Float64, replace(x, "D" => "E"))
 
 function AntArray(hdu::TableHDU)
     header = read_header(hdu)
-    antennas = map(Antenna, hdu |> columntable |> rowtable)
+    antennas = map(Antenna, hdu |> columntable |> StructArray)
     AntArray(;
         name=header["ARRNAM"],
         freq=strfloat_to_float(header["FREQ"]) * u"Hz",
@@ -84,7 +84,7 @@ Base.@kwdef struct UVData
 end
 
 function read_freqs(uvh, fq_table)
-    fq_row = fq_table |> rowtable |> only
+    fq_row = fq_table |> columntable |> StructArray |> only
     fq_row = fq_row[Symbol.(["IF FREQ", "CH WIDTH", "TOTAL BANDWIDTH", "SIDEBAND"])]
     fq_row = map(fq_row) do x
         isa(x, Real) ? [x] : x
@@ -205,7 +205,7 @@ function load(::Type{UVData}, path)
         hdu = try
             fits["AIPS AN", i]
         catch err
-            occursin("illegal HDU number", string(err)) && break
+            err isa FITSIO.CFITSIO.CFITSIOError && "illegal HDU number" == err.errmsgshort && break
             rethrow()
         end
         push!(ant_arrays, AntArray(hdu))
