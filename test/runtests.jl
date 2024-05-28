@@ -91,6 +91,22 @@ end
     @test_broken mod = VLBI.load(MultiComponentModel, "./data/map_stacked.fits")
 end
 
+@testitem "img nonstandard header names" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using StaticArrays
+    using Statistics
+    using AxisKeys
+    using VLBIData: frequency
+    cd(dirname(@__FILE__))
+
+    img = VLBI.load("./data/sampling_mean.fits", read_data=true)
+    @test size(img.data) == (256, 256)
+    @test maximum(img.data) ≈ 0.0022970616631588308
+    @test img.data[123, 222] ≈ 1.0227093348779382e-6
+    @test axiskeys(img.data, :ra)  .|> ustrip ≈ -0.3984375:0.003125:0.3984375  atol=1e-3
+    @test_throws "key \"BMAJ\" not found" beam(img)
+end
+
 @testitem "uvf simple" begin
     using Unitful, UnitfulAstro, UnitfulAngles
     using Dates
