@@ -280,7 +280,6 @@ end
 # ╔═╡ 7dada6fd-757c-42e9-964b-f62b7b45503a
 image(
 	convolve(dmod, beam(CircularGaussian, σ=0.05u"mas")),  # model itself: need to use convolve(), otherwise cannot compute brightness for delta functions
-	xyintervals=(0±5, 0±5).*u"mas",  # arguments that define how to turn a model into an image
 	colorscale=SymLog(1e-5), colormap=:inferno,  # regular Makie arguments
 )
 
@@ -451,7 +450,7 @@ Unitful = "~1.20.0"
 UnitfulAngles = "~0.7.2"
 UnitfulAstro = "~1.2.1"
 VLBIData = "~0.3.23"
-VLBIPlots = "~0.1.19"
+VLBIPlots = "~0.1.20"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -460,7 +459,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "21b2d745d7e5aebf8d12fd4997c8e63a4e685542"
+project_hash = "186129d89f974163a3a8fc3402436a50d73ccc4a"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -1201,9 +1200,9 @@ uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[deps.InterferometricModels]]
 deps = ["Accessors", "AccessorsExtra", "IntervalSets", "LinearAlgebra", "StaticArrays", "Unitful", "UnitfulAstro"]
-git-tree-sha1 = "fbc875b786fe9127fba85e253a8ac28902c3ccca"
+git-tree-sha1 = "cb5c6bc8e10699f4c082718de5b1dfde70075d5e"
 uuid = "b395d269-c2ec-4df6-b679-36919ad600ca"
-version = "0.1.17"
+version = "0.1.18"
 weakdeps = ["IntervalArithmetic"]
 
     [deps.InterferometricModels.extensions]
@@ -2116,9 +2115,9 @@ version = "0.3.23"
 
 [[deps.VLBIPlots]]
 deps = ["Accessors", "AccessorsExtra", "AxisKeysExtra", "DataManipulation", "InterferometricModels", "IntervalSets", "InverseFunctions", "LinearAlgebra", "MakieExtra", "RectiGrids", "StaticArrays", "Statistics", "Unitful"]
-git-tree-sha1 = "cacd8f1776b82e113fda289cf610a375494f164f"
+git-tree-sha1 = "0f1b2a889c98cf55648bb07671f555343af74506"
 uuid = "0260e397-8112-41bf-b55a-6b4577718f00"
-version = "0.1.19"
+version = "0.1.20"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
