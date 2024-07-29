@@ -62,12 +62,13 @@ function pixel_area(fi::FitsImage)
     return (ra_step * u"°" .|> u"mas") * (dec_step * u"°" .|> u"mas")
 end
 
-InterferometricModels.beam(src::AbstractString) = FITS(src) do f
+load(Beam, src) = FITS(src) do f
     header = read_header(f[1])
-    beam(header)
+    Beam(header)
 end
-InterferometricModels.beam(fi::FitsImage) = beam(fi.header)
-InterferometricModels.beam(fh::FITSHeader) = beam(EllipticGaussian,
+InterferometricModels.beam(x::Union{FitsImage,FITSHeader}) = Beam(x)
+InterferometricModels.Beam(fi::FitsImage) = Beam(fi.header)
+InterferometricModels.Beam(fh::FITSHeader) = Beam(EllipticGaussian,
     σ_major = InterferometricModels.fwhm_to_σ(fh["BMAJ"] * u"°" .|> u"mas"),
     ratio_minor_major = fh["BMIN"] / fh["BMAJ"],
     pa_major = fh["BPA"] |> deg2rad,
