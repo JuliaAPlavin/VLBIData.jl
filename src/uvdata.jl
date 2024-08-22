@@ -33,7 +33,6 @@ function UVHeader(fh::FITSHeader)
 
     val_to_stokes = Dict(-4=>:LR, -3=>:RL, -2=>:LL, -1=>:RR, 1=>:I, 2=>:Q, 3=>:U, 4=>:V)
     stokes = [val_to_stokes[val] for val in axis_vals(fh, "STOKES")]
-    # @show fh
     date_obs = match(r"([\d-]+)(\(\d+\))?", fh["DATE-OBS"]).captures[1]
 
     return UVHeader(
@@ -78,22 +77,27 @@ end
 
 Base.@kwdef struct UVData
     path::String
-    header::UVHeader
+    header::Union{UVHeader,Nothing}
     freq_windows::Vector{FrequencyWindow}
     ant_arrays::Vector{AntArray}
 end
 
 function read_freqs(uvh, fq_table)
     fq_row = fq_table |> columntable |> StructArray |> only
-    fq_row = fq_row[Symbol.(["IF FREQ", "CH WIDTH", "TOTAL BANDWIDTH", "SIDEBAND"])]
+    # fq_row = fq_row[Symbol.(["IF FREQ", "CH WIDTH", "TOTAL BANDWIDTH", "SIDEBAND"])]
+    nrows = @p fq_row values() filter(_ isa AbstractVector) (isempty(__) ? 1 : length(__[1]))
     fq_row = map(fq_row) do x
-        isa(x, Real) ? [x] : x
+        isa(x, Real) ? fill(x, nrows) : x
     end
+    ref_freq = @oget frequency(uvh) read_header(fq_table)["REF_FREQ"]*u"Hz"
     res = map(fq_row |> rowtable) do r
-        nchan = Int(r.var"TOTAL BANDWIDTH" / r.var"CH WIDTH")
+        total_bw = @oget r[S"TOTAL BANDWIDTH"] r[S"TOTAL_BANDWIDTH"]
+        ch_width = @oget r[S"CH WIDTH"] r[S"CH_WIDTH"]
+        curfreq = @oget r[S"IF FREQ"] r[S"BANDFREQ"]
+        nchan = Int(total_bw / ch_width)
         FrequencyWindow(;
-            freq=frequency(uvh) + r.var"IF FREQ" * u"Hz",
-            width=r.var"TOTAL BANDWIDTH" * u"Hz",
+            freq=ref_freq + curfreq * u"Hz",
+            width=total_bw * u"Hz",
             nchan,
             sideband=r.SIDEBAND,
         )
@@ -103,6 +107,9 @@ end
 
 function read_data_raw(uvdata::UVData, ::typeof(identity)=identity)
     fits = FITS(uvdata.path)
+    if haskey(fits, "UV_DATA")
+        return StructArray(fits["UV_DATA"] |> columntable)
+    end
     hdu = GroupedHDU(fits.fitsfile, 1)
     read(hdu)
 end
@@ -194,16 +201,28 @@ function table(uvdata::UVData, impl=identity)
     end
 end
 
+Base.haskey(f::FITS, name::AbstractString) = try
+    f[name]
+    return true
+catch e
+    e isa FITSIO.CFITSIO.CFITSIOError && e.errcode == 301 ? (return false) : rethrow()
+end
+
 function load(::Type{UVData}, path)
     path = abspath(path)  # for RFC.File
     fits = FITS(path)
     fh = read_header(fits[1])
-    header = UVHeader(fh)
-    freq_windows = read_freqs(header, fits["AIPS FQ"])
+    header = try
+        UVHeader(fh)
+    catch e
+        e isa KeyError || rethrow()
+        nothing
+    end
+    freq_windows = read_freqs(header, @oget fits["AIPS FQ"] fits["FREQUENCY"])
     ant_arrays = AntArray[]
     for i in Iterators.countfrom(1)
         hdu = try
-            fits["AIPS AN", i]
+            haskey(fits, "AIPS AN") ? fits["AIPS AN", i] : fits["ARRAY_GEOMETRY", i]
         catch err
             err isa FITSIO.CFITSIO.CFITSIOError && "illegal HDU number" == err.errmsgshort && break
             rethrow()
