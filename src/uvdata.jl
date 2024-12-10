@@ -190,6 +190,8 @@ UV(x::NamedTuple) = UV(x.spec)
 
 InterferometricModels.visibility(x::NamedTuple) = x.value
 
+frequency(x::NamedTuple) = frequency(x.if_spec)
+
 
 function read_data_arrays(uvdata::UVData, impl=identity)
     raw = read_data_raw(uvdata, impl)
