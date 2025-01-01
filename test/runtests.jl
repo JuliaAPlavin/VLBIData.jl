@@ -22,7 +22,7 @@ end
     cd(dirname(@__FILE__))
 
     img = VLBI.load("./data/map.fits", read_data=false)
-    @test img.data === nothing
+    @test_throws "not loaded" KeyedArray(img)
 
     @test VLBI.pixel_size(img) ≈ 0.2u"mas"  rtol=1e-5
     @test VLBI.pixel_steps(img) ≈ [-0.2u"mas", 0.2u"mas"]  rtol=1e-5
@@ -47,14 +47,15 @@ end
     cd(dirname(@__FILE__))
 
     img = VLBI.load("./data/map.fits", read_data=true)
-    @test size(img.data) == (512, 512)
-    @test mean(img.data) ≈ 2.4069064f-5
-    @test maximum(img.data) ≈ 0.021357307f0
-    @test img.data[123, 456] ≈ -7.372097f-5
-    @test axiskeys(img.data, :ra)  .|> ustrip ≈ 51:-0.2:-51.2  atol=1e-3
-    @test axiskeys(img.data, :dec) .|> ustrip ≈ -51.2:0.2:51   atol=1e-3
-    @test axiskeys(img.data, :ra) isa AbstractRange
-    @test axiskeys(img.data, :dec) isa AbstractRange
+    KA = KeyedArray(img)
+    @test size(KA) == (512, 512)
+    @test mean(KA) ≈ 2.4069064f-5
+    @test maximum(KA) ≈ 0.021357307f0
+    @test KA[123, 456] ≈ -7.372097f-5
+    @test axiskeys(KA, :ra)  .|> ustrip ≈ 51:-0.2:-51.2  atol=1e-3
+    @test axiskeys(KA, :dec) .|> ustrip ≈ -51.2:0.2:51   atol=1e-3
+    @test axiskeys(KA, :ra) isa AbstractRange
+    @test axiskeys(KA, :dec) isa AbstractRange
 end
 
 @testitem "img read clean" begin
@@ -81,10 +82,11 @@ end
     cd(dirname(@__FILE__))
 
     img = VLBI.load("./data/map_stacked.fits", read_data=true)
-    @test size(img.data) == (512, 512)
-    @test maximum(img.data) ≈ 0.5073718945185344
-    @test img.data[123, 456] ≈ -1.0848011697817128e-5
-    @test axiskeys(img.data, :ra)  .|> ustrip ≈ 25.5:-0.1:-25.6  atol=1e-3
+    KA = KeyedArray(img)
+    @test size(KA) == (512, 512)
+    @test maximum(KA) ≈ 0.5073718945185344
+    @test KA[123, 456] ≈ -1.0848011697817128e-5
+    @test axiskeys(KA, :ra)  .|> ustrip ≈ 25.5:-0.1:-25.6  atol=1e-3
     bm = beam(img)
     @test fwhm_min(bm) == fwhm_max(bm)
 
@@ -100,10 +102,11 @@ end
     cd(dirname(@__FILE__))
 
     img = VLBI.load("./data/sampling_mean.fits", read_data=true)
-    @test size(img.data) == (256, 256)
-    @test maximum(img.data) ≈ 0.0022970616631588308
-    @test img.data[123, 222] ≈ 1.0227093348779382e-6
-    @test axiskeys(img.data, :ra)  .|> ustrip ≈ -0.3984375:0.003125:0.3984375  atol=1e-3
+    KA = KeyedArray(img)
+    @test size(KA) == (256, 256)
+    @test maximum(KA) ≈ 0.0022970616631588308
+    @test KA[123, 222] ≈ 1.0227093348779382e-6
+    @test axiskeys(KA, :ra)  .|> ustrip ≈ -0.3984375:0.003125:0.3984375  atol=1e-3
     @test_throws "key \"BMAJ\" not found" beam(img)
 end
 
