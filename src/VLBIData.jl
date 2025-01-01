@@ -1,7 +1,7 @@
 module VLBIData
 
 const VLBI = VLBIData
-export VLBI, table
+export VLBI, table, uvtable
 
 using Reexport
 using DataManipulation
@@ -18,6 +18,9 @@ using DelimitedFiles: readdlm
 using DateFormats: julian_day
 using PyFormattedStrings
 @reexport using InterferometricModels
+using Statistics
+using Uncertain
+
 
 include("grouphdu.jl")
 

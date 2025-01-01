@@ -143,8 +143,10 @@ end
     using Dates
     using PyCall
     using VLBIData: frequency
+    using VLBIData.Uncertain
     using Statistics
     using StaticArrays
+    using DataManipulation
     using Tables
     cd(dirname(@__FILE__))
 
@@ -160,6 +162,7 @@ end
     @test map(a -> a.id, antarr.antennas) == 1:10
     @test map(a -> a.name, antarr.antennas) == [:BR, :FD, :HN, :KP, :LA, :MK, :NL, :OV, :PT, :SC]
 
+    # old table extraction:
     df = table(uv)
     @test Tables.rowaccess(df)
     @test length(df) == 160560
@@ -188,6 +191,21 @@ end
     @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
     @test first(df) == first(table(uv, pyimport))
     @test df == table(uv, pyimport)
+
+    # new table extraction:
+    tbl = uvtable(uv; stokes=UniversalSet)
+    @test length(tbl) == 160560
+    tbl = uvtable(uv)
+    @test length(tbl) == 80280
+    @test isconcretetype(eltype(tbl))
+    @test tbl[12345] == (
+        datetime = DateTime("2010-12-24T08:06:25"),
+        stokes = :RR,
+        if_ix = 6,
+        if_spec = VLBI.FrequencyWindow(1.5369459f10u"Hz", 8.0f6u"Hz", 1, 1),
+        spec = VLBI.VisSpec(VLBI.Baseline(1, (2, 9), (:FD, :PT)), [4.282665f6, -2.8318948f7]),
+        value = (0.48758677f0 - 0.09014242f0im) ±ᵤ 0.040410895f0
+    )
 end
 
 @testitem "uvf multichannel" begin
