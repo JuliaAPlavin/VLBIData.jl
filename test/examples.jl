@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.42
+# v0.19.43
 
 using Markdown
 using InteractiveUtils
@@ -272,10 +272,17 @@ Here's how one can display the model components in the image plane:
 
 # ╔═╡ eab32eff-e4df-4465-a19d-d807266fd699
 let
-	fig, _, _ = poly(dmod, alpha=0.5)
+	poly(dmod, alpha=0.5)
 	scatter!(dmod, color=:black)
-	fig
+	current_figure()
 end
+
+# ╔═╡ 7dada6fd-757c-42e9-964b-f62b7b45503a
+image(
+	convolve(dmod, beam(CircularGaussian, σ=0.05u"mas")),  # model itself: need to use convolve(), otherwise cannot compute brightness for delta functions
+	xyintervals=(0±5, 0±5).*u"mas",  # arguments that define how to turn a model into an image
+	colorscale=SymLog(1e-5), colormap=:inferno,  # regular Makie arguments
+)
 
 # ╔═╡ bd6255c9-fe17-4a29-8a5c-d9b734ae7c5c
 md"""
@@ -431,20 +438,20 @@ VLBIPlots = "0260e397-8112-41bf-b55a-6b4577718f00"
 
 [compat]
 AxisKeys = "~0.2.14"
-CairoMakie = "~0.12.3"
+CairoMakie = "~0.12.5"
 DataManipulation = "~0.1.16"
 Difmap = "~0.1.18"
 DisplayAs = "~0.1.6"
 IntervarrrSets = "~0.1.2"
-MakieExtra = "~0.1.11"
+MakieExtra = "~0.1.15"
 PlutoUI = "~0.7.59"
 RectiGrids = "~0.1.18"
-StaticArrays = "~1.9.5"
+StaticArrays = "~1.9.7"
 Unitful = "~1.20.0"
 UnitfulAngles = "~0.7.2"
 UnitfulAstro = "~1.2.1"
 VLBIData = "~0.3.23"
-VLBIPlots = "~0.1.17"
+VLBIPlots = "~0.1.19"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -453,7 +460,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "dc921d06ca5c99744d4f0187de34c20b63739072"
+project_hash = "21b2d745d7e5aebf8d12fd4997c8e63a4e685542"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -492,10 +499,10 @@ weakdeps = ["AxisKeys", "IntervalSets", "Requires", "StaticArrays", "StructArray
     AccessorsUnitfulExt = "Unitful"
 
 [[deps.AccessorsExtra]]
-deps = ["Accessors", "CompositionsBase", "ConstructionBase", "DataPipes", "InverseFunctions", "Reexport"]
-git-tree-sha1 = "347ceade87b396742f7191a587055dcb1df13706"
+deps = ["Accessors", "CompositionsBase", "ConstructionBase", "DataPipes", "InverseFunctions", "LinearAlgebra", "Reexport", "Test"]
+git-tree-sha1 = "00e29911b476d7bd30a5419e4b691f319ea31d77"
 uuid = "33016aad-b69d-45be-9359-82a41f556fd4"
-version = "0.1.71"
+version = "0.1.73"
 
     [deps.AccessorsExtra.extensions]
     ColorTypesExt = "ColorTypes"
@@ -505,12 +512,10 @@ version = "0.1.71"
     DomainSetsExt = "DomainSets"
     FlexiMapsExt = "FlexiMaps"
     FlexiMapsStructArraysExt = ["FlexiMaps", "StructArrays"]
-    LinearAlgebraExt = "LinearAlgebra"
     SkipperExt = "Skipper"
     StaticArraysExt = "StaticArrays"
     StructArraysExt = "StructArrays"
     TablesExt = "Tables"
-    TestExt = "Test"
     URIsExt = "URIs"
 
     [deps.AccessorsExtra.weakdeps]
@@ -520,12 +525,10 @@ version = "0.1.71"
     Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
     DomainSets = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
     FlexiMaps = "6394faf6-06db-4fa8-b750-35ccc60383f7"
-    LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
     Skipper = "fc65d762-6112-4b1c-b428-ad0792653d81"
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
     StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
     Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-    Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
     URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [[deps.Adapt]]
@@ -559,9 +562,9 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
 [[deps.Automa]]
 deps = ["PrecompileTools", "TranscodingStreams"]
-git-tree-sha1 = "588e0d680ad1d7201d4c6a804dcb1cd9cba79fbb"
+git-tree-sha1 = "014bc22d6c400a7703c0f5dc1fdc302440cf88be"
 uuid = "67c07d97-cdcb-5c2c-af73-a7f9c32a568b"
-version = "1.0.3"
+version = "1.0.4"
 
 [[deps.AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -603,18 +606,20 @@ version = "0.2.14"
 
 [[deps.AxisKeysExtra]]
 deps = ["AxisKeys", "Reexport", "StructArrays"]
-git-tree-sha1 = "de5cf555b816a9ea5a63cefba6ebefc5d4f36ccb"
+git-tree-sha1 = "6b533fa97b6fdc3d48006b8a410df439aeb14ab9"
 uuid = "b7a0d2b7-1990-46dc-b5dd-87820ecd1b09"
-version = "0.1.10"
+version = "0.1.11"
 
     [deps.AxisKeysExtra.extensions]
     DimensionalDataExt = "DimensionalData"
+    GeoMakieExt = "GeoMakie"
     MakieExt = "Makie"
     RectiGridsExt = "RectiGrids"
     UnitfulExt = "Unitful"
 
     [deps.AxisKeysExtra.weakdeps]
     DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
+    GeoMakie = "db073c08-6b98-4ee5-b6a4-5efafb3259c6"
     Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
     RectiGrids = "8ac6971d-971d-971d-971d-971d5ab1a71a"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
@@ -662,9 +667,9 @@ version = "1.0.5"
 
 [[deps.CairoMakie]]
 deps = ["CRC32c", "Cairo", "Cairo_jll", "Colors", "FileIO", "FreeType", "GeometryBasics", "LinearAlgebra", "Makie", "PrecompileTools"]
-git-tree-sha1 = "3441d68ea63944a2b9b6de76603ec1c8b0fd4e3e"
+git-tree-sha1 = "e4da5095557f24713bae4c9f50e34ff4d3b959c0"
 uuid = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-version = "0.12.3"
+version = "0.12.5"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "CompilerSupportLibraries_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -783,9 +788,9 @@ weakdeps = ["IntervalSets"]
     IntervalSetsExt = "IntervalSets"
 
 [[deps.DataPipes]]
-git-tree-sha1 = "79843dda2bbd58d62123027d38051a1bf0b646eb"
+git-tree-sha1 = "39dd85718246d2a13b5f3659af21e009ddf4400b"
 uuid = "02685ad9-2d12-40c3-9f73-c6aeda6a7ff5"
-version = "0.3.16"
+version = "0.3.17"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -822,9 +827,9 @@ uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
 
 [[deps.DelaunayTriangulation]]
 deps = ["EnumX", "ExactPredicates", "Random"]
-git-tree-sha1 = "1755070db557ec2c37df2664c75600298b0c1cfc"
+git-tree-sha1 = "078c716cbb032242df18b960e8b1fec6b1b0b9f9"
 uuid = "927a84f5-c5f4-47a5-9785-b46e178433df"
-version = "1.0.3"
+version = "1.0.5"
 
 [[deps.DelimitedFiles]]
 deps = ["Mmap"]
@@ -1046,9 +1051,9 @@ version = "1.0.14+0"
 
 [[deps.GeoInterface]]
 deps = ["Extents"]
-git-tree-sha1 = "801aef8228f7f04972e596b09d4dba481807c913"
+git-tree-sha1 = "9fff8990361d5127b770e3454488360443019bb3"
 uuid = "cf35fbd7-0cd7-5166-be24-54bfbe79505f"
-version = "1.3.4"
+version = "1.3.5"
 
 [[deps.GeometryBasics]]
 deps = ["EarCut_jll", "Extents", "GeoInterface", "IterTools", "LinearAlgebra", "StaticArrays", "StructArrays", "Tables"]
@@ -1186,9 +1191,9 @@ version = "0.1.5"
 
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "be50fe8df3acbffa0274a744f1a99d29c45a57f4"
+git-tree-sha1 = "14eb2b542e748570b56446f4c50fbfb2306ebc45"
 uuid = "1d5cc7b8-4909-519e-a0f8-d0f5ad9712d0"
-version = "2024.1.0+0"
+version = "2024.2.0+0"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -1196,9 +1201,9 @@ uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[deps.InterferometricModels]]
 deps = ["Accessors", "AccessorsExtra", "IntervalSets", "LinearAlgebra", "StaticArrays", "Unitful", "UnitfulAstro"]
-git-tree-sha1 = "585992f1464c98a1cac68155290f8504d50ff9e2"
+git-tree-sha1 = "fbc875b786fe9127fba85e253a8ac28902c3ccca"
 uuid = "b395d269-c2ec-4df6-b679-36919ad600ca"
-version = "0.1.16"
+version = "0.1.17"
 weakdeps = ["IntervalArithmetic"]
 
     [deps.InterferometricModels.extensions]
@@ -1459,9 +1464,9 @@ version = "0.1.4"
 
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "oneTBB_jll"]
-git-tree-sha1 = "80b2833b56d466b3858d565adcd16a4a05f2089b"
+git-tree-sha1 = "f046ccd0c6db2832a9f639e2c669c6fe867e5f4f"
 uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
-version = "2024.1.0+0"
+version = "2024.2.0+0"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -1471,21 +1476,21 @@ version = "0.5.13"
 
 [[deps.Makie]]
 deps = ["Animations", "Base64", "CRC32c", "ColorBrewer", "ColorSchemes", "ColorTypes", "Colors", "Contour", "Dates", "DelaunayTriangulation", "Distributions", "DocStringExtensions", "Downloads", "FFMPEG_jll", "FileIO", "FilePaths", "FixedPointNumbers", "Format", "FreeType", "FreeTypeAbstraction", "GeometryBasics", "GridLayoutBase", "ImageIO", "InteractiveUtils", "IntervalSets", "Isoband", "KernelDensity", "LaTeXStrings", "LinearAlgebra", "MacroTools", "MakieCore", "Markdown", "MathTeXEngine", "Observables", "OffsetArrays", "Packing", "PlotUtils", "PolygonOps", "PrecompileTools", "Printf", "REPL", "Random", "RelocatableFolders", "Scratch", "ShaderAbstractions", "Showoff", "SignedDistanceFields", "SparseArrays", "Statistics", "StatsBase", "StatsFuns", "StructArrays", "TriplotBase", "UnicodeFun", "Unitful"]
-git-tree-sha1 = "e11b0666b457e3bb60119f2ed4d063d2b68954d3"
+git-tree-sha1 = "863b9e666b5a099c8835e85476a5834f9d77c4c1"
 uuid = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-version = "0.21.3"
+version = "0.21.5"
 
 [[deps.MakieCore]]
 deps = ["ColorTypes", "GeometryBasics", "IntervalSets", "Observables"]
-git-tree-sha1 = "638bc817096742e8302f7b0b972ee5701fe00e97"
+git-tree-sha1 = "c1c950560397ee68ad7302ee0e3efa1b07466a2f"
 uuid = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
-version = "0.8.3"
+version = "0.8.4"
 
 [[deps.MakieExtra]]
 deps = ["Accessors", "DataManipulation", "DataPipes", "InverseFunctions", "Makie", "PyFormattedStrings", "Reexport"]
-git-tree-sha1 = "ee3425f2a18cc51d4d1056e4be4fbb0a5ec50767"
+git-tree-sha1 = "ffe3d3361a47ef19fc7ef4c5dcd2bd35971fefab"
 uuid = "54e234d5-9986-40d8-815f-a5e42de435f6"
-version = "0.1.11"
+version = "0.1.15"
 
 [[deps.MappedArrays]]
 git-tree-sha1 = "2dab0221fe2b0f2cb6754eaa743cc266339f527e"
@@ -1573,9 +1578,9 @@ uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
 version = "0.5.5"
 
 [[deps.OffsetArrays]]
-git-tree-sha1 = "e64b4f5ea6b7389f6f046d13d4896a8f9c1ba71e"
+git-tree-sha1 = "1a27764e945a152f7ca7efa04de513d473e9542e"
 uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.14.0"
+version = "1.14.1"
 weakdeps = ["Adapt"]
 
     [deps.OffsetArrays.extensions]
@@ -1930,9 +1935,9 @@ version = "0.1.1"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "6e00379a24597be4ae1ee6b2d882e15392040132"
+git-tree-sha1 = "eeafab08ae20c62c44c8399ccb9354a04b80db50"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.5"
+version = "1.9.7"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
@@ -2038,9 +2043,9 @@ uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 version = "0.10.0"
 
 [[deps.TranscodingStreams]]
-git-tree-sha1 = "a947ea21087caba0a798c5e494d0bb78e3a1a3a0"
+git-tree-sha1 = "60df3f8126263c0d6b357b9a1017bb94f53e3582"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.10.9"
+version = "0.11.0"
 weakdeps = ["Random", "Test"]
 
     [deps.TranscodingStreams.extensions]
@@ -2099,7 +2104,7 @@ version = "1.2.1"
 
 [[deps.VLBIData]]
 deps = ["AxisKeys", "DataManipulation", "DateFormats", "Dates", "DelimitedFiles", "FITSIO", "InterferometricModels", "PyFormattedStrings", "Reexport", "StaticArrays", "StructArrays", "Tables", "Unitful", "UnitfulAngles", "UnitfulAstro"]
-git-tree-sha1 = "446a9627fcc8d1e74bcf8dc4cddb1ea53876e211"
+git-tree-sha1 = "76259df8338273e3e0dbbfc6dc0c89b7c88ea327"
 uuid = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
 version = "0.3.23"
 
@@ -2110,10 +2115,10 @@ version = "0.3.23"
     PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 
 [[deps.VLBIPlots]]
-deps = ["Accessors", "AxisKeysExtra", "DataManipulation", "InterferometricModels", "IntervalSets", "InverseFunctions", "LinearAlgebra", "MakieExtra", "RectiGrids", "StaticArrays", "Statistics", "Unitful"]
-git-tree-sha1 = "041c22e530b1e798a21bdbdbd4d9e399c1e15b86"
+deps = ["Accessors", "AccessorsExtra", "AxisKeysExtra", "DataManipulation", "InterferometricModels", "IntervalSets", "InverseFunctions", "LinearAlgebra", "MakieExtra", "RectiGrids", "StaticArrays", "Statistics", "Unitful"]
+git-tree-sha1 = "cacd8f1776b82e113fda289cf610a375494f164f"
 uuid = "0260e397-8112-41bf-b55a-6b4577718f00"
-version = "0.1.17"
+version = "0.1.19"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -2123,15 +2128,15 @@ version = "1.0.0"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "52ff2af32e591541550bd753c0da8b9bc92bb9d9"
+git-tree-sha1 = "d9717ce3518dc68a99e6b96300813760d887a01d"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.12.7+0"
+version = "2.13.1+0"
 
 [[deps.XSLT_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "Pkg", "XML2_jll", "Zlib_jll"]
-git-tree-sha1 = "91844873c4085240b95e795f692c4cec4d805f8a"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "XML2_jll", "Zlib_jll"]
+git-tree-sha1 = "a54ee957f4c86b526460a720dbc882fa5edcbefc"
 uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
-version = "1.1.34+0"
+version = "1.1.41+0"
 
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
@@ -2171,9 +2176,9 @@ version = "0.1.1+0"
 
 [[deps.Xorg_libxcb_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
-git-tree-sha1 = "b4bfde5d5b652e22b9c790ad00af08b6d042b97d"
+git-tree-sha1 = "bcd466676fef0878338c61e655629fa7bbc69d8e"
 uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
-version = "1.15.0+0"
+version = "1.17.0+0"
 
 [[deps.Xorg_xtrans_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2321,6 +2326,7 @@ version = "3.5.0+0"
 # ╟─b2a45d8a-c0d6-4e27-8f57-0ff9db75ecc8
 # ╟─e7500919-4325-47b8-87a4-c668f4e43576
 # ╠═eab32eff-e4df-4465-a19d-d807266fd699
+# ╠═7dada6fd-757c-42e9-964b-f62b7b45503a
 # ╟─bd6255c9-fe17-4a29-8a5c-d9b734ae7c5c
 # ╠═9b0f96da-6326-4e04-8956-ffef0cd9a1e7
 # ╟─47d146c8-47f0-45b4-acf7-7e1c080d22f2
