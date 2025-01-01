@@ -196,6 +196,23 @@ end
     @test df == table(uv, pyimport)
 end
 
+@testitem "uvf EHT 3" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using Dates
+    using PyCall
+    using VLBIData: frequency
+    using Statistics
+    using StaticArrays
+    using Tables
+    cd(dirname(@__FILE__))
+
+    uv = VLBI.load(VLBI.UVData, "./data/datafile_01-01_230GHz.uvfits")
+    @test length(uv.freq_windows) == 1
+    df = table(uv)
+    @test df[1].visibility ≈ -0.0061733737f0 + 0.052109245f0im
+    @test df == table(uv, pyimport)
+end
+
 @testitem "difmap model" begin
     using Unitful, UnitfulAstro, UnitfulAngles
     cd(dirname(@__FILE__))
