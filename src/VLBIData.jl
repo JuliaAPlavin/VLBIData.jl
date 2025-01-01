@@ -26,4 +26,11 @@ include("fitsimage.jl")
 include("difmap_files.jl")
 include("loading.jl")
 
+using PrecompileTools
+@compile_workload begin
+    VLBI.load(joinpath(@__DIR__, "../test/data/map.fits"))
+    VLBI.load(joinpath(@__DIR__, "../test/data/vis.fits"))
+    VLBI.load(joinpath(@__DIR__, "../test/data/difmap_model_empty.mod"))
+end
+
 end
