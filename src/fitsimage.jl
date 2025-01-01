@@ -62,7 +62,7 @@ function pixel_area(fi::FitsImage)
     return (ra_step * u"°" .|> u"mas") * (dec_step * u"°" .|> u"mas")
 end
 
-load(Beam, src) = FITS(abspath(src)) do f
+load(::Type{Beam}, src) = FITS(abspath(src)) do f
     header = read_header(f[1])
     Beam(header)
 end
