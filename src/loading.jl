@@ -1,5 +1,7 @@
 function guess_type(src)
-    if startswith(first(eachline(src)), "! Center")
+    src = abspath(src)  # for RFC.File
+    line = first(eachline(src))
+    if isvalid(line) && startswith(line, r"! \w+")
         MultiComponentModel
     else
         ctypes = try

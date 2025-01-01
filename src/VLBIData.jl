@@ -1,13 +1,13 @@
 module VLBIData
 
 const VLBI = VLBIData
-export VLBI
+export VLBI, table
 
 using Reexport
-using DataPipes
+using DataManipulation
 using Tables
-using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames
-using PyCall
+import Tables: table
+using FITSIO: FITSHeader, FITS, TableHDU, read_header, colnames, FITSIO
 using Dates
 using Unitful, UnitfulAstro, UnitfulAngles
 using AxisKeys
@@ -15,8 +15,10 @@ using StaticArrays
 using StructArrays
 using DelimitedFiles: readdlm
 using DateFormats: julian_day
+using PyFormattedStrings
 @reexport using InterferometricModels
 
+include("grouphdu.jl")
 
 include("fitsutils.jl")
 include("uvdata.jl")
