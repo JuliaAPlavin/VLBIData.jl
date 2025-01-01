@@ -234,6 +234,7 @@ function read_data_arrays(uvdata::UVData, impl=identity)
 end
 
 function table(uvdata::UVData, impl=identity)
+    Base.depwarn("table(::UVData) is deprecated, use uvtable(::UVData) instead", :table, force=true)
     data = read_data_arrays(uvdata, impl)
     @assert ndims(data.visibility) == 4
     
