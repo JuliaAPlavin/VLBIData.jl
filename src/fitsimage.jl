@@ -13,9 +13,12 @@ function load(::Type{FitsImage}, path; read_data=true)
         data = if read_data
             haskey(header, "BSCALE") && @assert header["BSCALE"] == 1
             haskey(header, "BZERO" ) && @assert header["BZERO" ] == 0
-            @assert header["BUNIT"] == "JY/BEAM"
+            header["BUNIT"] ∈ ("JY/BEAM", "JY/PIXEL") || error("Unknown BUNIT: $(header["BUNIT"])")
             data = read(primary)
-            data = dropdims(data, dims=(3, 4))
+            ndims(data) ∈ (2, 4) || error("Unexpected data shape: $(size(data))")
+            if ndims(data) == 4
+                data = dropdims(data, dims=(3, 4))
+            end
             KeyedArray(data; image_named_axiskeys(header)...)
         else
             nothing
@@ -30,28 +33,28 @@ AxisKeys.named_axiskeys(fi::FitsImage) = image_named_axiskeys(fi.header)
 image_axiskeys(fh::FITSHeader) = values(image_named_axiskeys(fh))
 function image_named_axiskeys(fh::FITSHeader)
     mul = 1u"°" |> u"mas"
-    ra  = axis_vals(fh, "RA---SIN", zero_reference=true) * mul
-    dec = axis_vals(fh, "DEC--SIN", zero_reference=true) * mul
+    ra  = axis_vals(fh, r"RA-+SIN", zero_reference=true) * mul
+    dec = axis_vals(fh, r"DEC-+SIN", zero_reference=true) * mul
     (; ra, dec)
 end
 
 function pixel_size(fi::FitsImage)
-    ra_step  = axis_dict(fi.header, "RA---SIN")["CDELT"] |> abs
-    dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"] |> abs
+    ra_step  = axis_dict(fi.header, r"RA-+SIN")["CDELT"] |> abs
+    dec_step = axis_dict(fi.header, r"DEC-+SIN")["CDELT"] |> abs
     @assert ra_step == dec_step
     return ra_step * u"°" .|> u"mas"
 end
 
 function pixel_steps(fi::FitsImage)
-    ra_step  = axis_dict(fi.header, "RA---SIN")["CDELT"]
-    dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"]
+    ra_step  = axis_dict(fi.header, r"RA-+SIN")["CDELT"]
+    dec_step = axis_dict(fi.header, r"DEC-+SIN")["CDELT"]
     @assert abs(ra_step) == abs(dec_step)
     return SVector(ra_step, dec_step) .* u"°" .|> u"mas"
 end
 
 function pixel_area(fi::FitsImage)
-    ra_step  = axis_dict(fi.header, "RA---SIN")["CDELT"] |> abs
-    dec_step = axis_dict(fi.header, "DEC--SIN")["CDELT"] |> abs
+    ra_step  = axis_dict(fi.header, r"RA-+SIN")["CDELT"] |> abs
+    dec_step = axis_dict(fi.header, r"DEC-+SIN")["CDELT"] |> abs
     return (ra_step * u"°" .|> u"mas") * (dec_step * u"°" .|> u"mas")
 end
 
