@@ -117,10 +117,3 @@ function save(fname, image::KeyedArray{<:Any,2}; kwargs...)
         end
     end
 end
-
-# XXX: piracy, https://github.com/JuliaAstro/FITSIO.jl/pull/199
-FITSIO.FITSHeader(cards::AbstractVector{<:NamedTuple}) = FITSHeader(
-    map((@o _.key), cards),
-    map((@o _.value), cards),
-    map((@o _.comment), cards),
-)

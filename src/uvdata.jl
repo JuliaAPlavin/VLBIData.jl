@@ -201,13 +201,6 @@ function table(uvdata::UVData, impl=identity)
     end
 end
 
-Base.haskey(f::FITS, name::AbstractString) = try
-    f[name]
-    return true
-catch e
-    e isa FITSIO.CFITSIO.CFITSIOError && e.errcode == 301 ? (return false) : rethrow()
-end
-
 function load(::Type{UVData}, path)
     path = abspath(path)  # for RFC.File
     fits = FITS(path)
