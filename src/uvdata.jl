@@ -235,6 +235,10 @@ end
 
 function table(uvdata::UVData, impl=identity)
     Base.depwarn("table(::UVData) is deprecated, use uvtable(::UVData) instead", :table, force=true)
+    _table(uvdata, impl)
+end
+
+function _table(uvdata::UVData, impl=identity)
     data = read_data_arrays(uvdata, impl)
     @assert ndims(data.visibility) == 4
     
@@ -264,7 +268,7 @@ function table(uvdata::UVData, impl=identity)
 end
 
 
-uvtable(uvd::VLBI.UVData; stokes=(:I, :LL, :RR)) = @p uvd table filter(_.stokes ∈ stokes) map((;
+uvtable(uvd::VLBI.UVData; stokes=(:I, :LL, :RR)) = @p uvd _table filter(_.stokes ∈ stokes) map((;
 	_.datetime, _.stokes, _.if_ix, _.if_spec,
 	spec=VisSpec(_.baseline, UV(_.uv)),
 	value=U.Value(_.visibility, 1/√_.weight),
