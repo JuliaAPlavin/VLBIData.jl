@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.18.0
+# v0.19.38
 
 using Markdown
 using InteractiveUtils
@@ -14,7 +14,7 @@ using PyPlotUtils; pyplot_style!()
 using VLBIPlots
 
 # ╔═╡ 7a4e96c8-8ab0-4338-82b5-e07f0afdaae5
-using DataPipes
+using DataManipulation
 
 # ╔═╡ 9c6efe8c-385e-4446-acdf-bd19cffe31e2
 using DisplayAs: Text as AsText
@@ -313,7 +313,7 @@ Visually compare the `VLBIData` plot with the one produced by `difmap`. They are
 """
 
 # ╔═╡ 95d32985-b924-43eb-85d2-115c95b3798c
-uvtbl_difmap = @p uvtbl_full |> filter(_.stokes == :RR) |> mutate(
+uvtbl_difmap = @p uvtbl_full |> filter(_.stokes == :RR) |> map(
 	_.uv.u >= 0 ?  # difmap puts all uv points into the right semiplane
 		(;_.uv, _.visibility) :
 		(;uv=-_.uv, visibility=conj(_.visibility))
