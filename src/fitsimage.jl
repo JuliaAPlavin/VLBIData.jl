@@ -4,6 +4,8 @@ Base.@kwdef struct FitsImage{TD}
     data::TD
 end
 
+AxisKeys.KeyedArray(fimg::FitsImage) = isnothing(fimg.data) ? error("Image data not loaded") : fimg.data::KeyedArray
+
 function load(::Type{FitsImage}, path; read_data=true)
     path = abspath(path)  # for RFC.File
     FITS(path) do f
