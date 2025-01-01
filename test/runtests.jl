@@ -317,13 +317,13 @@ end
 
 #     @testset "vis" begin
 #         rfci = RFC.Files()
-#         @showprogress for f in rand(RFC.files(rfci, suffix="vis"), 1000)
+#         @showprogress for f in RFC.files(rfci, suffix="vis")
 #             try
 #                 uv = VLBI.load(f)
 #                 df = table(uv)
 #                 @test df == table(uv, pyimport)
 #             catch e
-#                 @show f e
+#                 @show abspath(f) e
 #                 rethrow()
 #             end
 #         end
@@ -331,7 +331,7 @@ end
 
 #     @testset "maps" begin
 #         rfci = RFC.Files()
-#         @showprogress for f in rand(RFC.files(rfci, suffix="map", extension="fits"), 1000)
+#         @showprogress for f in RFC.files(rfci, suffix="map", extension="fits")
 #             try
 #                 VLBI.load(f)
 #             catch e
@@ -345,7 +345,7 @@ end
 #                 rethrow()
 #             end
 #             try
-#                 beam(abspath(f))
+#                 VLBI.load(Beam, abspath(f))
 #             catch e
 #                 if e isa KeyError && e.key == "BMAJ"
 #                     @warn "Missing BMAJ" f
