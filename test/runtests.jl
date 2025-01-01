@@ -59,6 +59,33 @@ end
     @test axiskeys(KA, :dec) isa AbstractRange
 end
 
+@testitem "img save" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using AxisKeys
+
+    tmpf = tempname()
+    
+    img = KeyedArray(rand(512, 256), ra=range(-10, 10, length=512)u"mas", dec=range(-20, 20, length=256)u"mas")
+    @test_throws Exception VLBI.save(tmpf, img)
+
+    img = KeyedArray(rand(512, 256), ra=range(-10, 10, length=512)u"mas", dec=range(-20, 20, length=256)u"mas")*u"Jy"
+    VLBI.save(tmpf, img; freq=123)
+
+    img_r = VLBI.load(tmpf).data
+    @test axiskeys(img_r, 1) ≈ axiskeys(img, 1)
+    @test axiskeys(img_r, 2) ≈ axiskeys(img, 2)
+    @test AxisKeys.keyless_unname(img_r) ≈ AxisKeys.keyless_unname(ustrip.(u"Jy", img))
+    @test_broken VLBI.frequency(VLBI.load(tmpf)) == 123
+
+    img = KeyedArray(rand(512, 256), ra=range(-5, 10, length=512)u"mas", dec=range(-7, 1, length=256)u"mas")*u"Jy"
+    VLBI.save(tmpf, img)
+
+    img_r = VLBI.load(tmpf).data
+    @test axiskeys(img_r, 1) ≈ axiskeys(img, 1)
+    @test axiskeys(img_r, 2) ≈ axiskeys(img, 2)
+    @test AxisKeys.keyless_unname(img_r) ≈ AxisKeys.keyless_unname(ustrip.(u"Jy", img))
+end
+
 @testitem "img read clean" begin
     using Unitful, UnitfulAstro, UnitfulAngles
     using StaticArrays
