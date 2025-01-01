@@ -46,6 +46,7 @@ end
     cd(dirname(@__FILE__))
 
     img = VLBI.load("./data/map.fits", read_data=true)
+    @test img.data == VLBI.load(VLBI.FitsImage, "./data/map.fits").data
     KA = KeyedArray(img)
     @test KA == VLBI.load(KeyedArray, "./data/map.fits")
     @test size(KA) == (512, 512)

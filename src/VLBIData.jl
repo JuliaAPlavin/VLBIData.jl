@@ -13,6 +13,7 @@ using Unitful, UnitfulAstro, UnitfulAngles
 using AxisKeys
 using StaticArrays
 using StructArrays
+using AccessorsExtra
 using DelimitedFiles: readdlm
 using DateFormats: julian_day
 using PyFormattedStrings
