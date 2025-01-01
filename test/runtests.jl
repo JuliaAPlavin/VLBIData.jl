@@ -12,7 +12,6 @@ using TestItemRunner
     @test VLBI.guess_type("./data/difmap_model_empty.mod") == MultiComponentModel
 end
 
-
 @testitem "img don't read data" begin
     using Unitful, UnitfulAstro, UnitfulAngles
     using StaticArrays
@@ -30,12 +29,12 @@ end
     @test frequency(img) ≈ 4.344u"GHz"
 
     bm = beam(img)
-    @test beam("./data/map.fits") === bm
+    @test VLBI.load(Beam, "./data/map.fits") === bm
     @test effective_area(bm) ≈ 6.5519451u"mas^2"  rtol=1e-5
     @test fwhm_max(bm) ≈ 4.02887356u"mas"  rtol=1e-5
     @test fwhm_min(bm) ≈ 1.43523228u"mas"  rtol=1e-5
     @test position_angle(bm) ≈ -0.046499863  rtol=1e-5
-    @test intensity(bm)(SVector(0.5u"mas", 0u"mas")) ≈ 0.714721  rtol=1e-5
+    @test intensity(ModelComponent(bm))(SVector(0.5u"mas", 0u"mas")) ≈ 0.714721  rtol=1e-5
 end
     
 @testitem "img read data" begin
