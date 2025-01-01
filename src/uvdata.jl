@@ -15,6 +15,13 @@ else
 	error("Unsupported kind: $kind")
 end
 
+Statistics.mean(xs::AbstractVector{<:VLBI.FrequencyWindow}) = VLBI.FrequencyWindow(
+	(@p xs map(_.freq) mean),
+	(@p xs map(_.width) sum),
+	(@p xs map(_.nchan) sum),
+	(@p xs map(_.sideband) uniqueonly),
+)
+
 Base.@kwdef struct UVHeader
     fits::FITSHeader
     object::String
@@ -233,6 +240,20 @@ function table(uvdata::UVData, impl=identity)
         filter!(_.weight > 0)
     end
 end
+
+abstract type AbstractSpec end
+
+struct VisSpec{TUV<:UV} <: AbstractSpec
+	bl::VLBI.Baseline
+	uv::TUV
+end
+VisSpec(bl::VLBI.Baseline, uv::AbstractVector) = VisSpec(bl, UV(uv))
+
+uvtable(uvd::VLBI.UVData; stokes=(:I, :LL, :RR)) = @p uvd table filter(_.stokes ∈ stokes) map((;
+	_.datetime, _.stokes, _.if_ix, _.if_spec,
+	spec=VisSpec(_.baseline, UV(_.uv)),
+	value=U.Value(_.visibility, 1/√_.weight),
+))
 
 function load(::Type{UVData}, path)
     path = abspath(path)  # for RFC.File
