@@ -78,7 +78,7 @@ frequency(fi::FitsImage) = axis_val(fi.header, "FREQ") * u"Hz" |> u"GHz"
 
 
 function prepare_header(image::KeyedArray{<:Any,2}; unit::String="JY/PIXEL", freq::Union{Real,Nothing}=nothing)
-    Unitful.unit(eltype(image)) == u"Jy" || @error "Only images with Jy units are supported, corresponding to Jy/pix" Unitful.unit(eltype(image))
+    Unitful.unit(eltype(image)) == u"Jy" || error("Only images with Jy units are supported, corresponding to Jy/pix; got $(Unitful.unit(eltype(image)))")
     axks = axiskeys(image)
     pixsizes = step.(axks)
     map(NamedTuple{(:key,:value,:comment)}, [
