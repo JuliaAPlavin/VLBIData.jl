@@ -75,6 +75,9 @@ function AntArray(hdu::TableHDU)
     )
 end
 
+Base.length(a::AntArray) = length(a.antennas)
+Base.getindex(a::AntArray, i::Int) = a.antennas[i]
+
 Base.@kwdef struct UVData
     path::String
     header::Union{UVHeader,Nothing}
@@ -129,8 +132,38 @@ UV(uvw::UVW) = UV(uvw.u, uvw.v)
 
 struct Baseline
     array_ix::Int8
-    ants_ix::NTuple{2, Int8}
+    ant_ids::NTuple{2, Int8}
+    ant_names::NTuple{2, Symbol}
 end
+
+function Base.getproperty(b::Baseline, key::Symbol)
+    key == :ants_ix && (Base.depwarn("Baseline.ants_ix is deprecated, use ant_ids instead", :ants_ix); return b.ant_ids)
+    return getfield(b, key)
+end
+
+@deprecate Baseline(array_ix::Integer, ant_ids::NTuple{2, Integer}) Baseline(array_ix, ant_ids, (Symbol(:ANT, ant_ids[1]), Symbol(:ANT, ant_ids[2])))
+
+function Baseline(array_ix::Integer, ant_ids::NTuple{2, Integer}, ant_arrays::Vector{AntArray})
+    ants = ant_arrays[array_ix].antennas
+    names = map(ant_ids) do id
+        ix = findfirst(ant -> ant.id == id, ants)
+        if !isnothing(ix)
+            ants[ix].name
+        else
+            @warn "Antenna index out of bounds, assigning generated name" length(ants) ant_ids
+            Symbol(:ANT, id)
+        end
+    end
+    Baseline(array_ix, ant_ids, names)
+end
+
+antennas(b::Baseline) =
+    map(b.ant_ids, b.ant_names) do id, name
+        Antenna(name, id, SVector(NaN, NaN, NaN))
+    end
+
+Accessors.set(b::Baseline, ::typeof(antennas), ants) = setproperties(b, ant_ids=map(a -> a.id, ants), ant_names=map(a -> a.name, ants))
+
 
 function read_data_arrays(uvdata::UVData, impl=identity)
     raw = read_data_raw(uvdata, impl)
@@ -157,7 +190,7 @@ function read_data_arrays(uvdata::UVData, impl=identity)
     uvw_m = UVW.([Float32.(raw[k]) .* (u"c" * u"s") .|> u"m" for k in uvw_keys]...)
     baseline = map(raw[:BASELINE]) do b
         bi = floor(Int, b)
-        Baseline(round(Int, (b % 1) * 100) + 1, (bi ÷ 256, bi % 256))
+        Baseline(round(Int, (b % 1) * 100) + 1, (bi ÷ 256, bi % 256), uvdata.ant_arrays)
     end
     data = (;
         uvw_m,
