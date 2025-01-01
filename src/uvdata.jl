@@ -48,13 +48,14 @@ end
 Base.@kwdef struct Antenna
     name::Symbol
     id::Int
+    xyz::SVector{3, Float64}
 end
 
 function Antenna(hdu_row)
     if !isempty(hdu_row.ORBPARM) && hdu_row.ORBPARM != 0
         @warn "Antennas with ORBPARM detected, be careful" hdu_row.ORBPARM hdu_row.ANNAME
     end
-    Antenna(; name=Symbol(hdu_row.ANNAME), id=hdu_row.NOSTA)
+    Antenna(; name=Symbol(hdu_row.ANNAME), id=hdu_row.NOSTA, xyz=hdu_row.STABXYZ)
 end
 Base.@kwdef struct AntArray
     name::String
