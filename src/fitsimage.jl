@@ -74,3 +74,52 @@ InterferometricModels.beam(fh::FITSHeader) = beam(EllipticGaussian,
 )
 
 frequency(fi::FitsImage) = axis_val(fi.header, "FREQ") * u"Hz" |> u"GHz"
+
+
+function prepare_header(image::KeyedArray{<:Any,2}; unit::String="JY/PIXEL", freq::Union{Real,Nothing}=nothing)
+    Unitful.unit(eltype(image)) == u"Jy" || @error "Only images with Jy units are supported, corresponding to Jy/pix" Unitful.unit(eltype(image))
+    axks = axiskeys(image)
+    pixsizes = step.(axks)
+    map(NamedTuple{(:key,:value,:comment)}, [
+        ("SIMPLE"  , true           , "conforms to FITS standard" ),
+        ("BITPIX"  , -64            , "array data type"           ),
+        ("NAXIS"   , 2              , "number of array dimensions"),
+        ("NAXIS1"  , size(image, 1) , ""                          ),
+        ("NAXIS2"  , size(image, 2) , ""                          ),
+        ("EXTEND"  , true           , ""                          ),
+        # ("OBJECT"  , source    , ""                          ),
+        ("CTYPE1"  , "RA---SIN"     , ""                          ),
+        ("CTYPE2"  , "DEC--SIN"     , ""                          ),
+        ("CDELT1"  , ustrip(u"°", pixsizes[1]), ""                          ),
+        ("CDELT2"  , ustrip(u"°", pixsizes[2]), ""                          ),
+        # ("OBSRA"   , 180.0        , ""                          ),
+        # ("OBSDEC"  , 0.0       , ""                          ),
+        ("FREQ"    , freq         , ""                          ),
+        ("CRPIX1"  , -(first(axks[1])/pixsizes[1] - 1), ""        ),
+        ("CRPIX2"  , -(first(axks[2])/pixsizes[2] - 1), ""        ),
+        # ("MJD"     , 0       , ""                          ),
+        # ("TELESCOP", "VLBI"         , ""                          ),
+        ("BUNIT"   , unit           , ""                          ),
+        ("STOKES"  , "I"         , ""                          ),
+    ]) |> FITSHeader
+end
+
+function save(fname, image::KeyedArray{<:Any,2}; kwargs...)
+    rm(fname, force=true)
+    FITS(fname, "w") do f
+        try
+            # img = parent(image[end:-1:1, :])  # XXX: is it needed?
+            FITSIO.write(f, ustrip.(u"Jy", AxisKeys.keyless_unname(image)); header=prepare_header(image; kwargs...))
+        catch e
+            @error "Got exception when writing image data to FITS" e
+            rethrow()
+        end
+    end
+end
+
+# XXX: piracy, https://github.com/JuliaAstro/FITSIO.jl/pull/199
+FITSIO.FITSHeader(cards::AbstractVector{<:NamedTuple}) = FITSHeader(
+    map((@o _.key), cards),
+    map((@o _.value), cards),
+    map((@o _.comment), cards),
+)
