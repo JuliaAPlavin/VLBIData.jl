@@ -137,6 +137,8 @@ end
 
 UV(uvw::UVW) = UV(uvw.u, uvw.v)
 
+InterferometricModels.position_angle(x::UV) = atan(x.u, x.v)
+
 struct Baseline
     array_ix::Int8
     ant_ids::NTuple{2, Int8}
@@ -168,8 +170,25 @@ antennas(b::Baseline) =
     map(b.ant_ids, b.ant_names) do id, name
         Antenna(name, id, SVector(NaN, NaN, NaN))
     end
-
 Accessors.set(b::Baseline, ::typeof(antennas), ants) = setproperties(b, ant_ids=map(a -> a.id, ants), ant_names=map(a -> a.name, ants))
+@accessor antennas(x) = antennas(VLBI.Baseline(x))
+
+abstract type AbstractSpec end
+
+struct VisSpec{TUV<:UV} <: AbstractSpec
+	bl::VLBI.Baseline
+	uv::TUV
+end
+VisSpec(bl::VLBI.Baseline, uv::AbstractVector) = VisSpec(bl, UV(uv))
+
+@accessor VLBI.Baseline(bl::Baseline) = identity(bl)
+@accessor VLBI.Baseline(vs::VisSpec) = vs.bl
+VLBI.Baseline(x::NamedTuple) = VLBI.Baseline(@oget x.baseline x.spec)
+
+@accessor UV(x::VisSpec) = x.uv
+UV(x::NamedTuple) = UV(x.spec)
+
+InterferometricModels.visibility(x::NamedTuple) = x.value
 
 
 function read_data_arrays(uvdata::UVData, impl=identity)
@@ -241,13 +260,6 @@ function table(uvdata::UVData, impl=identity)
     end
 end
 
-abstract type AbstractSpec end
-
-struct VisSpec{TUV<:UV} <: AbstractSpec
-	bl::VLBI.Baseline
-	uv::TUV
-end
-VisSpec(bl::VLBI.Baseline, uv::AbstractVector) = VisSpec(bl, UV(uv))
 
 uvtable(uvd::VLBI.UVData; stokes=(:I, :LL, :RR)) = @p uvd table filter(_.stokes ∈ stokes) map((;
 	_.datetime, _.stokes, _.if_ix, _.if_spec,
