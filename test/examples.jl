@@ -55,7 +55,7 @@ using PlutoUI
 # ╔═╡ 5491a70e-8aea-42bc-b449-a56fd120d3fd
 md"""
 !!! info "VLBIData.jl"
-	`VLBIData` reads a range of data formats typically used in very long baseline interferometry (VLBI).
+	`VLBIData` reads and writes a range of data formats typically used in very long baseline interferometry (VLBI).
 
 For convenience, it exports itself as `VLBI`: non-exported functions are accessed as `VLBI.load`.
 
