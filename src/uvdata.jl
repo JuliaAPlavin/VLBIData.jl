@@ -87,7 +87,7 @@ function read_freqs(uvh, fq_table)
     # fq_row = fq_row[Symbol.(["IF FREQ", "CH WIDTH", "TOTAL BANDWIDTH", "SIDEBAND"])]
     nrows = @p fq_row values() filter(_ isa AbstractVector) (isempty(__) ? 1 : length(__[1]))
     fq_row = map(fq_row) do x
-        isa(x, Real) ? fill(x, nrows) : x
+        isa(x, AbstractArray) ? x : fill(x, nrows)
     end
     ref_freq = @oget frequency(uvh) read_header(fq_table)["REF_FREQ"]*u"Hz"
     res = map(fq_row |> rowtable) do r
