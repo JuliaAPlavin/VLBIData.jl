@@ -1,11 +1,5 @@
 name: Export Pluto notebooks
 on:
-    push:
-        branches:
-            - main
-            - master
-        paths:
-          - 'test/examples.jl'
     workflow_dispatch:
 
 env:
