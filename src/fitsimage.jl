@@ -6,6 +6,8 @@ end
 
 AxisKeys.KeyedArray(fimg::FitsImage) = isnothing(fimg.data) ? error("Image data not loaded") : fimg.data::KeyedArray
 
+load(::Type{KeyedArray}, path) = load(FitsImage, path).data
+
 function load(::Type{FitsImage}, path; read_data=true)
     path = abspath(path)  # for RFC.File
     FITS(path) do f

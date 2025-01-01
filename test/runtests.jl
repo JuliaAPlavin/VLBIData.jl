@@ -48,6 +48,7 @@ end
 
     img = VLBI.load("./data/map.fits", read_data=true)
     KA = KeyedArray(img)
+    @test KA == VLBI.load(KeyedArray, "./data/map.fits")
     @test size(KA) == (512, 512)
     @test mean(KA) ≈ 2.4069064f-5
     @test maximum(KA) ≈ 0.021357307f0
