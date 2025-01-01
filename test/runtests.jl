@@ -13,63 +13,82 @@ using TestItemRunner
 end
 
 
-@testitem "fits image" begin
+@testitem "img don't read data" begin
     using Unitful, UnitfulAstro, UnitfulAngles
     using StaticArrays
     using Statistics
     using AxisKeys
     using VLBIData: frequency
-
     cd(dirname(@__FILE__))
-    @testset "read nothing" begin
-        img = VLBI.load("./data/map.fits", read_data=false)
-        @test img.data === nothing
 
-        @test VLBI.pixel_size(img) ≈ 0.2u"mas"  rtol=1e-5
-        @test VLBI.pixel_steps(img) ≈ [-0.2u"mas", 0.2u"mas"]  rtol=1e-5
-        @test VLBI.pixel_area(img) ≈ 0.04u"mas^2"  rtol=1e-5
-        @test frequency(img) ≈ 4.344u"GHz"
+    img = VLBI.load("./data/map.fits", read_data=false)
+    @test img.data === nothing
 
-        bm = beam(img)
-        @test beam("./data/map.fits") === bm
-        @test effective_area(bm) ≈ 6.5519451u"mas^2"  rtol=1e-5
-        @test fwhm_max(bm) ≈ 4.02887356u"mas"  rtol=1e-5
-        @test fwhm_min(bm) ≈ 1.43523228u"mas"  rtol=1e-5
-        @test position_angle(bm) ≈ -0.046499863  rtol=1e-5
-        @test intensity(bm)(SVector(0.5u"mas", 0u"mas")) ≈ 0.714721  rtol=1e-5
-    end
+    @test VLBI.pixel_size(img) ≈ 0.2u"mas"  rtol=1e-5
+    @test VLBI.pixel_steps(img) ≈ [-0.2u"mas", 0.2u"mas"]  rtol=1e-5
+    @test VLBI.pixel_area(img) ≈ 0.04u"mas^2"  rtol=1e-5
+    @test frequency(img) ≈ 4.344u"GHz"
+
+    bm = beam(img)
+    @test beam("./data/map.fits") === bm
+    @test effective_area(bm) ≈ 6.5519451u"mas^2"  rtol=1e-5
+    @test fwhm_max(bm) ≈ 4.02887356u"mas"  rtol=1e-5
+    @test fwhm_min(bm) ≈ 1.43523228u"mas"  rtol=1e-5
+    @test position_angle(bm) ≈ -0.046499863  rtol=1e-5
+    @test intensity(bm)(SVector(0.5u"mas", 0u"mas")) ≈ 0.714721  rtol=1e-5
+end
     
-    @testset "read data" begin
-        img = VLBI.load("./data/map.fits", read_data=true)
-        @test size(img.data) == (512, 512)
-        @test mean(img.data) ≈ 2.4069064f-5
-        @test maximum(img.data) ≈ 0.021357307f0
-        @test img.data[123, 456] ≈ -7.372097f-5
-        @test axiskeys(img.data, :ra)  .|> ustrip ≈ 51:-0.2:-51.2  atol=1e-3
-        @test axiskeys(img.data, :dec) .|> ustrip ≈ -51.2:0.2:51   atol=1e-3
-        @test axiskeys(img.data, :ra) isa AbstractRange
-        @test axiskeys(img.data, :dec) isa AbstractRange
-    end
-    
-    @testset "read clean" begin
-        mod = VLBI.load(MultiComponentModel, "./data/map.fits")
-        @test length(components(mod)) == 361
-        @test sum(flux, components(mod)) ≈ 0.038659f0u"Jy"
-        @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587u"mas"
-        @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233u"mas"
-    end
+@testitem "img read data" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using StaticArrays
+    using Statistics
+    using AxisKeys
+    using VLBIData: frequency
+    cd(dirname(@__FILE__))
 
-    @testset "stacked image" begin
-        img = VLBI.load("./data/map_stacked.fits", read_data=true)
-        @test size(img.data) == (512, 512)
-        @test maximum(img.data) ≈ 0.5073718945185344
-        @test img.data[123, 456] ≈ -1.0848011697817128e-5
-        @test axiskeys(img.data, :ra)  .|> ustrip ≈ 25.5:-0.1:-25.6  atol=1e-3
-        bm = beam(img)
-        @test fwhm_min(bm) == fwhm_max(bm)
+    img = VLBI.load("./data/map.fits", read_data=true)
+    @test size(img.data) == (512, 512)
+    @test mean(img.data) ≈ 2.4069064f-5
+    @test maximum(img.data) ≈ 0.021357307f0
+    @test img.data[123, 456] ≈ -7.372097f-5
+    @test axiskeys(img.data, :ra)  .|> ustrip ≈ 51:-0.2:-51.2  atol=1e-3
+    @test axiskeys(img.data, :dec) .|> ustrip ≈ -51.2:0.2:51   atol=1e-3
+    @test axiskeys(img.data, :ra) isa AbstractRange
+    @test axiskeys(img.data, :dec) isa AbstractRange
+end
 
-        @test_broken mod = VLBI.load(MultiComponentModel, "./data/map_stacked.fits")
-    end
+@testitem "img read clean" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using StaticArrays
+    using Statistics
+    using AxisKeys
+    using VLBIData: frequency
+    cd(dirname(@__FILE__))
+
+    mod = VLBI.load(MultiComponentModel, "./data/map.fits")
+    @test length(components(mod)) == 361
+    @test sum(flux, components(mod)) ≈ 0.038659f0u"Jy"
+    @test mean(first ∘ coords, components(mod)) ≈ -0.913573508654587u"mas"
+    @test mean(last ∘ coords, components(mod)) ≈ 8.145706523588233u"mas"
+end
+
+@testitem "img stacked" begin
+    using Unitful, UnitfulAstro, UnitfulAngles
+    using StaticArrays
+    using Statistics
+    using AxisKeys
+    using VLBIData: frequency
+    cd(dirname(@__FILE__))
+
+    img = VLBI.load("./data/map_stacked.fits", read_data=true)
+    @test size(img.data) == (512, 512)
+    @test maximum(img.data) ≈ 0.5073718945185344
+    @test img.data[123, 456] ≈ -1.0848011697817128e-5
+    @test axiskeys(img.data, :ra)  .|> ustrip ≈ 25.5:-0.1:-25.6  atol=1e-3
+    bm = beam(img)
+    @test fwhm_min(bm) == fwhm_max(bm)
+
+    @test_broken mod = VLBI.load(MultiComponentModel, "./data/map_stacked.fits")
 end
 
 @testitem "uvf simple" begin
