@@ -96,8 +96,8 @@ The returned object contains both the header information, and the image data as 
 # ╔═╡ 8b722ca5-3198-4c6c-94b1-4daf8fd2e718
 fimg.header["OBJECT"]
 
-# ╔═╡ fd52ba81-f515-4388-b677-72ad9bfb4f6b
-fimg.data |> AsText
+# ╔═╡ 9abadd95-1aeb-436f-aab2-64dc2ad78830
+KeyedArray(fimg) |> display
 
 # ╔═╡ b104bdf4-cdee-4743-a4e7-31844f5338e7
 md"""
@@ -105,11 +105,11 @@ As you see, the image data is a `KeyedArray`. It contains information about axes
 """
 
 # ╔═╡ dcd07de0-148d-4641-9cfc-79926e1ba3b1
-fimg.data(dec=Near(5u"mas")) |> AsText
+KeyedArray(fimg)(dec=Near(5u"mas")) |> display
 
 # ╔═╡ 203e7c90-11d3-4fc1-895a-ffcba4247b34
 let
-	fig, ax, plt = image(fimg.data, colormap=:inferno, colorscale=SymLog(5e-4, vmin=0))
+	fig, ax, plt = image(KeyedArray(fimg), colormap=:inferno, colorscale=SymLog(5e-4, vmin=0))
 	Colorbar(fig[1,2], plt, label="Jy/beam")
 	fig
 end
@@ -124,7 +124,7 @@ beam(fimg)
 
 # ╔═╡ 530aa386-84a7-47b2-ba76-a9c01fc5393d
 let
-	fig, ax, plt = image(fimg.data((-30..20)u"mas", (-25..25)u"mas"), colormap=:inferno, colorscale=SymLog(5e-4, vmin=0))
+	fig, ax, plt = image(KeyedArray(fimg)((-30..20)u"mas", (-25..25)u"mas"), colormap=:inferno, colorscale=SymLog(5e-4, vmin=0))
 	beampoly!(ax, ustrip(beam(fimg)), position=(0.1, 0.1), color=:lightgreen)
 	# plt.gca().add_artist(ScalebarArtist([(1, "mas")], loc="lower right", color=:w))
 	fig
@@ -443,7 +443,7 @@ StaticArrays = "~1.9.5"
 Unitful = "~1.20.0"
 UnitfulAngles = "~0.7.2"
 UnitfulAstro = "~1.2.1"
-VLBIData = "~0.3.22"
+VLBIData = "~0.3.23"
 VLBIPlots = "~0.1.17"
 """
 
@@ -453,7 +453,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.4"
 manifest_format = "2.0"
-project_hash = "494a220837cedd00edb1fb4d3f7946fa2ed891db"
+project_hash = "dc921d06ca5c99744d4f0187de34c20b63739072"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2099,9 +2099,9 @@ version = "1.2.1"
 
 [[deps.VLBIData]]
 deps = ["AxisKeys", "DataManipulation", "DateFormats", "Dates", "DelimitedFiles", "FITSIO", "InterferometricModels", "PyFormattedStrings", "Reexport", "StaticArrays", "StructArrays", "Tables", "Unitful", "UnitfulAngles", "UnitfulAstro"]
-git-tree-sha1 = "5f446d41d7c18a1e6e342f2f1f0607c44454f7b5"
+git-tree-sha1 = "446a9627fcc8d1e74bcf8dc4cddb1ea53876e211"
 uuid = "679fc9cc-3e84-11e9-251b-cbd013bd8115"
-version = "0.3.22"
+version = "0.3.23"
 
     [deps.VLBIData.extensions]
     PyCallExt = "PyCall"
@@ -2283,7 +2283,7 @@ version = "3.5.0+0"
 # ╠═6bf4ae14-33d7-4faa-a664-80889ece70b7
 # ╟─50c8dfe9-db54-4239-a14d-c8e047eab443
 # ╠═8b722ca5-3198-4c6c-94b1-4daf8fd2e718
-# ╠═fd52ba81-f515-4388-b677-72ad9bfb4f6b
+# ╠═9abadd95-1aeb-436f-aab2-64dc2ad78830
 # ╟─b104bdf4-cdee-4743-a4e7-31844f5338e7
 # ╠═dcd07de0-148d-4641-9cfc-79926e1ba3b1
 # ╠═203e7c90-11d3-4fc1-895a-ffcba4247b34
