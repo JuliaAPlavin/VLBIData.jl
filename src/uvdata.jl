@@ -186,7 +186,7 @@ VisSpec(bl::VLBI.Baseline, uv::AbstractVector) = VisSpec(bl, UV(uv))
 VLBI.Baseline(x::NamedTuple) = VLBI.Baseline(@oget x.baseline x.spec)
 
 @accessor UV(x::VisSpec) = x.uv
-UV(x::NamedTuple) = UV(x.spec)
+@accessor UV(x::NamedTuple) = UV(x.spec)
 
 InterferometricModels.visibility(x::NamedTuple) = x.value
 
