@@ -380,8 +380,8 @@ end
 #     end
 # end
 
-@testitem "Baseline type" begin
-    using Accessors
+@testitem "uv-related types" begin
+    using AccessorsExtra
 
     bl = Baseline(1, (2, 3), (:A, :B))
     @test bl.ant_ids == (2, 3)
@@ -396,6 +396,17 @@ end
     @test bl != Baseline(1, (2, 4))
     @test bl.array_ix == 1
     @test bl.ants_ix == (2, 3)
+
+    @test (@oget VLBI.UV([1,2]) 123) == VLBI.UV(1, 2)
+    @test (@oget VLBI.UV(bl) 123) == 123
+    ants = VLBI.antennas(bl)
+    ant = ants[1]
+    @test (@oget VLBI.UV(ants) 123) == 123
+    @test (@oget VLBI.UV(ant) 123) == 123
+    @test (@oget VLBI.antennas(ants) 123) == ants
+    @test (@oget VLBI.antennas(ant) 123) == (ant,)
+    uv = VLBI.UV(1, 2)
+    @test (@oget VLBI.antennas(uv) 123) == 123
 end
 
 @testitem "_" begin

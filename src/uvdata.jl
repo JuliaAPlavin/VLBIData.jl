@@ -173,6 +173,10 @@ antennas(b::Baseline) =
 Accessors.set(b::Baseline, ::typeof(antennas), ants) = setproperties(b, ant_ids=map(a -> a.id, ants), ant_names=map(a -> a.name, ants))
 @accessor antennas(x) = antennas(VLBI.Baseline(x))
 
+antennas(x::Antenna) = (x,)
+antennas(x::NTuple{<:Any,Antenna}) = x
+antennas(x::AbstractVector{Antenna}) = x
+
 abstract type AbstractSpec end
 
 struct VisSpec{TUV<:UV} <: AbstractSpec
@@ -187,6 +191,11 @@ VLBI.Baseline(x::NamedTuple) = VLBI.Baseline(@oget x.baseline x.spec)
 
 @accessor UV(x::VisSpec) = x.uv
 @accessor UV(x::NamedTuple) = UV(x.spec)
+
+AccessorsExtra.hasoptic(::Baseline, ::Type{UV}) = false
+AccessorsExtra.hasoptic(::Union{Antenna,NTuple{<:Any,Antenna},AbstractVector{Antenna}}, ::Type{UV}) = false
+AccessorsExtra.hasoptic(::UV, ::Type{Baseline}) = false
+AccessorsExtra.hasoptic(obj, ::typeof(antennas)) = AccessorsExtra.hasoptic(obj, Baseline)
 
 InterferometricModels.visibility(x::NamedTuple) = x.value
 
