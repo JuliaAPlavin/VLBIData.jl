@@ -124,21 +124,6 @@ function read_data_raw(uvdata::UVData, ::typeof(identity)=identity)
     read(hdu)
 end
 
-struct UVW{T} <: FieldVector{3, T}
-    u::T
-    v::T
-    w::T
-end
-
-struct UV{T} <: FieldVector{2, T}
-    u::T
-    v::T
-end
-
-UV(uvw::UVW) = UV(uvw.u, uvw.v)
-
-InterferometricModels.position_angle(x::UV) = atan(x.u, x.v)
-
 struct Baseline
     array_ix::Int8
     ant_ids::NTuple{2, Int8}
