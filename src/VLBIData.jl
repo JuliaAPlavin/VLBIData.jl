@@ -12,7 +12,6 @@ using Uncertain
 using StructHelpers
 
 
-const VLBI = VLBIData
 export VLBI,
 	Antenna, antennas, Baseline,
 	UV, UVs, visibility, frequency,
@@ -42,5 +41,13 @@ AccessorsExtra.hasoptic(obj, ::typeof(antennas)) = AccessorsExtra.hasoptic(obj, 
 @accessor UVs(x::NamedTuple) = UVs(x.spec)
 conjvis(x::NamedTuple) = modify(conj, x, @o _.value _.spec)
 @accessor visibility(x::NamedTuple) = x.value
+
+baremodule VLBI
+using ..VLBIData
+using ..VLBIData:
+	conjvis, add_conjvis, average_bytime, closures_scan, closures_all,
+	uvshift,
+	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors
+end
 
 end

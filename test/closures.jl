@@ -20,7 +20,6 @@
 end
 
 @testitem "closure amplitude calculations" begin
-    using VLBIData: closures_scan
     using Uncertain
     using DataManipulation
     using DataManipulation.FlexiGroups: GroupArray
@@ -41,7 +40,7 @@ end
         (spec=VisSpec(Baseline(1, (2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline(1, (3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clas = closures_scan(ClosureAmpSpec, uvgr)
+    clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
     nbls = @p clas flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
     @test length(clas) == binomial(4, 4) * Int(factorial(3) / 2) == 3
     @test all(==(2), nbls)
@@ -59,7 +58,7 @@ end
         (spec=VisSpec(Baseline(1, (3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline(1, (4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clas = closures_scan(ClosureAmpSpec, uvgr)
+    clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
     nbls = @p clas flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
     @test length(clas) == binomial(5, 4) * Int(factorial(3) / 2) == 15
     @test all(==(6), nbls)
@@ -67,7 +66,6 @@ end
 end
 
 @testitem "closure phase calculations" begin
-    using VLBIData: closures_scan
     using Uncertain
     using DataManipulation
     using DataManipulation.FlexiGroups: GroupArray
@@ -80,7 +78,7 @@ end
         (spec=VisSpec(Baseline(1, (2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline(1, (3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clps = closures_scan(ClosurePhaseSpec, uvgr)
+    clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
     nbls = @p clps flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
     @test length(clps) == binomial(4, 3) * Int(factorial(2) / 2) == 4
     @test all(==(2), nbls)
@@ -99,7 +97,7 @@ end
         (spec=VisSpec(Baseline(1, (3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline(1, (4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clps = closures_scan(ClosurePhaseSpec, uvgr)
+    clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
     nbls = @p clps flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
     @test length(clps) == binomial(5, 3) * Int(factorial(2) / 2) == 10
     @test all(==(3), nbls)
