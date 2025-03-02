@@ -43,8 +43,10 @@ conjvis(x::NamedTuple) = modify(conj, x, @o _.value _.spec)
 @accessor visibility(x::NamedTuple) = x.value
 
 baremodule VLBI
-using ..VLBIData
-using ..VLBIData:
+import ..VLBIData:
+	Antenna, antennas, Baseline,
+	UV, UVs, visibility, frequency,
+	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_bytime, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors
