@@ -1,6 +1,8 @@
-function average_bytime(src_, avg_interval; avgvals=U.weightedmean)
+function average_bytime(src_, avg_interval_; avgvals=U.weightedmean)
 	src = StructArray(src_)
 	mindt = minimum(src.datetime)
+	avg_interval = float(avg_interval_)
+	avg_interval = iszero(avg_interval) ? oftype(avg_interval, 1u"ms") : avg_interval
 	@p begin
 		src
 		groupview_vg((;
