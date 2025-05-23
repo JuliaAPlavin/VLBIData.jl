@@ -182,7 +182,7 @@ end
 
     uvtbl = VLBI.load(joinpath(pkgdir(VLBIFiles), "test/data/vis_multichan.vis")) |> uvtable
     @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 0.4298 rtol=1e-3
-    @test_throws InexactError VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter())
+    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter()) ≈ 0.4306 rtol=1e-3
 
     uvtbl = VLBI.load(joinpath(pkgdir(VLBI), "test/data/datafile_01-01_230GHz.uvfits")) |> uvtable
     @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 27.79 rtol=1e-3
