@@ -109,11 +109,14 @@ end
 end
 
 @testitem "frequencies" begin
+    using Unitful
     struct MyFreq
         freq::Float64
     end
     VLBI.frequency(x::MyFreq) = x.freq
     @test frequency((;freq_spec=MyFreq(10))) == 10
+    @test frequency(10u"GHz") == 10u"GHz"
+    @test frequency((;freq_spec=10u"GHz")) == 10u"GHz"
 end
 
 @testitem "renumbering" begin
