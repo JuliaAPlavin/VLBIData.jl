@@ -32,6 +32,8 @@ include("reindex.jl")
 
 function uvtable end
 
+function uvtable_values_to end
+
 function frequency end
 function frequency(q::Quantity)
 	q |> u"Hz"  # to throw an error
@@ -64,7 +66,7 @@ using Reexport
 	conjvis, add_conjvis, average_bytime, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
-	uv_reindex, uvtable
+	uv_reindex, uvtable, uvtable_values_to
 end
 
 end
