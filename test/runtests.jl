@@ -106,6 +106,8 @@ end
     @test antennas((;spec)) == antennas(spec)
     @test UV((;spec)) == UV(spec)
     @test VLBI.conjvis((;spec, value=1+2im)) == (spec=conj(spec), value=1-2im)
+    @test VLBI.conjvis((;spec, value=1+2im, stokes=:RR)) == (spec=conj(spec), value=1-2im, stokes=:RR)
+    @test VLBI.conjvis((;spec, value=1+2im, stokes=:RL)) == (spec=conj(spec), value=1-2im, stokes=:LR)
 end
 
 @testitem "frequencies" begin
