@@ -83,4 +83,90 @@ end
     uvtbl_long_gaps = VLBI.add_scan_ids(uvtbl_scans, VLBI.GapBasedScans(min_gap=10u"minute"))
     # Should create only one scan since all gaps are < 10 minutes
     @test uvtbl_long_gaps.scan_id == [1, 1, 1, 1, 1, 1]
+    
+    # Test scan_intervals with strategy=nothing on data that already has scan_id
+    intervals_from_existing = VLBI.scan_intervals(uvtbl_with_scans, nothing)
+    @test intervals_from_existing == intervals  # Should be same as when computed with strategy
+    
+    # Test that scan_intervals results are always in scan order (1, 2, 3, ...) even with unordered scan_ids
+    uvtbl_unordered = StructArray([
+        (datetime=DateTime(2020, 1, 1, 0, 5, 0), scan_id=2),   # Scan 2 first
+        (datetime=DateTime(2020, 1, 1, 0, 0, 0), scan_id=1),   # Scan 1 second
+        (datetime=DateTime(2020, 1, 1, 0, 0, 30), scan_id=1),  # More scan 1
+        (datetime=DateTime(2020, 1, 1, 0, 5, 30), scan_id=2),  # More scan 2
+        (datetime=DateTime(2020, 1, 1, 0, 10, 0), scan_id=3),  # Scan 3 last
+    ])
+    intervals_unordered = VLBI.scan_intervals(uvtbl_unordered, nothing)
+    @test length(intervals_unordered) == 3
+    # Should be ordered by scan_id: scan 1, scan 2, scan 3
+    @test intervals_unordered[1] == DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 30)   # Scan 1
+    @test intervals_unordered[2] == DateTime(2020, 1, 1, 0, 5, 0)..DateTime(2020, 1, 1, 0, 5, 30)   # Scan 2  
+    @test intervals_unordered[3] == DateTime(2020, 1, 1, 0, 10, 0)..DateTime(2020, 1, 1, 0, 10, 0)  # Scan 3
+    
+    # Test that scan_intervals with strategy=nothing fails on data without scan_id
+    @test_throws ErrorException VLBI.scan_intervals(uvtbl_scans, nothing)
+end
+
+@testitem "average_data by scans" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using VLBIData.StructArrays
+
+    # Create test data with multiple observations per scan for the same baseline/freq/stokes
+    uvtbl_for_avg = StructArray([
+        # Scan 1: observations in chronological order
+        (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(1, 1)), freq_spec=123, stokes=:RR, value=2±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 15), spec=VisSpec(Baseline(1, (1, 3)), UV(5, 5)), freq_spec=123, stokes=:RR, value=10±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 30), spec=VisSpec(Baseline(1, (1, 2)), UV(2, 2)), freq_spec=123, stokes=:RR, value=4±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 45), spec=VisSpec(Baseline(1, (1, 2)), UV(6, 6)), freq_spec=123, stokes=:LL, value=12±ᵤ0.1),
+        
+        # Gap of 5 minutes (> 1 minute threshold)
+        
+        # Scan 2: 2 observations for same baseline/freq/stokes - should be averaged
+        (datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(3, 3)), freq_spec=123, stokes=:RR, value=6±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 5, 30), spec=VisSpec(Baseline(1, (1, 2)), UV(4, 4)), freq_spec=123, stokes=:RR, value=8±ᵤ0.1),
+    ])
+
+    strategy = VLBI.GapBasedScans(min_gap=1u"minute")
+    
+    # Test average_data
+    averaged = VLBI.average_data(uvtbl_for_avg, strategy)
+    
+    # Should have 4 rows: baseline (1,2) RR in scan 1, baseline (1,2) RR in scan 2, baseline (1,3) RR in scan 1, baseline (1,2) LL in scan 1
+    @test length(averaged) == 4
+    
+    # Test explicit scan_id values
+    @test averaged.scan_id == [1, 1, 1, 2]
+    
+    # Test explicit datetime values (order should be deterministic based on grouping)
+    @test averaged.datetime == [
+        DateTime(2020, 1, 1, 0, 0, 22, 500),
+        DateTime(2020, 1, 1, 0, 0, 22, 500),
+        DateTime(2020, 1, 1, 0, 0, 22, 500),
+        DateTime(2020, 1, 1, 0, 5, 15, 0),
+    ]
+    
+    # Test explicit value array (averaged values and uncertainties)
+    @test U.value.(averaged.value) ≈ [
+        3.0,   # (1,2) RR scan1 - weighted mean of 2±0.1 and 4±0.1
+        10.0,  # (1,3) RR scan1 - single value 10±0.1
+        12.0,  # (1,2) LL scan1 - single value 12±0.1
+        7.0    # (1,2) RR scan2 - weighted mean of 6±0.1 and 8±0.1
+    ]
+    
+    @test U.uncertainty.(averaged.value) ≈ [
+        √2 * 0.1 / 2,      # (1,2) RR scan1 - uncertainty from weighted mean
+        0.1,                # (1,2) LL scan1 - single uncertainty
+        0.1,                # (1,3) RR scan1 - single uncertainty  
+        √2 * 0.1 / 2       # (1,2) RR scan2 - uncertainty from weighted mean
+    ]
+    
+    # Test stokes parameters
+    @test averaged.stokes == [
+        :RR,
+        :RR,
+        :LL,
+        :RR,
+    ]
 end
