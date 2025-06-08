@@ -23,7 +23,7 @@ ComradeBaseExt = "ComradeBase"
 
 [compat]
 AccessorsExtra = "0.1.77"
-ComradeBase = "0.9.3"
+ComradeBase = "0.8, 0.9"
 DataManipulation = "0.1.12"
 InterferometricModels = "0.1.24"
 Reexport = "1.2.2"
