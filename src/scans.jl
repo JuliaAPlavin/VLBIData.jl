@@ -1,4 +1,6 @@
-@kwdef struct GapBasedScans
+abstract type AbstractScanStrategy end
+
+@kwdef struct GapBasedScans <: AbstractScanStrategy
     min_gap = 1u"minute"
 end
 
@@ -17,16 +19,26 @@ function scan_ids(uvtbl::StructVector, strategy::GapBasedScans)
     return scan_id
 end
 
-function add_scan_ids(uvtbl, strategy)
+function add_scan_ids(uvtbl, strategy::AbstractScanStrategy)
     uvtbl = StructArray(uvtbl)
+    @assert !hasproperty(uvtbl, :scan_id)
     @insert uvtbl.scan_id = scan_ids(uvtbl, strategy)
 end
 
-scan_intervals(uvtbl, strategy) = @p let
-    add_scan_ids(uvtbl, strategy)
-    group_vg(_.scan_id)
-    map() do __
-        extrema(_.datetime)
-        Interval(__...)
+function scan_intervals(uvtbl, strategy::Union{Nothing,AbstractScanStrategy}=nothing)
+    uvtbl = StructArray(uvtbl)
+    uvtbl = if hasproperty(uvtbl, :scan_id)
+        @p uvtbl sort(by=_.scan_id)
+    else
+        isnothing(strategy) && error("No scan strategy provided and no scan_id present in the table.")
+        add_scan_ids(uvtbl, strategy)
+    end
+    @p let
+        uvtbl
+        group_vg(_.scan_id)
+        map() do __
+            extrema(_.datetime)
+            Interval(__...)
+        end
     end
 end
