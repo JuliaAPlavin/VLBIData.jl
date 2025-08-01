@@ -1,7 +1,7 @@
 aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs) |> UV)
 
-function average_data(uvtbl, strategy::AbstractScanStrategy; avgvals=U.weightedmean)
-    uvtbl_with_scans = add_scan_ids(uvtbl, strategy)
+function average_data(strategy::AbstractScanStrategy, uvtbl; avgvals=U.weightedmean)
+    uvtbl_with_scans = add_scan_ids(strategy, uvtbl)
     const_part = @p getproperties(uvtbl_with_scans) (@delete __[(:freq_spec, :stokes, :scan_id, :value, :spec)]) _filter(allequal) map(uniqueonly)
     return _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
 end
@@ -27,13 +27,13 @@ end
     interval = 1u"minute"
 end
 
-function average_data(src_, strategy::FixedTimeIntervals; avgvals=U.weightedmean)
+function average_data(strategy::FixedTimeIntervals, src_; avgvals=U.weightedmean)
     src = StructArray(src_)
     const_part = @p getproperties(src) (@delete __[(:freq_spec, :stokes, :value, :spec)]) _filter(allequal) map(uniqueonly)
-    return _average_data_by_time(src, strategy, const_part; avgvals)
+    return _average_data_by_time(strategy, src, const_part; avgvals)
 end
 
-function _average_data_by_time(src, strategy::FixedTimeIntervals, const_part; avgvals)
+function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; avgvals)
     mindt = minimum(src.datetime)
     avg_interval = @p let
         float(strategy.interval)
