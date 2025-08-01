@@ -5,8 +5,8 @@ using TestItemRunner
 @testitem "Antenna" begin
     using AccessorsExtra
 
-    a = Antenna(:MyAnt, (1.0, 2.0, 3.0))
-    b = Antenna(:XXAnt, (2, 3, 5))
+    a = Antenna(:MyAnt, xyz=(1.0, 2.0, 3.0))
+    b = Antenna(:XXAnt, xyz=(2, 3, 5))
     @test antenna_names(a) == (:MyAnt,)
     @test antenna_names((a, b)) == (:MyAnt, :XXAnt)
     @test antenna_names([a, b]) == [:MyAnt, :XXAnt]
