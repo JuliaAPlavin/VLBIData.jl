@@ -33,7 +33,7 @@ VisAmpSpec(bl::Baseline, uv::UV) = VisAmpSpec(VisSpec(bl, uv))
 
 Base.conj(spec::VisSpec) = @p let
 	spec
-	@modify(reverse, Baseline(__).ant_names)
+	@modify(conj, Baseline(__))
 	@modify(-, __.uv)
 end
 Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
