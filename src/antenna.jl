@@ -1,4 +1,4 @@
-@enum AntennaMountType begin
+@enumx AntennaMountType begin
     # codes 0-6 must correspond those from the uvfits standard:
     AltAzimuth = 0
     Equatorial = 1
@@ -15,7 +15,7 @@ end
 Base.@kwdef struct Antenna
     name::Symbol
     xyz::SVector{3, Float64} = SVector(NaN, NaN, NaN)
-    mount_type::AntennaMountType = AntennaMountType.Unknown
+    mount_type::AntennaMountType.T = AntennaMountType.Unknown
     poltypes::NTuple{2, Symbol} = (:U, :U)
 end
 @batteries Antenna eq=false
