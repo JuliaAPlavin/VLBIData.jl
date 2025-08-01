@@ -25,6 +25,8 @@ end
 end
 
 @testitem "stokes_to_feeds" begin
+    using Accessors.InverseFunctions: test_inverse
+
     # Test circular polarization
     @test stokes_to_feeds(:RR) == (:R, :R)
     @test stokes_to_feeds(:RL) == (:R, :L)
@@ -36,6 +38,9 @@ end
     # Test mixed polarizations
     @test stokes_to_feeds(:RX) == (:R, :X)
     @test stokes_to_feeds(:LY) == (:L, :Y)
+
+    test_inverse(stokes_to_feeds, :RX; compare=(==))
+    test_inverse(stokes_to_feeds, :YL; compare=(==))
     
     # Test error cases
     @test_throws ErrorException stokes_to_feeds(:I)
