@@ -1,7 +1,10 @@
-closures_all(::Type{T}, data::AbstractVector) where {T} = @p let
-	data
-	group_vg((;_.freq_spec, _.stokes, _.datetime))
-	flatmap(closures_scan(T, _))
+function closures_all(::Type{T}, data::AbstractVector) where {T}
+	NT = intersect_nt_type(eltype(data), NamedTuple{(:freq_spec, :stokes, :datetime)})
+	@p let
+		data
+		group_vg(NT)
+		flatmap(closures_scan(T, _))
+	end
 end
 
 function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
