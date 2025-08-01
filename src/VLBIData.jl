@@ -61,7 +61,7 @@ end
 @accessor visibility(x::NamedTuple) = x.value
 
 _reverse_stokes(s::Symbol) =
-	s ∈ (:I, :RR, :LL) ? s :
+	s ∈ (:RR, :L, :I, :total) ? s :
 	s == :RL ? :LR :
 	s == :LR ? :RL :
 	error("Unknown stokes symbol: $s")
