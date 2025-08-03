@@ -160,27 +160,27 @@ end
     using Unitful
     
     uvtbl = VLBI.load(joinpath(pkgdir(VLBIFiles), "test/data/SR1_3C279_2017_101_hi_hops_netcal_StokesI.uvfits")) |> uvtable
-    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 0.6789 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard(2u"minute")) ≈ 0.6789 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard(2u"minute", rayleigh_q=0.2)) ≈ 0.605 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter()) ≈ 0.7293 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter(2u"minute")) ≈ 0.7260 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter(2u"minute", min_cnt_avg=5)) ≈ 0.7275 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter(0.7u"minute", min_cnt_avg=5)) ≈ 0.6855 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2)) ≈ 0.6789 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.2)) ≈ 0.7042 rtol=1e-3
-    @test_throws "don't agree" VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.05))
-    @test length(VLBI.rescale_visibility_errors(uvtbl, VLBI.ConsecutiveDifferencesStandard())) == length(uvtbl)
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 0.6789 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) ≈ 0.6789 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute", rayleigh_q=0.2), uvtbl) ≈ 0.605 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 0.7293 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(2u"minute"), uvtbl) ≈ 0.7260 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(2u"minute", min_cnt_avg=5), uvtbl) ≈ 0.7275 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(0.7u"minute", min_cnt_avg=5), uvtbl) ≈ 0.6855 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl) ≈ 0.6789 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.2), uvtbl) ≈ 0.7042 rtol=1e-3
+    @test_throws "don't agree" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.05), uvtbl)
+    @test length(VLBI.rescale_visibility_errors(VLBI.ConsecutiveDifferencesStandard(), uvtbl)) == length(uvtbl)
 
     uvtbl = VLBI.load(joinpath(pkgdir(VLBIFiles), "test/data/vis_multichan.vis")) |> uvtable
-    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 0.4298 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter()) ≈ 0.4306 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 0.4298 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 0.4306 rtol=1e-3
 
     uvtbl = VLBI.load(joinpath(pkgdir(VLBI), "test/data/datafile_01-01_230GHz.uvfits")) |> uvtable
-    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 27.79 rtol=1e-3
-    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard(2u"minute")) |> isnothing
-    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter()) ≈ 26.30 rtol=1e-3
-    @test_throws "couldn't be estimated" VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2))
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 27.79 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) |> isnothing
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 26.30 rtol=1e-3
+    @test_throws "couldn't be estimated" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl)
 end
 
 @testitem "comradebase" begin
