@@ -6,7 +6,7 @@
         VisSpec(Baseline((5, 2)), UV([-4.282665f6, -2.8318948f7]))
     ))
     @test UVs(cas) == (UV(4.282665f6, -2.8318948f7), UV(-1.425433f6, 2.8318948f7), UV(1.425433f6, 2.8318948f7), UV(-4.282665f6, -2.8318948f7))
-    @test map(:name, antennas(cas)) == (:ANT2, :ANT9, :ANT3, :ANT5)
+    @test antenna_names(cas) == (:ANT2, :ANT9, :ANT3, :ANT5)
     @test string(cas) == "ClosureAmp ANT2 - ANT9 - ANT3 - ANT5"
 
     cps = ClosurePhaseSpec((
@@ -15,7 +15,7 @@
         VisSpec(Baseline((3, 2)), UV([1.425433f6, 2.8318948f7]))
     ))
     @test UVs(cps) == (UV(4.282665f6, -2.8318948f7), UV(-1.425433f6, 2.8318948f7), UV(1.425433f6, 2.8318948f7))
-    @test map(:name, antennas(cps)) == (:ANT2, :ANT9, :ANT3)
+    @test antenna_names(cps) == (:ANT2, :ANT9, :ANT3)
     @test string(cps) == "ClosurePhase ANT2 - ANT9 - ANT3"
 end
 
