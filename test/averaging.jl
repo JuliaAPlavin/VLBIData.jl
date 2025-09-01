@@ -83,12 +83,12 @@ end
     # Should create more scans due to shorter threshold
     # Gap between 0:00:10 and 0:00:30 is 20s > 15s threshold, so new scan
     # Gap between 0:05:30 and 0:05:50 is 20s > 15s threshold, so new scan
-    @test uvtbl_short_gaps.scan_id == [1, 1, 2, 3, 4, 5]
+    @test uvtbl_short_gaps.scan_id::Vector{Int} == [1, 1, 2, 3, 4, 5]
     
     # Test with very large gap threshold
     uvtbl_long_gaps = VLBI.add_scan_ids(VLBI.GapBasedScans(min_gap=10u"minute"), uvtbl_scans)
     # Should create only one scan since all gaps are < 10 minutes
-    @test uvtbl_long_gaps.scan_id == [1, 1, 1, 1, 1, 1]
+    @test uvtbl_long_gaps.scan_id::Vector{Int} == [1, 1, 1, 1, 1, 1]
     
     # Test scan_intervals with strategy=nothing on data that already has scan_id
     intervals_from_existing = VLBI.scan_intervals(uvtbl_with_scans)
