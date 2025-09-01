@@ -8,7 +8,7 @@ function closures_all(::Type{T}, data::AbstractVector) where {T}
 end
 
 function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
-	bls = @p data map(Baseline)
+	bls = @p data map(Baseline(_))
 	@assert allunique(bls)
 	all_ant_names = @p bls flatmap(antenna_names) unique sort
 	@p let
@@ -37,7 +37,7 @@ function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
 end
 
 function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
-	bls = @p data map(Baseline)
+	bls = @p data map(Baseline(_))
 	@assert allunique(bls)
 	all_ant_names = @p bls flatmap(antenna_names) unique sort
 	@p let
