@@ -11,6 +11,7 @@ end
 nom_vses(x::ClosureAmpSpec) = (x.vses[1], x.vses[3])
 denom_vses(x::ClosureAmpSpec) = (x.vses[2], x.vses[4])
 
+AccessorsExtra.hasoptic(::Union{ClosurePhaseSpec, ClosureAmpSpec}, ::Type{UV}) = false
 @accessor UVs(x::Union{ClosurePhaseSpec,ClosureAmpSpec}) = map(UV, x.vses)
 
 antenna_names(x::Union{ClosurePhaseSpec,ClosureAmpSpec}) = (@assert isvalid(x); map(vs -> first(antenna_names(vs)), x.vses))
