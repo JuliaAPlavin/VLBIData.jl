@@ -2,13 +2,13 @@ aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs
 
 function average_data(strategy::AbstractScanStrategy, uvtbl; avgvals=U.weightedmean)
     uvtbl_with_scans = add_scan_ids(strategy, uvtbl)
-    const_part = @p getproperties(uvtbl_with_scans) (@delete __[(:freq_spec, :stokes, :scan_id, :value, :spec)]) _filter(allequal) map(uniqueonly)
+    const_part = @p getproperties(uvtbl_with_scans) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec)]) _filter(allequal) map(uniqueonly)
     return _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
 end
 
 function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
     intervals = scan_intervals(uvtbl_with_scans)
-    NT = intersect_nt_type(eltype(uvtbl_with_scans), NamedTuple{(:freq_spec, :stokes, :scan_id)})
+    NT = intersect_nt_type(eltype(uvtbl_with_scans), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
     @p begin
         uvtbl_with_scans
         groupview_vg((;bl=Baseline(_), NT(_)...))
@@ -30,7 +30,7 @@ end
 
 function average_data(strategy::FixedTimeIntervals, src_; avgvals=U.weightedmean)
     src = StructArray(src_)
-    const_part = @p getproperties(src) (@delete __[(:freq_spec, :stokes, :value, :spec)]) _filter(allequal) map(uniqueonly)
+    const_part = @p getproperties(src) (@delete __[(:source, :freq_spec, :stokes, :value, :spec)]) _filter(allequal) map(uniqueonly)
     return _average_data_by_time(strategy, src, const_part; avgvals)
 end
 
@@ -40,7 +40,7 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
         float(strategy.interval)
         iszero(__) ? oftype(__, 1u"ms") : __
     end
-    NT = intersect_nt_type(eltype(src), NamedTuple{(:freq_spec, :stokes)})
+    NT = intersect_nt_type(eltype(src), NamedTuple{(:source, :freq_spec, :stokes)})
     @p begin
         src
         groupview_vg((;
