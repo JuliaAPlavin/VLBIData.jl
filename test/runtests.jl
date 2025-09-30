@@ -68,7 +68,7 @@ end
     @test hasoptic(spec, UV)
     @test !hasoptic(spec, antenna_names)
     @test_broken conj(spec) == VLBI.VisSpec0(UV(-10, 20))
-    @test string(spec) == "VisSpec0: [10, -20]"
+    @test string(spec) == "Vis, 22.4"
     @test spec == VLBI.VisSpec0(UV(10, -20.))
     @test spec != VLBI.VisSpec0(UV(10, -21))
 
@@ -80,7 +80,7 @@ end
     @test hasoptic(spec, UV)
     @test hasoptic(spec, antenna_names)
     @test conj(spec) == VisSpec(Baseline((3, 2)), UV(-10, 20))
-    @test string(spec) == "Vis ANT2 - ANT3"
+    @test string(spec) == "Vis ANT2 - ANT3, 22.4"
     @test spec == VisSpec(Baseline((2, 3)), UV(10, -20.))
     @test spec != VisSpec(Baseline((2, 4)), UV(10, -20))
     @test spec != VisSpec(Baseline((2, 3)), UV(10, -21))
@@ -92,7 +92,7 @@ end
     @test antenna_names(aspec) == (:ANT2, :ANT3)
     @test VisSpec(aspec) == spec
     @test conj(aspec) == VisAmpSpec(VisSpec(Baseline((3, 2)), UV(-10, 20)))
-    @test string(aspec) == "VisAmp ANT2 - ANT3"
+    @test string(aspec) == "VisAmp ANT2 - ANT3, 22.4"
     @test aspec == VisAmpSpec(Baseline((2, 3)), UV(10, -20.))
     @test aspec != VisAmpSpec(Baseline((2, 4)), UV(10, -20))
     @test aspec != VisAmpSpec(Baseline((2, 3)), UV(10, -21))
