@@ -5,28 +5,28 @@
     using VLBIData.StructArrays
 
     uvtbl_orig = [
-        (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 0, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 2)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 0, 20), spec=VisSpec(Baseline(1, (1, 3)), UV(0, 3)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 20, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 4)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5)), freq_spec=123, stokes=:LL, value=1±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5)), freq_spec=124, stokes=:LL, value=1±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 2)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 20), spec=VisSpec(Baseline(1, (1, 3)), UV(0, 3)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020, 1, 1, 0, 20, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 4)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5)), freq_spec=123, stokes=:LL, value=1±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5)), freq_spec=124, stokes=:LL, value=1±ᵤ0.1, source="SgrA*"),
     ]
 
     @test VLBI.average_bytime(uvtbl_orig, 0u"minute")::StructArray == [
-        (freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1))),
-        (freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 2))),
-        (freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 20), spec=VisSpec(Baseline(1, (1, 3)), UV(0, 3))),
-        (freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 4))),
-        (freq_spec=123, stokes=:LL, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5))),
-        (freq_spec=124, stokes=:LL, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5))),
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1))),
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 2))),
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 20), spec=VisSpec(Baseline(1, (1, 3)), UV(0, 3))),
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 4))),
+        (source="SgrA*", freq_spec=123, stokes=:LL, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5))),
+        (source="SgrA*", freq_spec=124, stokes=:LL, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline(1, (1, 2)), UV(0, 5))),
     ]
     @test VLBI.average_bytime(uvtbl_orig, 10u"minute")::StructArray == [
-        (freq_spec = 123, stokes = :RR, count = 2, value = 1±ᵤ0.07071067811865475, datetime = DateTime("2020-01-01T00:05:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 1.5))),
-        (freq_spec = 123, stokes = :RR, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:05:00"), spec = VisSpec(Baseline(1, (1, 3)), UV(0, 3.))),
-        (freq_spec = 123, stokes = :RR, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 4.))),
-        (freq_spec = 123, stokes = :LL, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 5.))),
-        (freq_spec = 124, stokes = :LL, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 5.))),
+        (source="SgrA*", freq_spec = 123, stokes = :RR, count = 2, value = 1±ᵤ0.07071067811865475, datetime = DateTime("2020-01-01T00:05:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 1.5))),
+        (source="SgrA*", freq_spec = 123, stokes = :RR, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:05:00"), spec = VisSpec(Baseline(1, (1, 3)), UV(0, 3.))),
+        (source="SgrA*", freq_spec = 123, stokes = :RR, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 4.))),
+        (source="SgrA*", freq_spec = 123, stokes = :LL, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 5.))),
+        (source="SgrA*", freq_spec = 124, stokes = :LL, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline(1, (1, 2)), UV(0, 5.))),
     ]
 end
 
@@ -116,16 +116,16 @@ end
     # Create test data with multiple observations per scan for the same baseline/freq/stokes
     uvtbl_for_avg = StructArray([
         # Scan 1: observations in chronological order
-        (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(1, 1)), freq_spec=123, stokes=:RR, value=2±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 0, 15), spec=VisSpec(Baseline(1, (1, 3)), UV(5, 5)), freq_spec=123, stokes=:RR, value=10±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 0, 30), spec=VisSpec(Baseline(1, (1, 2)), UV(2, 2)), freq_spec=123, stokes=:RR, value=4±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 0, 45), spec=VisSpec(Baseline(1, (1, 2)), UV(6, 6)), freq_spec=123, stokes=:LL, value=12±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(1, 1)), freq_spec=123, stokes=:RR, value=2±ᵤ0.1, source="M87"),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 15), spec=VisSpec(Baseline(1, (1, 3)), UV(5, 5)), freq_spec=123, stokes=:RR, value=10±ᵤ0.1, source="M87"),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 30), spec=VisSpec(Baseline(1, (1, 2)), UV(2, 2)), freq_spec=123, stokes=:RR, value=4±ᵤ0.1, source="M87"),
+        (datetime=DateTime(2020, 1, 1, 0, 0, 45), spec=VisSpec(Baseline(1, (1, 2)), UV(6, 6)), freq_spec=123, stokes=:LL, value=12±ᵤ0.1, source="M87"),
         
         # Gap of 5 minutes (> 1 minute threshold)
         
         # Scan 2: 2 observations for same baseline/freq/stokes - should be averaged
-        (datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(3, 3)), freq_spec=123, stokes=:RR, value=6±ᵤ0.1),
-        (datetime=DateTime(2020, 1, 1, 0, 5, 30), spec=VisSpec(Baseline(1, (1, 2)), UV(4, 4)), freq_spec=123, stokes=:RR, value=8±ᵤ0.1),
+        (datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline(1, (1, 2)), UV(3, 3)), freq_spec=123, stokes=:RR, value=6±ᵤ0.1, source="M87"),
+        (datetime=DateTime(2020, 1, 1, 0, 5, 30), spec=VisSpec(Baseline(1, (1, 2)), UV(4, 4)), freq_spec=123, stokes=:RR, value=8±ᵤ0.1, source="M87"),
     ])
 
     strategy = VLBI.GapBasedScans(min_gap=1u"minute")
@@ -168,5 +168,13 @@ end
         :RR,
         :LL,
         :RR,
+    ]
+    
+    # Test that source column is maintained
+    @test averaged.source == [
+        "M87",  # (1,2) RR scan1
+        "M87",  # (1,3) RR scan1
+        "M87",  # (1,2) LL scan1
+        "M87"   # (1,2) RR scan2
     ]
 end
