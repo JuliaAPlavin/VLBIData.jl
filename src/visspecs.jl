@@ -46,11 +46,13 @@ Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
 visibility(visf::Function, spec::Union{VisSpec0, VisSpec,VisAmpSpec}) = visf(UV(spec))
 
 function Base.show(io::IO, s::AbstractSpec)
-	ants = antenna_names(s)
-	print(io,
-		chopsuffix(string(typeof(s).name.name), "Spec"), " ",
-		join(ants, " - ")
-	)
+	print(io, chopsuffix(string(typeof(s).name.name), r"Spec\d?"))
+	if hasoptic(s, antenna_names)
+		ants = antenna_names(s)
+		print(io, " ", join(ants, " - "))
+	end
+	if hasoptic(s, UV)
+		uvdist = hypot(UV(s)...)
+		print(io, ", ", @sprintf "%.3g" uvdist)
+	end
 end
-
-Base.show(io::IO, s::VisSpec0) = print(io, "VisSpec0: ", s.uv)
