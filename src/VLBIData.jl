@@ -18,6 +18,7 @@ using DelimitedFiles: readdlm
 using DateFormats: julian_day
 using PyFormattedStrings
 @reexport using InterferometricModels
+import InterferometricModels: UV
 using Statistics
 using Uncertain
 
