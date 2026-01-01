@@ -2,7 +2,7 @@ aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs
 
 function average_data(strategy::AbstractScanStrategy, uvtbl; avgvals=U.weightedmean)
     uvtbl_with_scans = add_scan_ids(strategy, uvtbl)
-    const_part = @p getproperties(uvtbl_with_scans) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec)]) _filter(allequal) map(uniqueonly)
+    const_part = @p getproperties(uvtbl_with_scans) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec)]) filter(allequal) map(uniqueonly)
     return _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
 end
 
@@ -30,7 +30,7 @@ end
 
 function average_data(strategy::FixedTimeIntervals, src_; avgvals=U.weightedmean)
     src = StructArray(src_)
-    const_part = @p getproperties(src) (@delete __[(:source, :freq_spec, :stokes, :value, :spec)]) _filter(allequal) map(uniqueonly)
+    const_part = @p getproperties(src) (@delete __[(:source, :freq_spec, :stokes, :value, :spec)]) filter(allequal) map(uniqueonly)
     return _average_data_by_time(strategy, src, const_part; avgvals)
 end
 
@@ -60,8 +60,3 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
 end
 
 _mean(i::Interval) = minimum(i) + (maximum(i) - minimum(i)) ÷ 2
-if VERSION ≥ v"1.11"
-    _filter(pred, x) = filter(pred, x)
-else
-    _filter(f, xs::NamedTuple) = xs[filter(k -> f(xs[k]), keys(xs))]
-end
