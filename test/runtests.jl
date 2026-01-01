@@ -225,6 +225,39 @@ end
     @test uvtbl[10].freq_spec ≈ 230u"GHz"
 end
 
+@testitem "polarizedtypes extension (manual table)" begin
+    using PolarizedTypes
+    using VLBIData
+
+    # Create a minimal fake uvtable with all 4 stokes
+    uvtbl = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LL, value=14.0),
+        (datetime=2, freq_spec=200.0, spec=2, stokes=:RR, value=21.0),
+        (datetime=2, freq_spec=200.0, spec=2, stokes=:LR, value=22.0),
+        (datetime=2, freq_spec=200.0, spec=2, stokes=:RL, value=23.0),
+        (datetime=2, freq_spec=200.0, spec=2, stokes=:LL, value=24.0),
+    ]
+    cm_tbl = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl)
+
+    @test length(cm_tbl) == 2
+    @test cm_tbl[1].value isa CoherencyMatrix
+    @test cm_tbl[2].value isa CoherencyMatrix
+    @test cm_tbl[1].value == [11 13; 12 14]
+    @test cm_tbl[2].value == [21 23; 22 24]
+    @test !haskey(cm_tbl[1], :stokes)
+
+    # Error case: group with not 4 elements (missing :LL)
+    uvtbl_err = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+    ]
+    @test_throws "expected 4" VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_err)
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true))
