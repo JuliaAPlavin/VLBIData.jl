@@ -9,6 +9,7 @@ using InterferometricModels
 import InterferometricModels: UV, visibility
 using Statistics: mean, median, quantile, std
 using Uncertain
+using IntervalSets
 using StructHelpers
 
 
@@ -28,6 +29,7 @@ include("trivial_calculations.jl")
 include("averaging.jl")
 include("error_rescaling.jl")
 include("reindex.jl")
+include("scans.jl")
 
 
 function uvtable end
@@ -66,7 +68,8 @@ using Reexport
 	conjvis, add_conjvis, average_bytime, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
-	uv_reindex, uvtable, uvtable_values_to
+	uv_reindex, uvtable, uvtable_values_to,
+	GapBasedScans, add_scan_ids, scan_intervals
 end
 
 end
