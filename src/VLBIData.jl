@@ -7,7 +7,7 @@ using StaticArrays
 using StructArrays
 using InterferometricModels
 import InterferometricModels: UV, visibility
-using Statistics: mean
+using Statistics: mean, median, quantile, std
 using Uncertain
 using StructHelpers
 
