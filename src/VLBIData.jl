@@ -15,7 +15,8 @@ using StructHelpers
 export VLBI,
 	Antenna, antennas, Baseline,
 	UV, UVs, visibility, frequency,
-	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec
+	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
+	uvtable
 
 
 include("antenna.jl")
@@ -28,6 +29,8 @@ include("averaging.jl")
 include("error_rescaling.jl")
 include("reindex.jl")
 
+
+function uvtable end
 
 function frequency end
 
@@ -49,14 +52,15 @@ AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UVs}) = hasproperty(x, :spec) && h
 AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec) && hasoptic(x.spec, Baseline)
 
 baremodule VLBI
-import ..VLBIData:
+using Reexport
+@reexport import ..VLBIData:
 	Antenna, antennas, Baseline,
 	UV, UVs, visibility, frequency,
 	VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_bytime, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
-	uv_reindex
+	uv_reindex, uvtable
 end
 
 end
