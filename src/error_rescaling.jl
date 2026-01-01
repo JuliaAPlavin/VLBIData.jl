@@ -21,7 +21,7 @@ ErrMulSame(methods...; rtol) = ErrMulSame(methods, rtol)
 
 function find_errmul(uvtbl, m::CoherentAverageScatter)
     avg_t = @something(m.maxΔt, 15*typical_Δt(uvtbl))
-    avg_t ∈ (30u"s"..16u"minute") || @warn "Strange Δt for averaging, consider specifying maxΔt explicitly" Δt=avg_t
+    30u"s" < avg_t < 16u"minute" || @warn "Strange Δt for averaging, consider specifying maxΔt explicitly" Δt=avg_t
     uvtbl_avg = @p compute_avgs(uvtbl; maxΔt=avg_t, min_cnt=m.min_cnt_avg) map(_.std / _.err)
     length(uvtbl_avg) ≥ m.min_cnt_after || return nothing
     return median(uvtbl_avg)
@@ -31,8 +31,11 @@ function find_errmul(uvtbl, m::ConsecutiveDifferencesStandard)
     diffs = compute_diffs(uvtbl; maxΔt=@something(m.maxΔt, 3*typical_Δt(uvtbl)))
     length(diffs) ≥ m.min_cnt || return nothing
     q = m.rayleigh_q
-    @p diffs map(_.abs / _.err) quantile(__, q) / quantile(Rayleigh(), q)
+    @p diffs map(_.abs / _.err) quantile(__, q) / quantile_rayleigh(q)
 end
+
+# same as quantile(Rayleigh(), q), but dependency-free
+quantile_rayleigh(q) = √(-2 * log(1 - q))
 
 function find_errmul(uvtbl, m::ErrMulSame)
     emuls = @p map(find_errmul(uvtbl, _), m.methods)
@@ -65,12 +68,12 @@ function typical_Δt(uvtbl)
         map(_ |> u"minute" |> float)
         median
     end
-    Δt ∈ (1u"s"..5u"minute") || @warn "Strange automatic median Δt" Δt
+    1u"s" < Δt < 5u"minute" || @warn "Strange automatic median Δt" Δt
     Δt
 end
 
 compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
-    average_vis(uvtbl, maxΔt; avgvals=vals -> (err=U.uncertainty(U.weightedmean(vals)), std=std(U.value.(vals)) / √length(vals) / √2))
+    average_bytime(uvtbl, maxΔt; avgvals=vals -> (err=U.uncertainty(U.weightedmean(vals)), std=std(U.value.(vals)) / √length(vals) / √2))
     # average_vis(uvtbl, avg_t; avgvals=vals -> (std=(mean(abs2∘value, vals) - abs2(mean(value, vals))) / (length(vals) - 1) / 2 |> sqrt, err=1/√(sum(v -> 1/uncertainty(v)^2, vals)) ))  # formula from difmap
     filter(_.count ≥ min_cnt)
     map(_.value)

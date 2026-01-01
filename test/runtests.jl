@@ -97,6 +97,35 @@ end
     @test frequency((;freq_spec=MyFreq(10))) == 10
 end
 
+@testitem "visibility error rescaling" begin
+    using VLBIFiles
+    using VLBIFiles: VLBI
+    using Unitful
+    
+    uvtbl = VLBI.load(joinpath(pkgdir(VLBIFiles), "test/data/SR1_3C279_2017_101_hi_hops_netcal_StokesI.uvfits")) |> uvtable
+    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 0.6789 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard(2u"minute")) ≈ 0.6789 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard(2u"minute", rayleigh_q=0.2)) ≈ 0.605 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter()) ≈ 0.7293 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter(2u"minute")) ≈ 0.7260 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter(2u"minute", min_cnt_avg=5)) ≈ 0.7275 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter(0.7u"minute", min_cnt_avg=5)) ≈ 0.6855 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2)) ≈ 0.6789 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.2)) ≈ 0.7042 rtol=1e-3
+    @test_throws "don't agree" VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.05))
+    @test length(VLBI.rescale_visibility_errors(uvtbl, VLBI.ConsecutiveDifferencesStandard())) == length(uvtbl)
+
+    uvtbl = VLBI.load(joinpath(pkgdir(VLBIFiles), "test/data/vis_multichan.vis")) |> uvtable
+    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 0.4298 rtol=1e-3
+    @test_throws InexactError VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter())
+
+    uvtbl = VLBI.load(joinpath(pkgdir(VLBI), "test/data/datafile_01-01_230GHz.uvfits")) |> uvtable
+    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard()) ≈ 27.79 rtol=1e-3
+    @test VLBI.find_errmul(uvtbl, VLBI.ConsecutiveDifferencesStandard(2u"minute")) |> isnothing
+    @test VLBI.find_errmul(uvtbl, VLBI.CoherentAverageScatter()) ≈ 26.30 rtol=1e-3
+    @test_throws "couldn't be estimated" VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2))
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true))
