@@ -33,7 +33,7 @@ VisAmpSpec(bl::Baseline, uv::UV) = VisAmpSpec(VisSpec(bl, uv))
 
 Base.conj(spec::VisSpec) = @p let
 	spec
-	@modify(reverse, antennas(Baseline(__)))
+	@modify(reverse, Baseline(__).ant_names)
 	@modify(-, __.uv)
 end
 Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
@@ -41,10 +41,10 @@ Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
 visibility(visf::Function, spec::Union{VisSpec,VisAmpSpec}) = visf(UV(spec))
 
 function Base.show(io::IO, s::AbstractSpec)
-	ants = antennas(s)
+	ants = antenna_names(s)
 	print(io,
 		chopsuffix(string(typeof(s).name.name), "Spec"), " ",
-		(@p ants map(_.name) join(__, " - "))
+		join(ants, " - ")
 	)
 end
 

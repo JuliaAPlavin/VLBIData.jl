@@ -6,14 +6,12 @@ end
 Baseline(ant_ids::NTuple{2, Integer}) = Baseline(Symbol.(:ANT, ant_ids))
 
 @accessor Baseline(bl::Baseline) = bl
-
-antennas(b::Baseline) = map(Antenna, b.ant_names)
-Accessors.set(b::Baseline, ::typeof(antennas), ants) = setproperties(b, ant_names=map(a -> a.name, ants))
+@accessor antenna_names(bl::Baseline) = bl.ant_names
 
 AccessorsExtra.hasoptic(::Baseline, ::Type{UV}) = false
 AccessorsExtra.hasoptic(::UV, ::Type{Baseline}) = false
 
 function Base.show(io::IO, bl::Baseline)
-	ants = antennas(bl)
-	print(io, "Baseline ", (@p ants map(_.name) join(__, " - ")))
+	ants = antenna_names(bl)
+	print(io, "Baseline ", join(ants, " - "))
 end

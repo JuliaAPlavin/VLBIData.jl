@@ -13,11 +13,11 @@ denom_vses(x::ClosureAmpSpec) = (x.vses[2], x.vses[4])
 
 @accessor UVs(x::Union{ClosurePhaseSpec,ClosureAmpSpec}) = map(UV, x.vses)
 
-antennas(x::Union{ClosurePhaseSpec,ClosureAmpSpec}) = (@assert isvalid(x); map(vs -> first(antennas(vs)), x.vses))
+antenna_names(x::Union{ClosurePhaseSpec,ClosureAmpSpec}) = (@assert isvalid(x); map(vs -> first(antenna_names(vs)), x.vses))
 
 function Base.isvalid(x::Union{ClosurePhaseSpec,ClosureAmpSpec})
 	for i in eachindex(x.vses)
-		antennas(x.vses[i])[2] == antennas(x.vses[mod1(i+1, length(x.vses))])[1] || return false
+		antenna_names(x.vses[i])[2] == antenna_names(x.vses[mod1(i+1, length(x.vses))])[1] || return false
 	end
 	return true
 end

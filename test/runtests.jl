@@ -7,9 +7,9 @@ using TestItemRunner
 
     a = Antenna(:MyAnt, (1.0, 2.0, 3.0))
     b = Antenna(:XXAnt, (2, 3, 5))
-    @test antennas(a) == (a,)
-    @test antennas((a, b)) == (a, b)
-    @test antennas([a, b]) == [a, b]
+    @test antenna_names(a) == (:MyAnt,)
+    @test antenna_names((a, b)) == (:MyAnt, :XXAnt)
+    @test antenna_names([a, b]) == [:MyAnt, :XXAnt]
     @test (@oget UV(a) UV((a, b)) 123) == 123
     
     @test Antenna(:A) < Antenna(:B)
@@ -34,13 +34,13 @@ end
     @test bl == Baseline((:A, :B))
     @test bl != Baseline((:A, :C))
 
-    @test antennas(bl) == (Antenna(:A, SVector(NaN, NaN, NaN)), Antenna(:B, SVector(NaN, NaN, NaN)))
-    Accessors.test_getset_laws(antennas, bl, (Antenna(:XX, SVector(NaN, NaN, NaN)), Antenna(:YY, SVector(NaN, NaN, NaN))), (Antenna(:ZZ, SVector(NaN, NaN, NaN)), Antenna(:WW, SVector(NaN, NaN, NaN))))
+    @test antenna_names(bl) == (:A, :B)
+    Accessors.test_getset_laws(antenna_names, bl, (:XX, :YY), (:ZZ, :WW))
 
     @test (@oget UV(bl) 123) == 123
 
     @test Baseline((;spec=bl)) == bl
-    @test antennas((;spec=bl)) == antennas(bl)
+    @test antenna_names((;spec=bl)) == antenna_names(bl)
 
     @test string(bl) == "Baseline A - B"
 end
@@ -52,7 +52,7 @@ end
 
     uv = UV(1, 2)
     @test (@oget UV(uv) 123) == uv
-    @test (@oget antennas(uv) 123) == 123
+    @test (@oget antenna_names(uv) 123) == 123
     @test (@oget Baseline(uv) 123) == 123
 
     @test UV((;spec=uv)) == uv
@@ -66,7 +66,7 @@ end
     @test UV(spec) == UV(10, -20)
     @test !hasoptic(spec, Baseline)
     @test hasoptic(spec, UV)
-    @test !hasoptic(spec, antennas)
+    @test !hasoptic(spec, antenna_names)
     @test_broken conj(spec) == VLBI.VisSpec0(UV(-10, 20))
     @test string(spec) == "VisSpec0: [10, -20]"
     @test spec == VLBI.VisSpec0(UV(10, -20.))
@@ -75,10 +75,10 @@ end
     spec = VisSpec(Baseline((2, 3)), UV(10, -20))
     @test Baseline(spec) == Baseline((2, 3))
     @test UV(spec) == UV(10, -20)
-    @test antennas(spec) == (Antenna(:ANT2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, SVector(NaN, NaN, NaN)))
+    @test antenna_names(spec) == (:ANT2, :ANT3)
     @test hasoptic(spec, Baseline)
     @test hasoptic(spec, UV)
-    @test hasoptic(spec, antennas)
+    @test hasoptic(spec, antenna_names)
     @test conj(spec) == VisSpec(Baseline((3, 2)), UV(-10, 20))
     @test string(spec) == "Vis ANT2 - ANT3"
     @test spec == VisSpec(Baseline((2, 3)), UV(10, -20.))
@@ -89,7 +89,7 @@ end
     @test aspec == VisAmpSpec(Baseline((2, 3)), UV(10, -20))
     @test Baseline(aspec) == Baseline((2, 3))
     @test UV(aspec) == UV(10, -20)
-    @test antennas(aspec) == (Antenna(:ANT2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, SVector(NaN, NaN, NaN)))
+    @test antenna_names(aspec) == (:ANT2, :ANT3)
     @test VisSpec(aspec) == spec
     @test conj(aspec) == VisAmpSpec(VisSpec(Baseline((3, 2)), UV(-10, 20)))
     @test string(aspec) == "VisAmp ANT2 - ANT3"
@@ -98,7 +98,7 @@ end
     @test aspec != VisAmpSpec(Baseline((2, 3)), UV(10, -21))
 
     @test Baseline((;spec)) == Baseline(spec)
-    @test antennas((;spec)) == antennas(spec)
+    @test antenna_names((;spec)) == antenna_names(spec)
     @test UV((;spec)) == UV(spec)
     @test VLBI.conjvis((;spec, value=1+2im)) == (spec=conj(spec), value=1-2im)
     @test VLBI.conjvis((;spec, value=1+2im, stokes=:RR)) == (spec=conj(spec), value=1-2im, stokes=:RR)

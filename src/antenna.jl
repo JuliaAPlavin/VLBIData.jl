@@ -6,9 +6,8 @@ end
 
 Antenna(name::Symbol) = Antenna(; name)
 
-antennas(x::Antenna) = (x,)
-antennas(x::NTuple{<:Any,Antenna}) = x
-antennas(x::AbstractVector{Antenna}) = x
+antenna_names(a::Antenna) = (a.name,)
+antenna_names(a::Union{NTuple{<:Any,Antenna}, AbstractVector{Antenna}}) = map(only∘antenna_names, a)
 
 AccessorsExtra.hasoptic(::Union{Antenna,NTuple{<:Any,Antenna},AbstractVector{Antenna}}, ::Type{UV}) = false
 
