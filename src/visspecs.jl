@@ -10,8 +10,8 @@ end
 
 AccessorsExtra.hasoptic(::VisSpec0, ::Type{Baseline}) = false
 
-struct VisSpec{TUV<:UV} <: AbstractSpec
-	bl::Baseline
+struct VisSpec{TUV<:UV, BL<:Baseline} <: AbstractSpec
+	bl::BL
 	uv::TUV
 end
 @batteries VisSpec
