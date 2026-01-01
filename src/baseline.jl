@@ -11,6 +11,8 @@ antenna_names(bl::Baseline) = error("Not implemented for $bl")
 
 Base.conj(bl::Baseline) = @modify(reverse, bl.antennas)
 
+Base.isless(a::Baseline, b::Baseline) = isless(a.antennas, b.antennas)
+
 AccessorsExtra.hasoptic(::Baseline, ::Type{UV}) = false
 AccessorsExtra.hasoptic(::UV, ::Type{Baseline}) = false
 
