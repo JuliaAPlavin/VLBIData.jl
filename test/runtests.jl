@@ -168,16 +168,16 @@ end
     @test length(df) == 160560
     @test all(∈(Tables.schema(df).names), [:uv, :visibility, :if_ix, :datetime])
     @test all(isconcretetype, Tables.schema(df).types)
-    @test df[1].uv === VLBI.UV(-6.4672084f7, 8.967541f7)
+    @test df[1].uv === UV(-6.4672084f7, 8.967541f7)
     target = (
-        baseline = VLBIData.Baseline(1, (8, 9), (:OV, :PT)),
+        baseline = VLBI.Baseline(1, (8, 9), (:OV, :PT)),
         datetime = DateTime("2010-12-24T04:57:34.999"),
         stokes = :RR,
         if_ix = Int8(1),
-        if_spec = VLBIData.FrequencyWindow(1.5329522f10u"Hz", 8.0f6u"Hz", 1, 1),
-        uv_m = VLBIData.UV(417953.38f0u"m", 860236.9f0u"m"),
+        if_spec = VLBI.FrequencyWindow(1.5329522f10u"Hz", 8.0f6u"Hz", 1, 1),
+        uv_m = UV(417953.38f0u"m", 860236.9f0u"m"),
         w_m = -179245.12f0u"m",
-        uv = VLBIData.UV(2.1377114f7, 4.3998644f7),
+        uv = UV(2.1377114f7, 4.3998644f7),
         w = -9.167873f6,
         visibility = 0.4755191f0 + 0.0043343306f0im,
         weight = 946.5216f0
@@ -187,7 +187,7 @@ end
     @test map(typeof, res) == map(typeof, target)
     df_cols = Tables.columntable(df)
     @test mean(df_cols.uv_m) ≈ SVector(-174221.2u"m", 314413.6u"m")
-    @test mean(v->abs.(v), df_cols.uv) ≈ VLBI.UV(1.0778852f8, 7.967933f7)
+    @test mean(v->abs.(v), df_cols.uv) ≈ UV(1.0778852f8, 7.967933f7)
     @test mean(df_cols.visibility) ≈ 0.2495917 + 0.0010398296im
     @test first(df) == first(table(uv, pyimport))
     @test df == table(uv, pyimport)
@@ -208,7 +208,7 @@ end
     )
     @test VLBI.antennas(tbl[12345]) == (VLBI.Antenna(:FD, 2, VLBI.SVector(NaN, NaN, NaN)), VLBI.Antenna(:PT, 9, VLBI.SVector(NaN, NaN, NaN)))
     @test VLBI.Baseline(tbl[12345]) == VLBI.Baseline(1, (2, 9), (:FD, :PT))
-    @test VLBI.UV(tbl[12345]) == VLBI.UV(4.282665f6, -2.8318948f7)
+    @test UV(tbl[12345]) == UV(4.282665f6, -2.8318948f7)
     @test VLBI.visibility(tbl[12345]) == (0.48758677f0 - 0.09014242f0im) ±ᵤ 0.040410895f0
 end
 
@@ -226,14 +226,14 @@ end
     @test length(uv.freq_windows) == 8
     df = table(uv)
     target = (
-        baseline = VLBIData.Baseline(1, (3, 5), (:HN, :LA)),
+        baseline = VLBI.Baseline(1, (3, 5), (:HN, :LA)),
         datetime = DateTime("1996-06-05T19:16:45.001"),
         stokes = :LL,
         if_ix = Int8(3),
-        if_spec = VLBIData.FrequencyWindow(4.84099f9u"Hz", 8.0f6u"Hz", 16, 1),
-        uv_m = VLBIData.UV(2.2424022f6u"m", 794705.06f0u"m"),
+        if_spec = VLBI.FrequencyWindow(4.84099f9u"Hz", 8.0f6u"Hz", 16, 1),
+        uv_m = UV(2.2424022f6u"m", 794705.06f0u"m"),
         w_m = -1.838948f6u"m",
-        uv = VLBIData.UV(3.6239796f7, 1.2843347f7),
+        uv = UV(3.6239796f7, 1.2843347f7),
         w = -2.9719512f7,
         visibility = -0.21484283f0 - 0.35979474f0im,
         weight = 3.0233376f0
@@ -257,7 +257,7 @@ end
     uv = VLBI.load(VLBI.UVData, "./data/hops_3600_OJ287_LO+HI.medcal_dcal_full.uvfits")
     @test length(uv.freq_windows) == 2
     df = table(uv)
-    target = (baseline = VLBIData.Baseline(1, (2, 3), (:AP, :AZ)), datetime = Dates.DateTime("2017-04-10T00:58:45.005"), stokes = :RR, if_ix = Int8(1), if_spec = VLBIData.FrequencyWindow(2.270707f11u"Hz", 1.856f9u"Hz", 1, 1), uv_m = VLBI.UV(3.9143352f6u"m", -5.933179f6u"m"), w_m = 0.0f0u"m", uv = VLBI.UV(2.9769375f9, -4.5123123f9), w = 0.0f0, visibility = 0.5662228f0 + 0.014944182f0im, weight = 117.818825f0)
+    target = (baseline = VLBI.Baseline(1, (2, 3), (:AP, :AZ)), datetime = Dates.DateTime("2017-04-10T00:58:45.005"), stokes = :RR, if_ix = Int8(1), if_spec = VLBI.FrequencyWindow(2.270707f11u"Hz", 1.856f9u"Hz", 1, 1), uv_m = UV(3.9143352f6u"m", -5.933179f6u"m"), w_m = 0.0f0u"m", uv = UV(2.9769375f9, -4.5123123f9), w = 0.0f0, visibility = 0.5662228f0 + 0.014944182f0im, weight = 117.818825f0)
     res = filter(r -> r.baseline.ant_ids == target.baseline.ant_ids && r.datetime == target.datetime && r.if_ix == target.if_ix && r.stokes == target.stokes, df)[1]
     @test res == target
     @test map(typeof, res) == map(typeof, target)
@@ -277,7 +277,7 @@ end
     uv = VLBI.load(VLBI.UVData, "./data/SR1_3C279_2017_101_hi_hops_netcal_StokesI.uvfits")
     @test length(uv.freq_windows) == 1
     df = table(uv)
-    target = (baseline = VLBIData.Baseline(1, (1, 2), (:AA, :AP)), datetime = Dates.DateTime("2017-04-11T02:14:55"), stokes = :RR, if_ix = Int8(1), if_spec = VLBIData.FrequencyWindow(2.290707f11u"Hz", 1.856f9u"Hz", 1, 1), uv_m = VLBI.UV(895.6223f0u"m", -2436.5188f0u"m"), w_m = 0.0f0u"m", uv = VLBI.UV(687115.25f0, -1.8692805f6), w = 0.0f0, visibility = -1.1796279f0 - 7.8919725f0im, weight = 40441.19f0)
+    target = (baseline = VLBI.Baseline(1, (1, 2), (:AA, :AP)), datetime = Dates.DateTime("2017-04-11T02:14:55"), stokes = :RR, if_ix = Int8(1), if_spec = VLBI.FrequencyWindow(2.290707f11u"Hz", 1.856f9u"Hz", 1, 1), uv_m = UV(895.6223f0u"m", -2436.5188f0u"m"), w_m = 0.0f0u"m", uv = UV(687115.25f0, -1.8692805f6), w = 0.0f0, visibility = -1.1796279f0 - 7.8919725f0im, weight = 40441.19f0)
     res = filter(r -> r.baseline.ant_ids == target.baseline.ant_ids && r.datetime == target.datetime && r.if_ix == target.if_ix && r.stokes == target.stokes, df)[1]
     @test res == target
     @test map(typeof, res) == map(typeof, target)
@@ -397,15 +397,15 @@ end
     @test bl.array_ix == 1
     @test bl.ants_ix == (2, 3)
 
-    @test (@oget VLBI.UV([1,2]) 123) == VLBI.UV(1, 2)
-    @test (@oget VLBI.UV(bl) 123) == 123
+    @test (@oget UV([1,2]) 123) == UV(1, 2)
+    @test (@oget UV(bl) 123) == 123
     ants = VLBI.antennas(bl)
     ant = ants[1]
-    @test (@oget VLBI.UV(ants) 123) == 123
-    @test (@oget VLBI.UV(ant) 123) == 123
+    @test (@oget UV(ants) 123) == 123
+    @test (@oget UV(ant) 123) == 123
     @test (@oget VLBI.antennas(ants) 123) == ants
     @test (@oget VLBI.antennas(ant) 123) == (ant,)
-    uv = VLBI.UV(1, 2)
+    uv = UV(1, 2)
     @test (@oget VLBI.antennas(uv) 123) == 123
 end
 
