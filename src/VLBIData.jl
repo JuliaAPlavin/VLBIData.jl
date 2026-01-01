@@ -75,7 +75,7 @@ using Reexport
 	Antenna, antennas, Baseline,
 	UV, UVs, visibility, frequency,
 	VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
-	conjvis, add_conjvis, average_bytime, average_data, closures_scan, closures_all,
+	conjvis, add_conjvis, average_data, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
 	uv_reindex, uvtable, uvtable_values_to,
