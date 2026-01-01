@@ -15,12 +15,11 @@ function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
         groupview_vg((;bl=Baseline(_), _.freq_spec, _.stokes, _.scan_id))
         map((;
             const_part...,
-            delete(key(_), @o _.bl _.scan_id)...,
+            delete(key(_), @o _.bl)...,
             count = length(_),
             value = avgvals(_.value),
             datetime = _mean(intervals[key(_).scan_id]),
             spec = aggspec(key(_).bl, _.spec),
-            scan_id = key(_).scan_id,
         ))
         StructArray()
     end
