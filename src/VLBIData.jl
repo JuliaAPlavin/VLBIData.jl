@@ -51,8 +51,18 @@ AccessorsExtra.hasoptic(obj, ::typeof(antennas)) = AccessorsExtra.hasoptic(obj, 
 @accessor Baseline(x::NamedTuple) = Baseline(x.spec)
 @accessor UV(x::NamedTuple) = UV(x.spec)
 @accessor UVs(x::NamedTuple) = UVs(x.spec)
-conjvis(x::NamedTuple) = modify(conj, x, @o _.value _.spec)
+conjvis(x::NamedTuple) = @p let
+	x
+	modify(conj, __, @o _.value _.spec)
+	modify(_reverse_stokes, __, @maybe _.stokes)
+end
 @accessor visibility(x::NamedTuple) = x.value
+
+_reverse_stokes(s::Symbol) =
+	s ∈ (:I, :RR, :LL) ? s :
+	s == :RL ? :LR :
+	s == :LR ? :RL :
+	error("Unknown stokes symbol: $s")
 
 # XXX: hasoptic should be handled by @accessor
 AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UV}) = hasproperty(x, :spec) && hasoptic(x.spec, UV)
