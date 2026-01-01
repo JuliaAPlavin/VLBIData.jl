@@ -11,6 +11,7 @@ using Statistics: mean, median, quantile, std
 using Uncertain
 using IntervalSets
 using StructHelpers
+using EnumX
 
 
 export VLBI,
