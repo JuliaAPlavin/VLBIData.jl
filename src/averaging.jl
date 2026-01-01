@@ -1,8 +1,10 @@
 function average_bytime(src_, avg_interval_; avgvals=U.weightedmean)
 	src = StructArray(src_)
 	mindt = minimum(src.datetime)
-	avg_interval = float(avg_interval_)
-	avg_interval = iszero(avg_interval) ? oftype(avg_interval, 1u"ms") : avg_interval
+	avg_interval = @p let
+		float(avg_interval_)
+		iszero(__) ? oftype(__, 1u"ms") : __
+	end
 	@p begin
 		src
 		groupview_vg((;
@@ -20,4 +22,4 @@ function average_bytime(src_, avg_interval_; avgvals=U.weightedmean)
 	end
 end
 
-aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(UV, specs) |> UV)
+aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs) |> UV)
