@@ -42,3 +42,7 @@ stokes_to_feeds(s::Symbol) =
 	s == :LY ? (:L, :Y) :
 	s == :YL ? (:Y, :L) :
 	error("Cannot convert stokes $s to feed types")
+
+feeds_to_stokes(feeds::NTuple{2,Any}) = Symbol(feeds...)
+Accessors.InverseFunctions.inverse(::typeof(stokes_to_feeds)) = feeds_to_stokes
+Accessors.InverseFunctions.inverse(::typeof(feeds_to_stokes)) = stokes_to_feeds
