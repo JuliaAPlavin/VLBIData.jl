@@ -162,6 +162,9 @@ end
     uvtbl = VLBI.load(joinpath(pkgdir(VLBIFiles), "test/data/SR1_3C279_2017_101_hi_hops_netcal_StokesI.uvfits")) |> uvtable
     filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
 
+    @test issetequal(sort(uvtbl), uvtbl)
+    @test issetequal(sort(uvtbl; by=Baseline), uvtbl)
+
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 0.6789 rtol=1e-3
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) ≈ 0.6789 rtol=1e-3
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute", rayleigh_q=0.2), uvtbl) ≈ 0.605 rtol=1e-3
