@@ -23,6 +23,11 @@ export VLBI,
 	is_parallel_hands, is_cross_hands, stokes_to_feeds
 
 
+# before Julia 1.11:
+filter(f, xs) = Base.filter(f, xs)
+filter(f, xs::NamedTuple) = xs[Base.filter(k -> f(xs[k]), keys(xs))]
+
+
 include("antenna.jl")
 include("baseline.jl")
 include("stokes.jl")
@@ -70,6 +75,7 @@ AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec)
 
 
 @generated intersect_nt_type(::Type{<:NamedTuple{KS1}}, ::Type{<:NamedTuple{KS2}}) where {KS1,KS2} = NamedTuple{Tuple(KS1 ∩ KS2)}
+
 
 baremodule VLBI
 using Reexport
