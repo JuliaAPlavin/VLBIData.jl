@@ -18,11 +18,13 @@ export VLBI,
 	Antenna, antenna_names, Baseline,
 	UV, UVs, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
-	uvtable
+	uvtable,
+	is_parallel_hands, is_cross_hands, stokes_to_feeds
 
 
 include("antenna.jl")
 include("baseline.jl")
+include("stokes.jl")
 include("visspecs.jl")
 include("closurespecs.jl")
 include("closure_calculations.jl")
@@ -59,12 +61,6 @@ conjvis(x::NamedTuple) = @p let
 	modify(_reverse_stokes, __, @maybe _.stokes)
 end
 @accessor visibility(x::NamedTuple) = x.value
-
-_reverse_stokes(s::Symbol) =
-	s ∈ (:RR, :L, :I, :total) ? s :
-	s == :RL ? :LR :
-	s == :LR ? :RL :
-	error("Unknown stokes symbol: $s")
 
 # XXX: hasoptic should be handled by @accessor
 AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UV}) = hasproperty(x, :spec) && hasoptic(x.spec, UV)
