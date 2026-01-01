@@ -67,10 +67,23 @@ end
     using AccessorsExtra
     using StaticArrays
 
+    spec = VLBI.VisSpec0(UV(10, -20))
+    @test UV(spec) == UV(10, -20)
+    @test !hasoptic(spec, Baseline)
+    @test hasoptic(spec, UV)
+    @test !hasoptic(spec, antennas)
+    @test_broken conj(spec) == VLBI.VisSpec0(UV(-10, 20))
+    @test string(spec) == "VisSpec0: [10, -20]"
+    @test spec == VLBI.VisSpec0(UV(10, -20.))
+    @test spec != VLBI.VisSpec0(UV(10, -21))
+
     spec = VisSpec(Baseline(1, (2, 3)), UV(10, -20))
     @test Baseline(spec) == Baseline(1, (2, 3))
     @test UV(spec) == UV(10, -20)
     @test antennas(spec) == (Antenna(:ANT2, 2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, 3, SVector(NaN, NaN, NaN)))
+    @test hasoptic(spec, Baseline)
+    @test hasoptic(spec, UV)
+    @test hasoptic(spec, antennas)
     @test conj(spec) == VisSpec(Baseline(1, (3, 2)), UV(-10, 20))
     @test string(spec) == "Vis 2-3: ANT2 - ANT3"
     @test spec == VisSpec(Baseline(1, (2, 3)), UV(10, -20.))
@@ -101,6 +114,52 @@ end
     end
     VLBI.frequency(x::MyFreq) = x.freq
     @test frequency((;freq_spec=MyFreq(10))) == 10
+end
+
+@testitem "renumbering" begin
+    uvtbl_orig = [
+        (spec=VLBI.VisSpec0(UV(0, 1)), freq_spec=123, stokes=:RR, value=1),
+        (spec=VLBI.VisSpec0(UV(0, 2)), freq_spec=123, stokes=:RR, value=2),
+        (spec=VLBI.VisSpec0(UV(0, 5)), freq_spec=124, stokes=:LL, value=3),
+    ]
+    @test VLBI.uv_reindex(uvtbl_orig) == [
+        (spec=VLBI.VisSpec0(UV(0, 1)), freq_spec=123, stokes=:RR, value=1),
+        (spec=VLBI.VisSpec0(UV(0, 2)), freq_spec=123, stokes=:RR, value=2),
+        (spec=VLBI.VisSpec0(UV(0, 5)), freq_spec=124, stokes=:LL, value=3),
+    ]
+
+    uvtbl_orig = [
+        (spec=VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1)), stokes=:RR, value=1),
+        (spec=VisSpec(Baseline(1, (2, 2), (:A, :B)), UV(0, 2)), stokes=:RR, value=2),
+        (spec=VisSpec(Baseline(1, (1, 2), (:C, :B)), UV(0, 5)), stokes=:LL, value=3),
+    ]
+    @test VLBI.uv_reindex(uvtbl_orig) == [
+        (spec=VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1)), stokes=:RR, value=1),
+        (spec=VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 2)), stokes=:RR, value=2),
+        (spec=VisSpec(Baseline(1, (3, 2), (:C, :B)), UV(0, 5)), stokes=:LL, value=3),
+    ]
+
+    uvtbl_orig = [
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=123, stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (2, 2), (:A, :B)), UV(0, 2))), freq_spec=123, stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:C, :B)), UV(0, 5))), freq_spec=124, stokes=:LL, value=3),
+    ]
+    @test VLBI.uv_reindex(uvtbl_orig) == [
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=123, stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 2))), freq_spec=123, stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (3, 2), (:C, :B)), UV(0, 5))), freq_spec=124, stokes=:LL, value=3),
+    ]
+
+    uvtbl_orig = [
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=(;ix=123), stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (2, 2), (:A, :B)), UV(0, 2))), freq_spec=(;ix=123), stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:C, :B)), UV(0, 5))), freq_spec=(;ix=124), stokes=:LL, value=3),
+    ]
+    @test VLBI.uv_reindex(uvtbl_orig) == [
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=(;ix=1), stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 2))), freq_spec=(;ix=1), stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline(1, (3, 2), (:C, :B)), UV(0, 5))), freq_spec=(;ix=2), stokes=:LL, value=3),
+    ]
 end
 
 @testitem "visibility error rescaling" begin

@@ -26,6 +26,7 @@ include("closure_calculations.jl")
 include("trivial_calculations.jl")
 include("averaging.jl")
 include("error_rescaling.jl")
+include("reindex.jl")
 
 
 function frequency end
@@ -42,14 +43,20 @@ AccessorsExtra.hasoptic(obj, ::typeof(antennas)) = AccessorsExtra.hasoptic(obj, 
 conjvis(x::NamedTuple) = modify(conj, x, @o _.value _.spec)
 @accessor visibility(x::NamedTuple) = x.value
 
+# XXX: hasoptic should be handled by @accessor
+AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UV}) = hasproperty(x, :spec) && hasoptic(x.spec, UV)
+AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UVs}) = hasproperty(x, :spec) && hasoptic(x.spec, UVs)
+AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec) && hasoptic(x.spec, Baseline)
+
 baremodule VLBI
 import ..VLBIData:
 	Antenna, antennas, Baseline,
 	UV, UVs, visibility, frequency,
-	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
+	VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_bytime, closures_scan, closures_all,
 	uvshift,
-	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors
+	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
+	uv_reindex
 end
 
 end
