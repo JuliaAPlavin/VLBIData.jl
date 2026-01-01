@@ -11,6 +11,12 @@ using TestItemRunner
     @test antennas((a, b)) == (a, b)
     @test antennas([a, b]) == [a, b]
     @test (@oget UV(a) UV((a, b)) 123) == 123
+    
+    @test Antenna(:A, 1) < Antenna(:B, 2)
+    @test Antenna(:B, 1) < Antenna(:A, 2)
+    @test !(Antenna(:B, 2) < Antenna(:A, 1))
+    @test Antenna(:A, 1) ≥ Antenna(:A, 1)
+    @test Antenna(:A, 1) ≥ Antenna(:A, 0)
 
     @test string(a) == "Antenna #2: MyAnt"
 end
