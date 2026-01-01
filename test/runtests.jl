@@ -191,6 +191,37 @@ end
     @test_throws "couldn't be estimated" VLBI.find_errmul(uvtbl, VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2))
 end
 
+@testitem "comradebase" begin
+    import ComradeBase as CB
+    using Unitful
+
+    p = (; U = 0.1 * randn(60), V = 0.1 * randn(60), Ti = collect(Float64, 1:60), Fr = fill(230.0e9, 60))
+    d = rand(60)
+    m = CB.UnstructuredMap(d, CB.UnstructuredDomain(p))
+    uvtbl = VLBI.uvtable(m)
+    @test length(uvtbl) == 60
+    @test issetequal(keys(uvtbl[10]), (:spec, :freq_spec, :value, :datetime))
+    @test uvtbl[10].spec::UV == UV(p.U[10], p.V[10])
+    @test uvtbl[10].freq_spec ≈ 230u"GHz"
+    @test uvtbl[10].value == d[10]
+    @test uvtbl[10].datetime == p.Ti[10]
+
+    m = CB.UnstructuredMap(d, CB.UnstructuredDomain(p[(:U, :V)]))
+    uvtbl = VLBI.uvtable(m)
+    @test length(uvtbl) == 60
+    @test issetequal(keys(uvtbl[10]), (:spec, :value))
+    @test uvtbl[10].spec::UV == UV(p.U[10], p.V[10])
+    @test uvtbl[10].value == d[10]
+
+    m = CB.UnstructuredMap(d, CB.UnstructuredDomain(p[(:U, :V, :Fr)]))
+    uvtbl = VLBI.uvtable(m)
+    @test length(uvtbl) == 60
+    @test issetequal(keys(uvtbl[10]), (:spec, :value, :freq_spec))
+    @test uvtbl[10].spec::UV == UV(p.U[10], p.V[10])
+    @test uvtbl[10].value == d[10]
+    @test uvtbl[10].freq_spec ≈ 230u"GHz"
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true))
