@@ -14,7 +14,7 @@ using StructHelpers
 
 
 export VLBI,
-	Antenna, antennas, Baseline,
+	Antenna, antenna_names, Baseline,
 	UV, UVs, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	uvtable
@@ -42,9 +42,10 @@ function frequency(q::Quantity)
 	q
 end
 
-function antennas end
-@accessor antennas(x) = antennas(Baseline(x))
-AccessorsExtra.hasoptic(obj, ::typeof(antennas)) = AccessorsExtra.hasoptic(obj, Baseline)
+function antenna_names end
+# fallbacks:
+@accessor antenna_names(x) = antenna_names(Baseline(x))
+AccessorsExtra.hasoptic(obj, ::typeof(antenna_names)) = AccessorsExtra.hasoptic(obj, Baseline)
 
 
 @accessor frequency(x::NamedTuple) = frequency(x.freq_spec)
@@ -72,7 +73,7 @@ AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec)
 baremodule VLBI
 using Reexport
 @reexport import ..VLBIData:
-	Antenna, antennas, Baseline,
+	Antenna, antenna_names, Baseline,
 	UV, UVs, visibility, frequency,
 	VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_data, closures_scan, closures_all,
