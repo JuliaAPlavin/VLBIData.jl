@@ -16,7 +16,7 @@ using EnumX
 
 export VLBI,
 	Antenna, antenna_names, Baseline,
-	UV, UVs, visibility, frequency,
+	UV, UVs, UVarea, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	uvtable,
 	is_parallel_hands, is_cross_hands, stokes_to_feeds
@@ -74,7 +74,7 @@ baremodule VLBI
 using Reexport
 @reexport import ..VLBIData:
 	Antenna, antenna_names, Baseline,
-	UV, UVs, visibility, frequency,
+	UV, UVs, UVarea, visibility, frequency,
 	AbstractSpec, VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_data, closures_scan, closures_all,
 	uvshift,

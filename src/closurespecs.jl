@@ -26,3 +26,20 @@ visibility(visf::Function, spec::ClosurePhaseSpec) = prod(visf, UVs(spec))
 
 visibility(visf::Function, spec::ClosureAmpSpec) =
 	visf(UV(spec.vses[1]))*visf(UV(spec.vses[3])) / (visf(UV(spec.vses[2]))*visf(UV(spec.vses[4])))
+
+
+UVarea(x) = _UVarea(UVs(x))
+
+# Triangle area - compute 2D determinant directly
+function _UVarea(uvs::NTuple{3,StaticVector{2}})
+    v1 = uvs[2] - uvs[1]
+    v2 = uvs[3] - uvs[1]
+    return abs(v1[1] * v2[2] - v1[2] * v2[1]) / 2
+end
+
+# Convex quadrangle - try both diagonal splits, take the maximum
+function _UVarea(uvs::NTuple{4,StaticVector{2}})
+    area1 = _UVarea((uvs[1], uvs[2], uvs[3])) + _UVarea((uvs[1], uvs[3], uvs[4]))
+    area2 = _UVarea((uvs[1], uvs[2], uvs[4])) + _UVarea((uvs[2], uvs[3], uvs[4]))
+    return max(area1, area2)
+end
