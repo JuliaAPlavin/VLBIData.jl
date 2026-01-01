@@ -115,11 +115,15 @@ end
         VisSpec(Baseline((9, 3)), UV([3, 4])),
         VisSpec(Baseline((3, 5)), UV([5, 6])),
         VisSpec(Baseline((5, 2)), UV([7, 8])),
+        VisSpec(Baseline((3, 2)), UV([9, 10])),
     )
-    cas = ClosureAmpSpec(visspecs)
-    vises = (0.2586332168367465 + 0.7959911936251323im, -0.3322517918545724 + 0.24139505678833204im, -0.09224042204143246 - 0.06701658941426379im, 0.005534089140668198 - 0.01703217504149487im)
+    cas = ClosureAmpSpec(visspecs[1:4])
+    cps = ClosurePhaseSpec(visspecs[[1,2,5]])
+    vises = (0.2586332168367465 + 0.7959911936251323im, -0.3322517918545724 + 0.24139505678833204im, -0.09224042204143246 - 0.06701658941426379im, 0.005534089140668198 - 0.01703217504149487im, 0.0015915127983935817 - 3.8980821087094936e-19im)
     @test visibility.(model, visspecs) == vises
     avis = vises[1] * vises[3] / (vises[2] * vises[4])
+    pvis = vises[1] * vises[2] * vises[5]
     @test visibility(model, cas) ≈ avis
     @test visibility(visibility(model), cas) ≈ avis
+    @test visibility(model, cps) ≈ pvis
 end

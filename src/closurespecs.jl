@@ -22,5 +22,7 @@ function Base.isvalid(x::Union{ClosurePhaseSpec,ClosureAmpSpec})
 	return true
 end
 
+visibility(visf::Function, spec::ClosurePhaseSpec) = prod(visf, UVs(spec))
+
 visibility(visf::Function, spec::ClosureAmpSpec) =
 	visf(UV(spec.vses[1]))*visf(UV(spec.vses[3])) / (visf(UV(spec.vses[2]))*visf(UV(spec.vses[4])))
