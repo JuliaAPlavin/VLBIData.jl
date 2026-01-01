@@ -7,7 +7,7 @@ end
 function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
 	bls = @p data map(Baseline)
 	@assert allunique(bls)
-	all_ant_names = @p bls flatmap(_.ant_names) unique sort
+	all_ant_names = @p bls flatmap(antenna_names) unique sort
 	@p let
 		ant_id_sets_for_closures(T, all_ant_names)
 		filtermap() do ant_names
@@ -19,8 +19,8 @@ function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
 			)
 			curdata = map(cbls) do bl
 				rs = @p data filtermap(
-					Baseline(_).ant_names == bl ? _ :
-					conj(_.spec).bl.ant_names == bl ? conjvis(_) :
+					antenna_names(Baseline(_)) == bl ? _ :
+					antenna_names(conj(Baseline(_))) == bl ? conjvis(_) :
 					nothing)
 				isempty(rs) ? nothing : only(rs)
 			end
@@ -36,7 +36,7 @@ end
 function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
 	bls = @p data map(Baseline)
 	@assert allunique(bls)
-	all_ant_names = @p bls flatmap(_.ant_names) unique sort
+	all_ant_names = @p bls flatmap(antenna_names) unique sort
 	@p let
 		Iterators.product(all_ant_names, all_ant_names, all_ant_names)
 		collect
@@ -49,8 +49,8 @@ function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
 			)
 			curdata = map(cbls) do bl
 				rs = @p data filtermap(
-					Baseline(_).ant_names == bl ? _ :
-					conj(_.spec).bl.ant_names == bl ? conjvis(_) :
+					antenna_names(Baseline(_)) == bl ? _ :
+					antenna_names(conj(Baseline(_))) == bl ? conjvis(_) :
 					nothing)
 				isempty(rs) ? nothing : only(rs)
 			end

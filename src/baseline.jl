@@ -1,12 +1,15 @@
-struct Baseline
-    ant_names::NTuple{2, Symbol}
+struct Baseline{T}
+    antennas::NTuple{2, T}
 end
 @batteries Baseline selfconstructor=false
 
-Baseline(ant_ids::NTuple{2, Integer}) = Baseline(Symbol.(:ANT, ant_ids))
-
 @accessor Baseline(bl::Baseline) = bl
-@accessor antenna_names(bl::Baseline) = bl.ant_names
+@accessor antenna_names(bl::Baseline{Symbol}) = bl.antennas
+@accessor antenna_names(bl::Baseline{Int}) = Symbol.(:ANT, bl.antennas)
+@accessor antenna_names(bl::Baseline{Antenna}) = map(a -> a.name, bl.antennas)
+antenna_names(bl::Baseline) = error("Not implemented for $bl")
+
+Base.conj(bl::Baseline) = @modify(reverse, bl.antennas)
 
 AccessorsExtra.hasoptic(::Baseline, ::Type{UV}) = false
 AccessorsExtra.hasoptic(::UV, ::Type{Baseline}) = false

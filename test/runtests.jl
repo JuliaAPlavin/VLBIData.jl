@@ -23,14 +23,14 @@ end
     using StaticArrays
 
     bl = Baseline((2, 3))
-    @test bl.ant_names == (:ANT2, :ANT3)
+    @test antenna_names(bl) == (:ANT2, :ANT3)
     @test bl == Baseline((2, 3))
-    @test bl == Baseline((:ANT2, :ANT3))
+    @test bl != Baseline((:ANT2, :ANT3))
     @test bl != Baseline((2, 4))
     @test bl != Baseline((:ANT2, :ANT4))
 
     bl = Baseline((:A, :B))
-    @test bl.ant_names == (:A, :B)
+    @test antenna_names(bl) == (:A, :B)
     @test bl == Baseline((:A, :B))
     @test bl != Baseline((:A, :C))
 
