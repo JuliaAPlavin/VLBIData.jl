@@ -8,6 +8,7 @@
     @test UVs(cas) == (UV(4.282665f6, -2.8318948f7), UV(-1.425433f6, 2.8318948f7), UV(1.425433f6, 2.8318948f7), UV(-4.282665f6, -2.8318948f7))
     @test antenna_names(cas) == (:ANT2, :ANT9, :ANT3, :ANT5)
     @test string(cas) == "ClosureAmp ANT2 - ANT9 - ANT3 - ANT5"
+    @test UVarea(cas) ≈ 3.2329467f14
 
     cps = ClosurePhaseSpec((
         VisSpec(Baseline((2, 9)), UV([4.282665f6, -2.8318948f7])),
@@ -17,6 +18,7 @@
     @test UVs(cps) == (UV(4.282665f6, -2.8318948f7), UV(-1.425433f6, 2.8318948f7), UV(1.425433f6, 2.8318948f7))
     @test antenna_names(cps) == (:ANT2, :ANT9, :ANT3)
     @test string(cps) == "ClosurePhase ANT2 - ANT9 - ANT3"
+    @test UVarea(cps) ≈ 8.073353f13
 end
 
 @testitem "closure amplitude calculations" begin
