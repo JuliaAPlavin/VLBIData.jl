@@ -69,7 +69,7 @@ using Reexport
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
 	uv_reindex, uvtable, uvtable_values_to,
-	GapBasedScans, add_scan_ids, scan_intervals
+	GapBasedScans, FixedTimeIntervals, add_scan_ids, scan_intervals
 end
 
 end
