@@ -1,5 +1,7 @@
 abstract type AbstractSpec end
 
+(::Type{T})(x::NamedTuple) where {T<:AbstractSpec} = x.spec::T
+
 visibility(model, spec::AbstractSpec) = visibility(visibility(model), spec)
 visibility(visf::Function, spec::AbstractSpec) = throw(MethodError(visibility, (visf, spec)))
 
