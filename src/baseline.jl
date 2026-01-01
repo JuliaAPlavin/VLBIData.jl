@@ -7,7 +7,7 @@ end
 @accessor antenna_names(bl::Baseline{Symbol}) = bl.antennas
 @accessor antenna_names(bl::Baseline{Int}) = Symbol.(:ANT, bl.antennas)
 @accessor antenna_names(bl::Baseline{Antenna}) = map(a -> a.name, bl.antennas)
-antenna_names(bl::Baseline) = error("Not implemented for $bl")
+antenna_names(bl::Baseline) = error("Not implemented for $(typeof(bl.antennas))")
 
 Base.conj(bl::Baseline) = @modify(reverse, bl.antennas)
 
