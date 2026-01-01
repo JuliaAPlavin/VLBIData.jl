@@ -57,7 +57,7 @@ Base.@kwdef struct Antenna
     xyz::SVector{3, Float64}
 end
 
-function Antenna(hdu_row)
+function Antenna(hdu_row::NamedTuple)
     if !isempty(hdu_row.ORBPARM) && hdu_row.ORBPARM != 0
         @warn "Antennas with ORBPARM detected, be careful" hdu_row.ORBPARM hdu_row.ANNAME
     end
