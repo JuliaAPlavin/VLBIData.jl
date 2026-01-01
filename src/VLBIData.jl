@@ -33,6 +33,10 @@ include("reindex.jl")
 function uvtable end
 
 function frequency end
+function frequency(q::Quantity)
+	q |> u"Hz"  # to throw an error
+	q
+end
 
 function antennas end
 @accessor antennas(x) = antennas(Baseline(x))
