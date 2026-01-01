@@ -13,7 +13,7 @@
         (datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 5)), freq_spec=124, stokes=:LL, value=1±ᵤ0.1, source="SgrA*"),
     ]
 
-    @test VLBI.average_data(uvtbl_orig, VLBI.FixedTimeIntervals(0u"minute"))::StructArray == [
+    @test VLBI.average_data(VLBI.FixedTimeIntervals(0u"minute"), uvtbl_orig)::StructArray == [
         (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 1))),
         (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 2))),
         (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 20), spec=VisSpec(Baseline((1, 3)), UV(0, 3))),
@@ -21,12 +21,12 @@
         (source="SgrA*", freq_spec=123, stokes=:LL, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 5))),
         (source="SgrA*", freq_spec=124, stokes=:LL, count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 5))),
     ]
-    @test VLBI.average_data(uvtbl_orig, VLBI.FixedTimeIntervals(10u"minute"))::StructArray == [
-        (source="SgrA*", freq_spec = 123, stokes = :RR, count = 2, value = 1±ᵤ0.07071067811865475, datetime = DateTime("2020-01-01T00:05:00"), spec = VisSpec(Baseline((1, 2)), UV(0, 1.5))),
-        (source="SgrA*", freq_spec = 123, stokes = :RR, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:05:00"), spec = VisSpec(Baseline((1, 3)), UV(0, 3.))),
-        (source="SgrA*", freq_spec = 123, stokes = :RR, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline((1, 2)), UV(0, 4.))),
-        (source="SgrA*", freq_spec = 123, stokes = :LL, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline((1, 2)), UV(0, 5.))),
-        (source="SgrA*", freq_spec = 124, stokes = :LL, count = 1, value = 1.0 ±ᵤ 0.1, datetime = Dates.DateTime("2020-01-01T00:25:00"), spec = VisSpec(Baseline((1, 2)), UV(0, 5.))),
+    @test VLBI.average_data(VLBI.FixedTimeIntervals(10u"minute"), uvtbl_orig)::StructArray == [
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=2, value=1±ᵤ0.07071067811865475, datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 1.5))),
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline((1, 3)), UV(0, 3.0))),
+        (source="SgrA*", freq_spec=123, stokes=:RR, count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 4.0))),
+        (source="SgrA*", freq_spec=123, stokes=:LL, count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 5.0))),
+        (source="SgrA*", freq_spec=124, stokes=:LL, count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 5.0))),
     ]
 end
 
@@ -59,39 +59,39 @@ end
     strategy = VLBI.GapBasedScans(min_gap=1u"minute")
     
     # Test add_scan_ids
-    uvtbl_with_scans = VLBI.add_scan_ids(uvtbl_scans, strategy)
+    uvtbl_with_scans = VLBI.add_scan_ids(strategy, uvtbl_scans)
     @test uvtbl_with_scans.scan_id == [1, 1, 1, 2, 2, 3]
     
     # Test that other columns remain unchanged after adding scan_ids
     @test uvtbl_with_scans.datetime == uvtbl_scans.datetime
 
     # Test add_scan_ids with arbitrary time order
-    uvtbl_with_scans_shuf = VLBI.add_scan_ids(reverse(uvtbl_scans), strategy)
+    uvtbl_with_scans_shuf = VLBI.add_scan_ids(strategy, reverse(uvtbl_scans))
     sort!(uvtbl_with_scans_shuf, by=x->x.datetime)
     @test uvtbl_with_scans_shuf.scan_id == uvtbl_with_scans.scan_id
     @test uvtbl_with_scans_shuf == uvtbl_with_scans
     
     # Test scan_intervals
-    intervals = VLBI.scan_intervals(uvtbl_scans, strategy)
+    intervals = VLBI.scan_intervals(strategy, uvtbl_scans)
     @test length(intervals) == 3
     @test intervals[1] == DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 30)
     @test intervals[2] == DateTime(2020, 1, 1, 0, 5, 30)..DateTime(2020, 1, 1, 0, 5, 50)
     @test intervals[3] == DateTime(2020, 1, 1, 0, 8, 50)..DateTime(2020, 1, 1, 0, 8, 50)
     
     # Test with different gap threshold
-    uvtbl_short_gaps = VLBI.add_scan_ids(uvtbl_scans, VLBI.GapBasedScans(min_gap=15u"s"))
+    uvtbl_short_gaps = VLBI.add_scan_ids(VLBI.GapBasedScans(min_gap=15u"s"), uvtbl_scans)
     # Should create more scans due to shorter threshold
     # Gap between 0:00:10 and 0:00:30 is 20s > 15s threshold, so new scan
     # Gap between 0:05:30 and 0:05:50 is 20s > 15s threshold, so new scan
     @test uvtbl_short_gaps.scan_id == [1, 1, 2, 3, 4, 5]
     
     # Test with very large gap threshold
-    uvtbl_long_gaps = VLBI.add_scan_ids(uvtbl_scans, VLBI.GapBasedScans(min_gap=10u"minute"))
+    uvtbl_long_gaps = VLBI.add_scan_ids(VLBI.GapBasedScans(min_gap=10u"minute"), uvtbl_scans)
     # Should create only one scan since all gaps are < 10 minutes
     @test uvtbl_long_gaps.scan_id == [1, 1, 1, 1, 1, 1]
     
     # Test scan_intervals with strategy=nothing on data that already has scan_id
-    intervals_from_existing = VLBI.scan_intervals(uvtbl_with_scans, nothing)
+    intervals_from_existing = VLBI.scan_intervals(uvtbl_with_scans)
     @test intervals_from_existing == intervals  # Should be same as when computed with strategy
     
     # Test that scan_intervals results are always in scan order (1, 2, 3, ...) even with unordered scan_ids
@@ -102,7 +102,7 @@ end
         (datetime=DateTime(2020, 1, 1, 0, 5, 30), scan_id=2),  # More scan 2
         (datetime=DateTime(2020, 1, 1, 0, 10, 0), scan_id=3),  # Scan 3 last
     ])
-    intervals_unordered = VLBI.scan_intervals(uvtbl_unordered, nothing)
+    intervals_unordered = VLBI.scan_intervals(uvtbl_unordered)
     @test length(intervals_unordered) == 3
     # Should be ordered by scan_id: scan 1, scan 2, scan 3
     @test intervals_unordered[1] == DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 30)   # Scan 1
@@ -110,7 +110,7 @@ end
     @test intervals_unordered[3] == DateTime(2020, 1, 1, 0, 10, 0)..DateTime(2020, 1, 1, 0, 10, 0)  # Scan 3
     
     # Test that scan_intervals with strategy=nothing fails on data without scan_id
-    @test_throws ErrorException VLBI.scan_intervals(uvtbl_scans, nothing)
+    @test_throws ErrorException VLBI.scan_intervals(uvtbl_scans)
 end
 
 @testitem "average_data by scans" begin
@@ -137,7 +137,7 @@ end
     strategy = VLBI.GapBasedScans(min_gap=1u"minute")
     
     # Test average_data
-    averaged = VLBI.average_data(uvtbl_for_avg, strategy)
+    averaged = VLBI.average_data(strategy, uvtbl_for_avg)
     
     # Should have 4 rows: baseline (1,2) RR in scan 1, baseline (1,2) RR in scan 2, baseline (1,3) RR in scan 1, baseline (1,2) LL in scan 1
     @test length(averaged) == 4

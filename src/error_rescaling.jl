@@ -19,7 +19,7 @@ end
 ErrMulSame(methods...; rtol) = ErrMulSame(methods, rtol)
 
 
-function find_errmul(uvtbl, m::CoherentAverageScatter)
+function find_errmul(m::CoherentAverageScatter, uvtbl)
     avg_t = @something(m.maxΔt, 15*typical_Δt(uvtbl))
     30u"s" < avg_t < 16u"minute" || @warn "Strange Δt for averaging, consider specifying maxΔt explicitly" Δt=avg_t
     uvtbl_avg = @p compute_avgs(uvtbl; maxΔt=avg_t, min_cnt=m.min_cnt_avg) map(_.std / _.err)
@@ -27,7 +27,7 @@ function find_errmul(uvtbl, m::CoherentAverageScatter)
     return median(uvtbl_avg)
 end
 
-function find_errmul(uvtbl, m::ConsecutiveDifferencesStandard)
+function find_errmul(m::ConsecutiveDifferencesStandard, uvtbl)
     diffs = compute_diffs(uvtbl; maxΔt=@something(m.maxΔt, 3*typical_Δt(uvtbl)))
     length(diffs) ≥ m.min_cnt || return nothing
     q = m.rayleigh_q
@@ -37,8 +37,8 @@ end
 # same as quantile(Rayleigh(), q), but dependency-free
 quantile_rayleigh(q) = √(-2 * log(1 - q))
 
-function find_errmul(uvtbl, m::ErrMulSame)
-    emuls = @p map(find_errmul(uvtbl, _), m.methods)
+function find_errmul(m::ErrMulSame, uvtbl)
+    emuls = @p map(find_errmul(_, uvtbl), m.methods)
     if any(isnothing, emuls)
         error("""Rescaling factors for visibility errors couldn't be estimated by some methods.
         
@@ -73,7 +73,7 @@ function typical_Δt(uvtbl)
 end
 
 compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
-    average_bytime(uvtbl, maxΔt; avgvals=vals -> (err=U.uncertainty(U.weightedmean(vals)), std=std(U.value.(vals)) / √length(vals) / √2))
+    average_data(FixedTimeIntervals(maxΔt), uvtbl; avgvals=vals -> (err=U.uncertainty(U.weightedmean(vals)), std=std(U.value.(vals)) / √length(vals) / √2))
     # average_vis(uvtbl, avg_t; avgvals=vals -> (std=(mean(abs2∘value, vals) - abs2(mean(value, vals))) / (length(vals) - 1) / 2 |> sqrt, err=1/√(sum(v -> 1/uncertainty(v)^2, vals)) ))  # formula from difmap
     filter(_.count ≥ min_cnt)
     map(_.value)
@@ -97,13 +97,13 @@ compute_diffs(uvtbl; maxΔt) = @p let
     end
 end
 
-multiply_errors(uvtbl, errmul) =
+multiply_errors(errmul, uvtbl) =
     @modify(uvtbl[∗].value |> U.uncertainty) do err
         err * errmul
     end
 
-function rescale_visibility_errors(uvtbl, m)
-    mul = find_errmul(uvtbl, m)
+function rescale_visibility_errors(m, uvtbl)
+    mul = find_errmul(m, uvtbl)
     isnothing(mul) && error("Couldn't determine error rescaling factor using $m")
-    multiply_errors(uvtbl, mul)
+    multiply_errors(mul, uvtbl)
 end
