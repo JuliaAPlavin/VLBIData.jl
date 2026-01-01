@@ -1,6 +1,9 @@
 abstract type AbstractSpec end
 
-(::Type{T})(x::NamedTuple) where {T<:AbstractSpec} = x.spec::T
+(::Type{T})(x::NamedTuple) where {T<:AbstractSpec} =
+	x.spec isa AbstractSpec ? x.spec::T :
+	x.spec isa AbstractVector ? VisSpec0(x.spec)::T :
+	error("Cannot convert to $T from $(typeof(x.spec))")
 
 visibility(model, spec::AbstractSpec) = visibility(visibility(model), spec)
 visibility(visf::Function, spec::AbstractSpec) = throw(MethodError(visibility, (visf, spec)))
@@ -40,7 +43,7 @@ Base.conj(spec::VisSpec) = @p let
 end
 Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
 
-visibility(visf::Function, spec::Union{VisSpec,VisAmpSpec}) = visf(UV(spec))
+visibility(visf::Function, spec::Union{VisSpec0, VisSpec,VisAmpSpec}) = visf(UV(spec))
 
 function Base.show(io::IO, s::AbstractSpec)
 	ants = antenna_names(s)
