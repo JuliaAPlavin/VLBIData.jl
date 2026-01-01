@@ -5,7 +5,7 @@ aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs
 function average_data(uvtbl, strategy::AbstractScanStrategy; avgvals=U.weightedmean)
     uvtbl_with_scans = add_scan_ids(uvtbl, strategy)
     intervals = scan_intervals(uvtbl_with_scans)
-what
+
     @p begin
         uvtbl_with_scans
         groupview_vg((;bl=Baseline(_), _.freq_spec, _.stokes, _.scan_id))
