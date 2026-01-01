@@ -8,9 +8,10 @@ end
 
 function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
     intervals = scan_intervals(uvtbl_with_scans)
+    NT = intersect_nt_type(eltype(uvtbl_with_scans), NamedTuple{(:freq_spec, :stokes, :scan_id)})
     @p begin
         uvtbl_with_scans
-        groupview_vg((;bl=Baseline(_), _.freq_spec, _.stokes, _.scan_id))
+        groupview_vg((;bl=Baseline(_), NT(_)...))
         map((;
             const_part...,
             delete(key(_), @o _.bl)...,
@@ -39,10 +40,11 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
         float(strategy.interval)
         iszero(__) ? oftype(__, 1u"ms") : __
     end
+    NT = intersect_nt_type(eltype(src), NamedTuple{(:freq_spec, :stokes)})
     @p begin
         src
         groupview_vg((;
-            bl=Baseline(_), _.freq_spec, _.stokes,
+            bl=Baseline(_), NT(_)...,
             timestep = ((_.datetime - mindt) / avg_interval) |> upreferred |> x->trunc(Int, x),
         ))
         map((;

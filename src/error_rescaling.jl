@@ -59,9 +59,10 @@ end
 
 
 function typical_Δt(uvtbl)
+    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:freq_spec, :stokes)})
     Δt = @p let
         uvtbl
-        group_vg((;_.stokes, _.freq_spec, _.spec.bl))
+        group_vg((;NT(_)..., bl=Baseline(_)))
         flatmap() do gr
             diff(gr.datetime)
         end
@@ -79,20 +80,23 @@ compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
     map(_.value)
 end
 
-compute_diffs(uvtbl; maxΔt) = @p let
-    uvtbl
-    group_vg((;_.stokes, _.freq_spec, _.spec.bl))
-    flatmap() do gr
-        Δs = @p let
-            gr
-            @aside @assert issorted(__, by=:datetime)
-            zip(__[begin:end-1], __[begin+1:end])
-            collect
-            filter(_[2].datetime - _[1].datetime ≤ maxΔt)
-            map(_[2].value - _[1].value)
-        end
-        map(Δs) do Δ
-            (abs=abs(U.value(Δ)), err=U.uncertainty(Δ))
+function compute_diffs(uvtbl; maxΔt)
+    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:freq_spec, :stokes)})
+    @p let
+        uvtbl
+        group_vg((;NT(_)..., bl=Baseline(_)))
+        flatmap() do gr
+            Δs = @p let
+                gr
+                @aside @assert issorted(__, by=:datetime)
+                zip(__[begin:end-1], __[begin+1:end])
+                collect
+                filter(_[2].datetime - _[1].datetime ≤ maxΔt)
+                map(_[2].value - _[1].value)
+            end
+            map(Δs) do Δ
+                (abs=abs(U.value(Δ)), err=U.uncertainty(Δ))
+            end
         end
     end
 end
