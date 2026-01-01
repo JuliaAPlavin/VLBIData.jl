@@ -12,7 +12,7 @@ end
 
 @deprecate Baseline(array_ix::Integer, ant_ids::NTuple{2, Integer}) Baseline(array_ix, ant_ids, (Symbol(:ANT, ant_ids[1]), Symbol(:ANT, ant_ids[2])))
 
-@accessor Baseline(bl::Baseline) = identity(bl)
+@accessor Baseline(bl::Baseline) = bl
 
 antennas(b::Baseline) =
     map(b.ant_ids, b.ant_names) do id, name
