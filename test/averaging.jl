@@ -64,6 +64,12 @@ end
     
     # Test that other columns remain unchanged after adding scan_ids
     @test uvtbl_with_scans.datetime == uvtbl_scans.datetime
+
+    # Test add_scan_ids with arbitrary time order
+    uvtbl_with_scans_shuf = VLBI.add_scan_ids(reverse(uvtbl_scans), strategy)
+    sort!(uvtbl_with_scans_shuf, by=x->x.datetime)
+    @test uvtbl_with_scans_shuf.scan_id == uvtbl_with_scans.scan_id
+    @test uvtbl_with_scans_shuf == uvtbl_with_scans
     
     # Test scan_intervals
     intervals = VLBI.scan_intervals(uvtbl_scans, strategy)
