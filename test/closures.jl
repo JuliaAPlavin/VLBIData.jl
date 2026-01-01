@@ -66,6 +66,10 @@ end
     @test length(clas) == binomial(5, 4) * Int(factorial(3) / 2) == 15
     @test all(==(6), nbls)
     @test all(c -> c.value === 1±ᵤ0.2, clas)
+
+    cla = @inferred VLBI.closures_all(ClosureAmpSpec, collect(uvgr))
+    @test length(cla) == 15
+    @test cla == collect(clas)
 end
 
 @testitem "closure phase calculations" begin
@@ -106,6 +110,10 @@ end
     @test length(clps) == binomial(5, 3) * Int(factorial(2) / 2) == 10
     @test all(==(3), nbls)
     @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
+
+    clp = @inferred VLBI.closures_all(ClosurePhaseSpec, collect(uvgr))
+    @test length(clp) == 10
+    @test clp == collect(clps)
 end
 
 @testitem "model evaluation" begin
