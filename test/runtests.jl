@@ -97,6 +97,9 @@ end
     @test aspec != VisAmpSpec(Baseline((2, 4)), UV(10, -20))
     @test aspec != VisAmpSpec(Baseline((2, 3)), UV(10, -21))
 
+    @test VLBI.AbstractSpec((;spec)) == spec
+    @test VisSpec((;spec)) == spec
+    @test_throws "expected VLBIData.VisAmpSpec" VisAmpSpec((;spec))
     @test Baseline((;spec)) == Baseline(spec)
     @test antenna_names((;spec)) == antenna_names(spec)
     @test UV((;spec)) == UV(spec)
@@ -280,7 +283,7 @@ end
 
 @testitem "_" begin
     import Aqua
-    Aqua.test_all(VLBIData; piracies=(;broken=true))
+    Aqua.test_all(VLBIData; piracies=(;broken=true), ambiguities=(;broken=true))
 
     import CompatHelperLocal as CHL
     CHL.@check()

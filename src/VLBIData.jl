@@ -75,7 +75,7 @@ using Reexport
 @reexport import ..VLBIData:
 	Antenna, antenna_names, Baseline,
 	UV, UVs, visibility, frequency,
-	VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
+	AbstractSpec, VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_data, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
