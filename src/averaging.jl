@@ -1,5 +1,3 @@
-@deprecate average_bytime(src, avg_interval; avgvals=U.weightedmean) average_data(src, FixedTimeIntervals(avg_interval); avgvals)
-
 aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs) |> UV)
 
 function average_data(uvtbl, strategy::AbstractScanStrategy; avgvals=U.weightedmean)

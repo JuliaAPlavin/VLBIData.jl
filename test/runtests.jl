@@ -5,49 +5,44 @@ using TestItemRunner
 @testitem "Antenna" begin
     using AccessorsExtra
 
-    a = Antenna(:MyAnt, 2, (1.0, 2.0, 3.0))
-    b = Antenna(:XXAnt, 4, (2, 3, 5))
+    a = Antenna(:MyAnt, (1.0, 2.0, 3.0))
+    b = Antenna(:XXAnt, (2, 3, 5))
     @test antennas(a) == (a,)
     @test antennas((a, b)) == (a, b)
     @test antennas([a, b]) == [a, b]
     @test (@oget UV(a) UV((a, b)) 123) == 123
     
-    @test Antenna(:A, 1) < Antenna(:B, 2)
-    @test Antenna(:B, 1) < Antenna(:A, 2)
-    @test !(Antenna(:B, 2) < Antenna(:A, 1))
-    @test Antenna(:A, 1) ≥ Antenna(:A, 1)
-    @test Antenna(:A, 1) ≥ Antenna(:A, 0)
+    @test Antenna(:A) < Antenna(:B)
+    @test Antenna(:A) == Antenna(:A)
 
-    @test string(a) == "Antenna #2: MyAnt"
+    @test string(a) == "Antenna MyAnt"
 end
 
 @testitem "Baseline" begin
     using AccessorsExtra
     using StaticArrays
 
-    bl = Baseline(1, (2, 3))
-    @test bl.ant_ids == (2, 3)
+    bl = Baseline((2, 3))
     @test bl.ant_names == (:ANT2, :ANT3)
-    @test bl == Baseline(1, (2, 3))
-    @test bl != Baseline(1, (2, 4))
-    @test bl != Baseline(1, (2, 3), (:ANT2, :ANT4))
+    @test bl == Baseline((2, 3))
+    @test bl == Baseline((:ANT2, :ANT3))
+    @test bl != Baseline((2, 4))
+    @test bl != Baseline((:ANT2, :ANT4))
 
-    bl = Baseline(1, (2, 3), (:A, :B))
-    @test bl.ant_ids == (2, 3)
+    bl = Baseline((:A, :B))
     @test bl.ant_names == (:A, :B)
-    @test bl == Baseline(1, (2, 3), (:A, :B))
-    @test bl != Baseline(1, (2, 4), (:A, :B))
-    @test bl != Baseline(1, (2, 3), (:A, :C))
+    @test bl == Baseline((:A, :B))
+    @test bl != Baseline((:A, :C))
 
-    @test antennas(bl) == (Antenna(:A, 2, SVector(NaN, NaN, NaN)), Antenna(:B, 3, SVector(NaN, NaN, NaN)))
-    Accessors.test_getset_laws(antennas, bl, (Antenna(:XX, 4, SVector(NaN, NaN, NaN)), Antenna(:YY, 5, SVector(NaN, NaN, NaN))), (Antenna(:ZZ, 6, SVector(NaN, NaN, NaN)), Antenna(:WW, 7, SVector(NaN, NaN, NaN))))
+    @test antennas(bl) == (Antenna(:A, SVector(NaN, NaN, NaN)), Antenna(:B, SVector(NaN, NaN, NaN)))
+    Accessors.test_getset_laws(antennas, bl, (Antenna(:XX, SVector(NaN, NaN, NaN)), Antenna(:YY, SVector(NaN, NaN, NaN))), (Antenna(:ZZ, SVector(NaN, NaN, NaN)), Antenna(:WW, SVector(NaN, NaN, NaN))))
 
     @test (@oget UV(bl) 123) == 123
 
     @test Baseline((;spec=bl)) == bl
     @test antennas((;spec=bl)) == antennas(bl)
 
-    @test string(bl) == "Baseline 2-3: A - B"
+    @test string(bl) == "Baseline A - B"
 end
 
 @testitem "UV" begin
@@ -77,30 +72,30 @@ end
     @test spec == VLBI.VisSpec0(UV(10, -20.))
     @test spec != VLBI.VisSpec0(UV(10, -21))
 
-    spec = VisSpec(Baseline(1, (2, 3)), UV(10, -20))
-    @test Baseline(spec) == Baseline(1, (2, 3))
+    spec = VisSpec(Baseline((2, 3)), UV(10, -20))
+    @test Baseline(spec) == Baseline((2, 3))
     @test UV(spec) == UV(10, -20)
-    @test antennas(spec) == (Antenna(:ANT2, 2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, 3, SVector(NaN, NaN, NaN)))
+    @test antennas(spec) == (Antenna(:ANT2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, SVector(NaN, NaN, NaN)))
     @test hasoptic(spec, Baseline)
     @test hasoptic(spec, UV)
     @test hasoptic(spec, antennas)
-    @test conj(spec) == VisSpec(Baseline(1, (3, 2)), UV(-10, 20))
-    @test string(spec) == "Vis 2-3: ANT2 - ANT3"
-    @test spec == VisSpec(Baseline(1, (2, 3)), UV(10, -20.))
-    @test spec != VisSpec(Baseline(1, (2, 4)), UV(10, -20))
-    @test spec != VisSpec(Baseline(1, (2, 3)), UV(10, -21))
+    @test conj(spec) == VisSpec(Baseline((3, 2)), UV(-10, 20))
+    @test string(spec) == "Vis ANT2 - ANT3"
+    @test spec == VisSpec(Baseline((2, 3)), UV(10, -20.))
+    @test spec != VisSpec(Baseline((2, 4)), UV(10, -20))
+    @test spec != VisSpec(Baseline((2, 3)), UV(10, -21))
 
     aspec = VisAmpSpec(spec)
-    @test aspec == VisAmpSpec(Baseline(1, (2, 3)), UV(10, -20))
-    @test Baseline(aspec) == Baseline(1, (2, 3))
+    @test aspec == VisAmpSpec(Baseline((2, 3)), UV(10, -20))
+    @test Baseline(aspec) == Baseline((2, 3))
     @test UV(aspec) == UV(10, -20)
-    @test antennas(aspec) == (Antenna(:ANT2, 2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, 3, SVector(NaN, NaN, NaN)))
+    @test antennas(aspec) == (Antenna(:ANT2, SVector(NaN, NaN, NaN)), Antenna(:ANT3, SVector(NaN, NaN, NaN)))
     @test VisSpec(aspec) == spec
-    @test conj(aspec) == VisAmpSpec(VisSpec(Baseline(1, (3, 2)), UV(-10, 20)))
-    @test string(aspec) == "VisAmp 2-3: ANT2 - ANT3"
-    @test aspec == VisAmpSpec(Baseline(1, (2, 3)), UV(10, -20.))
-    @test aspec != VisAmpSpec(Baseline(1, (2, 4)), UV(10, -20))
-    @test aspec != VisAmpSpec(Baseline(1, (2, 3)), UV(10, -21))
+    @test conj(aspec) == VisAmpSpec(VisSpec(Baseline((3, 2)), UV(-10, 20)))
+    @test string(aspec) == "VisAmp ANT2 - ANT3"
+    @test aspec == VisAmpSpec(Baseline((2, 3)), UV(10, -20.))
+    @test aspec != VisAmpSpec(Baseline((2, 4)), UV(10, -20))
+    @test aspec != VisAmpSpec(Baseline((2, 3)), UV(10, -21))
 
     @test Baseline((;spec)) == Baseline(spec)
     @test antennas((;spec)) == antennas(spec)
@@ -134,41 +129,33 @@ end
     ]
 
     uvtbl_orig = [
-        (spec=VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1)), stokes=:RR, value=1),
-        (spec=VisSpec(Baseline(1, (2, 2), (:A, :B)), UV(0, 2)), stokes=:RR, value=2),
-        (spec=VisSpec(Baseline(1, (1, 2), (:C, :B)), UV(0, 5)), stokes=:LL, value=3),
+        (spec=VisSpec(Baseline((:A, :B)), UV(0, 1)), stokes=:RR, value=1),
+        (spec=VisSpec(Baseline((:A, :B)), UV(0, 2)), stokes=:RR, value=2),
+        (spec=VisSpec(Baseline((:C, :B)), UV(0, 5)), stokes=:LL, value=3),
     ]
-    @test VLBI.uv_reindex(uvtbl_orig) == [
-        (spec=VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1)), stokes=:RR, value=1),
-        (spec=VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 2)), stokes=:RR, value=2),
-        (spec=VisSpec(Baseline(1, (3, 2), (:C, :B)), UV(0, 5)), stokes=:LL, value=3),
-    ]
+    @test VLBI.uv_reindex(uvtbl_orig) == uvtbl_orig
 
     uvtbl_orig = [
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=123, stokes=:RR, value=1),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (2, 2), (:A, :B)), UV(0, 2))), freq_spec=123, stokes=:RR, value=2),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:C, :B)), UV(0, 5))), freq_spec=124, stokes=:LL, value=3),
+        (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 1))), freq_spec=123, stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=123, stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=124, stokes=:LL, value=3),
     ]
-    @test VLBI.uv_reindex(uvtbl_orig) == [
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=123, stokes=:RR, value=1),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 2))), freq_spec=123, stokes=:RR, value=2),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (3, 2), (:C, :B)), UV(0, 5))), freq_spec=124, stokes=:LL, value=3),
-    ]
+    @test VLBI.uv_reindex(uvtbl_orig) == uvtbl_orig
 
     uvtbl_orig = [
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=(;ix=123), stokes=:RR, value=1),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (2, 2), (:A, :B)), UV(0, 2))), freq_spec=(;ix=123), stokes=:RR, value=2),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:C, :B)), UV(0, 5))), freq_spec=(;ix=124), stokes=:LL, value=3),
+        (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 1))), freq_spec=(;ix=123), stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=(;ix=123), stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=(;ix=124), stokes=:LL, value=3),
     ]
     @test VLBI.uv_reindex(uvtbl_orig) == [
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 1))), freq_spec=(;ix=1), stokes=:RR, value=1),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (1, 2), (:A, :B)), UV(0, 2))), freq_spec=(;ix=1), stokes=:RR, value=2),
-        (spec=VisAmpSpec(VisSpec(Baseline(1, (3, 2), (:C, :B)), UV(0, 5))), freq_spec=(;ix=2), stokes=:LL, value=3),
+        (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 1))), freq_spec=(;ix=1), stokes=:RR, value=1),
+        (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=(;ix=1), stokes=:RR, value=2),
+        (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=(;ix=2), stokes=:LL, value=3),
     ]
 end
 
 @testitem "visibility error rescaling" begin
-    using VLBIFiles
+    import VLBIFiles
     using VLBIFiles: VLBI
     using Unitful
     

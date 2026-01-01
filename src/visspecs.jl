@@ -44,8 +44,7 @@ function Base.show(io::IO, s::AbstractSpec)
 	ants = antennas(s)
 	print(io,
 		chopsuffix(string(typeof(s).name.name), "Spec"), " ",
-		(@p ants map(_.id) join(__, "-")),
-		": ", (@p ants map(_.name) join(__, " - "))
+		(@p ants map(_.name) join(__, " - "))
 	)
 end
 

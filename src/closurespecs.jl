@@ -16,7 +16,6 @@ denom_vses(x::ClosureAmpSpec) = (x.vses[2], x.vses[4])
 antennas(x::Union{ClosurePhaseSpec,ClosureAmpSpec}) = (@assert isvalid(x); map(vs -> first(antennas(vs)), x.vses))
 
 function Base.isvalid(x::Union{ClosurePhaseSpec,ClosureAmpSpec})
-	allequal(Baseline(vs).array_ix for vs in x.vses) || return false
 	for i in eachindex(x.vses)
 		antennas(x.vses[i])[2] == antennas(x.vses[mod1(i+1, length(x.vses))])[1] || return false
 	end

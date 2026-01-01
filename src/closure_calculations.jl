@@ -7,21 +7,20 @@ end
 function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
 	bls = @p data map(Baseline)
 	@assert allunique(bls)
-	array_ix = uniqueonly(map(x -> x.array_ix, bls))
-	all_ant_ids = @p bls flatmap(_.ant_ids) unique sort
+	all_ant_names = @p bls flatmap(_.ant_names) unique sort
 	@p let
-		ant_id_sets_for_closures(T, all_ant_ids)
-		filtermap() do ant_ids
+		ant_id_sets_for_closures(T, all_ant_names)
+		filtermap() do ant_names
 			cbls = (
-				(ant_ids[1], ant_ids[2]),
-				(ant_ids[2], ant_ids[3]),
-				(ant_ids[3], ant_ids[4]),
-				(ant_ids[4], ant_ids[1]),
+				(ant_names[1], ant_names[2]),
+				(ant_names[2], ant_names[3]),
+				(ant_names[3], ant_names[4]),
+				(ant_names[4], ant_names[1]),
 			)
 			curdata = map(cbls) do bl
 				rs = @p data filtermap(
-					Baseline(_).ant_ids == bl ? _ :
-					conj(_.spec).bl.ant_ids == bl ? conjvis(_) :
+					Baseline(_).ant_names == bl ? _ :
+					conj(_.spec).bl.ant_names == bl ? conjvis(_) :
 					nothing)
 				isempty(rs) ? nothing : only(rs)
 			end
@@ -37,22 +36,21 @@ end
 function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
 	bls = @p data map(Baseline)
 	@assert allunique(bls)
-	array_ix = uniqueonly(map(x -> x.array_ix, bls))
-	all_ant_ids = @p bls flatmap(_.ant_ids) unique sort
+	all_ant_names = @p bls flatmap(_.ant_names) unique sort
 	@p let
-		Iterators.product(all_ant_ids, all_ant_ids, all_ant_ids)
+		Iterators.product(all_ant_names, all_ant_names, all_ant_names)
 		collect
 		filter(allunique ⩓ issorted)
-		filtermap() do ant_ids
+		filtermap() do ant_names
 			cbls = (
-				(ant_ids[1], ant_ids[2]),
-				(ant_ids[2], ant_ids[3]),
-				(ant_ids[3], ant_ids[1]),
+				(ant_names[1], ant_names[2]),
+				(ant_names[2], ant_names[3]),
+				(ant_names[3], ant_names[1]),
 			)
 			curdata = map(cbls) do bl
 				rs = @p data filtermap(
-					Baseline(_).ant_ids == bl ? _ :
-					conj(_.spec).bl.ant_ids == bl ? conjvis(_) :
+					Baseline(_).ant_names == bl ? _ :
+					conj(_.spec).bl.ant_names == bl ? conjvis(_) :
 					nothing)
 				isempty(rs) ? nothing : only(rs)
 			end

@@ -1,22 +1,22 @@
 @testitem "types" begin
     cas = ClosureAmpSpec((
-        VisSpec(Baseline(1, (2, 9)), UV([4.282665f6, -2.8318948f7])),
-        VisSpec(Baseline(1, (9, 3)), UV([-1.425433f6, 2.8318948f7])),
-        VisSpec(Baseline(1, (3, 5)), UV([1.425433f6, 2.8318948f7])),
-        VisSpec(Baseline(1, (5, 2)), UV([-4.282665f6, -2.8318948f7]))
+        VisSpec(Baseline((2, 9)), UV([4.282665f6, -2.8318948f7])),
+        VisSpec(Baseline((9, 3)), UV([-1.425433f6, 2.8318948f7])),
+        VisSpec(Baseline((3, 5)), UV([1.425433f6, 2.8318948f7])),
+        VisSpec(Baseline((5, 2)), UV([-4.282665f6, -2.8318948f7]))
     ))
     @test UVs(cas) == (UV(4.282665f6, -2.8318948f7), UV(-1.425433f6, 2.8318948f7), UV(1.425433f6, 2.8318948f7), UV(-4.282665f6, -2.8318948f7))
-    @test map(:id, antennas(cas)) == (2, 9, 3, 5)
-    @test string(cas) == "ClosureAmp 2-9-3-5: ANT2 - ANT9 - ANT3 - ANT5"
+    @test map(:name, antennas(cas)) == (:ANT2, :ANT9, :ANT3, :ANT5)
+    @test string(cas) == "ClosureAmp ANT2 - ANT9 - ANT3 - ANT5"
 
     cps = ClosurePhaseSpec((
-        VisSpec(Baseline(1, (2, 9)), UV([4.282665f6, -2.8318948f7])),
-        VisSpec(Baseline(1, (9, 3)), UV([-1.425433f6, 2.8318948f7])),
-        VisSpec(Baseline(1, (3, 2)), UV([1.425433f6, 2.8318948f7]))
+        VisSpec(Baseline((2, 9)), UV([4.282665f6, -2.8318948f7])),
+        VisSpec(Baseline((9, 3)), UV([-1.425433f6, 2.8318948f7])),
+        VisSpec(Baseline((3, 2)), UV([1.425433f6, 2.8318948f7]))
     ))
     @test UVs(cps) == (UV(4.282665f6, -2.8318948f7), UV(-1.425433f6, 2.8318948f7), UV(1.425433f6, 2.8318948f7))
-    @test map(:id, antennas(cps)) == (2, 9, 3)
-    @test string(cps) == "ClosurePhase 2-9-3: ANT2 - ANT9 - ANT3"
+    @test map(:name, antennas(cps)) == (:ANT2, :ANT9, :ANT3)
+    @test string(cps) == "ClosurePhase ANT2 - ANT9 - ANT3"
 end
 
 @testitem "closure amplitude calculations" begin
@@ -33,33 +33,33 @@ end
     # n_bl_clamp_min ~ 4*n_clamp_dof / n_bl ~ 4
 
     uvgr = GroupArray((;), [
-        (spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
     clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
-    nbls = @p clas flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
+    nbls = @p clas flatmap(_.spec.vses, _2.bl.ant_names) map(extrema) groupmap(length)
     @test length(clas) == binomial(4, 4) * Int(factorial(3) / 2) == 3
     @test all(==(2), nbls)
     @test all(c -> c.value === 1±ᵤ0.2, clas)
 
     uvgr = GroupArray((;), [
-        (spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 5)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 5)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
     clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
-    nbls = @p clas flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
+    nbls = @p clas flatmap(_.spec.vses, _2.bl.ant_names) map(extrema) groupmap(length)
     @test length(clas) == binomial(5, 4) * Int(factorial(3) / 2) == 15
     @test all(==(6), nbls)
     @test all(c -> c.value === 1±ᵤ0.2, clas)
@@ -71,34 +71,34 @@ end
     using DataManipulation.FlexiGroups: GroupArray
 
     uvgr = GroupArray((;), [
-        (spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
     clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
-    nbls = @p clps flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
+    nbls = @p clps flatmap(_.spec.vses, _2.bl.ant_names) map(extrema) groupmap(length)
     @test length(clps) == binomial(4, 3) * Int(factorial(2) / 2) == 4
     @test all(==(2), nbls)
     @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
 
 
     uvgr = GroupArray((;), [
-        (spec=VisSpec(Baseline(1, (1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (1, 5)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (2, 5)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
-        (spec=VisSpec(Baseline(1, (4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((1, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 3)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((2, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
+        (spec=VisSpec(Baseline((4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
     clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
-    nbls = @p clps flatmap(_.spec.vses, _2.bl.ant_ids) map(extrema) groupmap(length)
+    nbls = @p clps flatmap(_.spec.vses, _2.bl.ant_names) map(extrema) groupmap(length)
     @test length(clps) == binomial(5, 3) * Int(factorial(2) / 2) == 10
     @test all(==(3), nbls)
     @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
@@ -111,10 +111,10 @@ end
 
     model = construct(CircularGaussian, flux=>1.0, fwhm_average=>0.1, coords=>SVector(0., 0.1))
     visspecs = (
-        VisSpec(Baseline(1, (2, 9)), UV([1, 2])),
-        VisSpec(Baseline(1, (9, 3)), UV([3, 4])),
-        VisSpec(Baseline(1, (3, 5)), UV([5, 6])),
-        VisSpec(Baseline(1, (5, 2)), UV([7, 8])),
+        VisSpec(Baseline((2, 9)), UV([1, 2])),
+        VisSpec(Baseline((9, 3)), UV([3, 4])),
+        VisSpec(Baseline((3, 5)), UV([5, 6])),
+        VisSpec(Baseline((5, 2)), UV([7, 8])),
     )
     cas = ClosureAmpSpec(visspecs)
     vises = (0.2586332168367465 + 0.7959911936251323im, -0.3322517918545724 + 0.24139505678833204im, -0.09224042204143246 - 0.06701658941426379im, 0.005534089140668198 - 0.01703217504149487im)
