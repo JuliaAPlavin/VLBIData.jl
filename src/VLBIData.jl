@@ -48,6 +48,7 @@ include("trivial_calculations.jl")
 include("scans.jl")
 include("averaging.jl")
 include("error_rescaling.jl")
+include("selfcal.jl")
 include("reindex.jl")
 include("polarizedtypes.jl")
 
@@ -96,6 +97,7 @@ using Reexport
 	conjvis, add_conjvis, average_data, debias_amplitudes, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ClosurePhaseConsecutive, CrossFrequencyScatter, ErrMulSame, ErrMulFallback, find_errmul, rescale_visibility_errors,
+	AmplitudeAnalytic, solve_gains, apply_gains, selfcal,
 	uv_reindex, uvtable, uvtable_values_to,
 	GapBasedScans, FixedTimeIntervals, ByFrequency, Coherent, Incoherent, add_scan_ids, scan_intervals,
 	is_parallel_hands, is_cross_hands, stokes_to_feeds,
