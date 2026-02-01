@@ -196,6 +196,10 @@ end
     @test_throws "couldn't be estimated" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl)
     @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), VLBI.ClosurePhaseConsecutive()), uvtbl) ≈ 1.104 rtol=1e-2
     @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter()), uvtbl) |> isnothing
+    @test VLBI.find_errmul(1, uvtbl) == 1
+    @test VLBI.find_errmul(1.5, uvtbl) == 1.5
+    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), 1), uvtbl) ≈ 1.104 rtol=1e-2
+    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.CoherentAverageScatter(), 1), uvtbl) == 1
 end
 
 @testitem "comradebase" begin
