@@ -184,3 +184,84 @@ end
         "M87"   # (1,2) RR scan2
     ]
 end
+
+@testitem "average_data by frequency" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using Statistics
+    using VLBIData.StructArrays
+
+    fs1 = 15u"GHz"
+    fs2 = 16u"GHz"
+
+    # Test data: two freq channels, multiple baselines/stokes/scans
+    uvtbl = StructArray([
+        # Baseline (1,2), :RR, scan 1, time T1 — two freq channels
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=fs1, stokes=:RR, value=2±ᵤ0.1, source="SgrA*", scan_id=1),
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=fs2, stokes=:RR, value=4±ᵤ0.1, source="SgrA*", scan_id=1),
+
+        # Baseline (1,3), :RR, scan 1, time T1 — two freq channels
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,3)), UV(0,3)), freq_spec=fs1, stokes=:RR, value=10±ᵤ0.2, source="SgrA*", scan_id=1),
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,3)), UV(0,4)), freq_spec=fs2, stokes=:RR, value=12±ᵤ0.2, source="SgrA*", scan_id=1),
+
+        # Baseline (1,2), :LL, scan 1, time T1 — single freq channel
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,5)), freq_spec=fs1, stokes=:LL, value=5±ᵤ0.1, source="SgrA*", scan_id=1),
+
+        # Baseline (1,2), :RR, scan 2, time T2 — two freq channels
+        (datetime=DateTime(2020,1,1,0,5,0), spec=VisSpec(Baseline((1,2)), UV(0,6)), freq_spec=fs1, stokes=:RR, value=6±ᵤ0.1, source="SgrA*", scan_id=2),
+        (datetime=DateTime(2020,1,1,0,5,0), spec=VisSpec(Baseline((1,2)), UV(0,7)), freq_spec=fs2, stokes=:RR, value=8±ᵤ0.1, source="SgrA*", scan_id=2),
+    ])
+
+    averaged = VLBI.average_data(VLBI.ByFrequency(), uvtbl)
+    @test averaged isa StructArray
+
+    # 4 groups: (1,2)/RR/scan1/T1, (1,3)/RR/scan1/T1, (1,2)/LL/scan1/T1, (1,2)/RR/scan2/T2
+    @test length(averaged) == 4
+
+    # All freq_spec should be the merged value
+    @test all(==(mean([fs1, fs2])), averaged.freq_spec)
+
+    @test averaged.source == fill("SgrA*", 4)
+    @test averaged.scan_id == [1, 1, 1, 2]
+    @test averaged.stokes == [:RR, :RR, :LL, :RR]
+    @test averaged.datetime == [
+        DateTime(2020,1,1,0,0,0),
+        DateTime(2020,1,1,0,0,0),
+        DateTime(2020,1,1,0,0,0),
+        DateTime(2020,1,1,0,5,0),
+    ]
+
+    # count: 2 channels merged except single-channel group
+    @test averaged.count == [2, 2, 1, 2]
+
+    # weighted mean values
+    @test U.value.(averaged.value) ≈ [3.0, 11.0, 5.0, 7.0]
+    @test U.uncertainty.(averaged.value) ≈ [√2*0.1/2, √2*0.2/2, 0.1, √2*0.1/2]
+
+    # spec aggregated: UV coordinates averaged per group
+    @test UV(averaged.spec[1]) == UV(0, 1.5)  # mean of UV(0,1) and UV(0,2)
+    @test UV(averaged.spec[2]) == UV(0, 3.5)  # mean of UV(0,3) and UV(0,4)
+    @test UV(averaged.spec[3]) == UV(0, 5.0)  # single: UV(0,5)
+    @test UV(averaged.spec[4]) == UV(0, 6.5)  # mean of UV(0,6) and UV(0,7)
+
+    # Edge case: single frequency channel — effectively a no-op
+    uvtbl_single = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=fs1, stokes=:RR, value=2±ᵤ0.1, source="SgrA*", scan_id=1),
+        (datetime=DateTime(2020,1,1,0,5,0), spec=VisSpec(Baseline((1,2)), UV(0,4)), freq_spec=fs1, stokes=:RR, value=6±ᵤ0.1, source="SgrA*", scan_id=2),
+    ])
+    avg_single = VLBI.average_data(VLBI.ByFrequency(), uvtbl_single)
+    @test length(avg_single) == 2
+    @test all(==(1), avg_single.count)
+    @test all(==(fs1), avg_single.freq_spec)
+
+    # Edge case: data without scan_id (raw data)
+    uvtbl_noscan = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=fs1, stokes=:RR, value=2±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=fs2, stokes=:RR, value=4±ᵤ0.1, source="SgrA*"),
+    ])
+    avg_noscan = VLBI.average_data(VLBI.ByFrequency(), uvtbl_noscan)
+    @test length(avg_noscan) == 1
+    @test avg_noscan.count == [2]
+    @test !hasproperty(avg_noscan, :scan_id)
+end

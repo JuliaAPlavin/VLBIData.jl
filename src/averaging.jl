@@ -59,4 +59,30 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
     end
 end
 
+
+struct ByFrequency end
+
+_aggfreq(freq_specs::AbstractVector{<:Number}) = mean(freq_specs)
+
+function average_data(::ByFrequency, uvtbl; avgvals=U.weightedmean)
+    uvtbl = StructArray(uvtbl)
+    merged_fs = _aggfreq(unique(uvtbl.freq_spec))
+    const_part = @p getproperties(uvtbl) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec, :count, :datetime)]) filter(allequal) map(uniqueonly)
+    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :stokes, :scan_id, :datetime)})
+    @p begin
+        uvtbl
+        groupview_vg((; bl=Baseline(_), NT(_)...))
+        map((;
+            const_part...,
+            delete(key(_), @o _.bl)...,
+            freq_spec=merged_fs,
+            count=length(_),
+            value=avgvals(_.value),
+            spec=aggspec(key(_).bl, _.spec),
+        ))
+        StructArray()
+    end
+end
+
+
 _mean(i::Interval) = minimum(i) + (maximum(i) - minimum(i)) ÷ 2
