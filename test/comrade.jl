@@ -1,3 +1,27 @@
+@testitem "vlbiskymodels" begin
+    using ComradeBase
+    using VLBISkyModels
+    using VLBIData
+    using VLBIData.StructArrays
+
+    # Create a simple test model
+    img = zeros(32, 32)
+    img[16, 16] = 1.0  # Point source at center
+    gim = RectiGrid((X = range(-1, 1, length=32), Y = range(-1, 1, length=32)))
+    model = ContinuousImage(img, gim, Gaussian())
+
+    # Create test UV coordinates
+    uvtbl_spec = [UV(0.1, 0.2), UV(-0.3, 0.4), UV(0.5, -0.1)] |> StructArray
+
+    # Test the visibilitymap function
+    result = visibilitymap(model, uvtbl_spec)
+    
+    # Check that we get a uvtable back with correct structure
+    @test result isa StructArray
+    @test length(result) == 3
+    @test result.spec == [UV(0.1, 0.2), UV(-0.3, 0.4), UV(0.5, -0.1)]
+end
+
 @testitem "comrade extract_table" begin
     import Comrade
     using Dates
