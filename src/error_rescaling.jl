@@ -1,12 +1,12 @@
 @kwdef struct ConsecutiveDifferencesStandard
-    maxΔt = nothing
+    maxΔt = 5u"minute"
     rayleigh_q = 0.5
     min_cnt = 50
 end
 ConsecutiveDifferencesStandard(maxΔt; kwargs...) = ConsecutiveDifferencesStandard(; maxΔt, kwargs...)
 
 @kwdef struct CoherentAverageScatter
-    maxΔt = nothing
+    maxΔt = 5u"minute"
     min_cnt_avg = 10
     min_cnt_after = 50
 end
@@ -20,7 +20,7 @@ ErrMulSame(methods...; rtol) = ErrMulSame(methods, rtol)
 
 
 function find_errmul(m::CoherentAverageScatter, uvtbl)
-    avg_t = @something(m.maxΔt, 15*typical_Δt(uvtbl))
+    avg_t = min(m.maxΔt, 15*typical_Δt(uvtbl))
     30u"s" < avg_t < 16u"minute" || @warn "Strange Δt for averaging, consider specifying maxΔt explicitly" Δt=avg_t
     uvtbl_avg = @p compute_avgs(uvtbl; maxΔt=avg_t, min_cnt=m.min_cnt_avg) map(_.std / _.err)
     length(uvtbl_avg) ≥ m.min_cnt_after || return nothing
@@ -28,7 +28,7 @@ function find_errmul(m::CoherentAverageScatter, uvtbl)
 end
 
 function find_errmul(m::ConsecutiveDifferencesStandard, uvtbl)
-    diffs = compute_diffs(uvtbl; maxΔt=@something(m.maxΔt, 3*typical_Δt(uvtbl)))
+    diffs = compute_diffs(uvtbl; maxΔt=min(m.maxΔt, 3*typical_Δt(uvtbl)))
     length(diffs) ≥ m.min_cnt || return nothing
     q = m.rayleigh_q
     @p diffs map(_.abs / _.err) quantile(__, q) / quantile_rayleigh(q)
