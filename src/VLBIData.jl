@@ -13,6 +13,8 @@ using IntervalSets
 using StructHelpers
 using EnumX
 using Printf
+import PolarizedTypes as PolT
+using PolarizedTypes: CoherencyMatrix, IPol
 
 
 export VLBI,
@@ -20,7 +22,8 @@ export VLBI,
 	UV, UVs, UVarea, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	uvtable,
-	is_parallel_hands, is_cross_hands, stokes_to_feeds
+	is_parallel_hands, is_cross_hands, stokes_to_feeds,
+	CoherencyMatrix, IPol
 
 
 # before Julia 1.11:
@@ -39,11 +42,11 @@ include("scans.jl")
 include("averaging.jl")
 include("error_rescaling.jl")
 include("reindex.jl")
+include("polarizedtypes.jl")
 
 
 function uvtable end
 
-function uvtable_values_to end
 
 function frequency end
 function frequency(q::Quantity)
@@ -88,7 +91,8 @@ using Reexport
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ErrMulSame, find_errmul, rescale_visibility_errors,
 	uv_reindex, uvtable, uvtable_values_to,
 	GapBasedScans, FixedTimeIntervals, add_scan_ids, scan_intervals,
-	is_parallel_hands, is_cross_hands, stokes_to_feeds
+	is_parallel_hands, is_cross_hands, stokes_to_feeds,
+	CoherencyMatrix, IPol
 end
 
 end
