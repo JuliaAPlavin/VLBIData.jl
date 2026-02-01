@@ -265,3 +265,141 @@ end
     @test avg_noscan.count == [2]
     @test !hasproperty(avg_noscan, :scan_id)
 end
+
+@testitem "debias_amplitudes" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using Statistics
+    using VLBIData.StructArrays
+
+    # High-SNR: debiased amp ≈ original amp
+    uvtbl = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=(3.0+4.0im)±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+    ])
+    deb = VLBI.debias_amplitudes(uvtbl)
+    @test all(s -> s isa VisAmpSpec, deb.spec)
+    @test all(v -> U.value(v) isa Real, deb.value)  # phase gone, values are real
+    @test U.value(deb.value[1]) ≈ 5.0 rtol=0.01  # |3+4i| = 5, high SNR
+    @test U.value(deb.value[2]) ≈ 5.0 rtol=0.01
+    @test U.uncertainty(deb.value[1]) ≈ 0.1 rtol=0.1  # high SNR: error ≈ σ
+
+    # Low-SNR: debiased amp < original amp, error grows
+    uvtbl_low = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=0.15±ᵤ0.1, source="SgrA*"),
+    ])
+    deb_low = VLBI.debias_amplitudes(uvtbl_low)
+    @test U.value(deb_low.value[1]) < 0.15  # debiased < observed
+    @test U.value(deb_low.value[1]) >= 0.0   # clamped to non-negative
+
+    # Heterogeneous errors: per-visibility σ correctly propagated
+    uvtbl_het = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=5.0±ᵤ1.0, source="SgrA*"),
+    ])
+    deb_het = VLBI.debias_amplitudes(uvtbl_het)
+    @test U.uncertainty(deb_het.value[1]) < U.uncertainty(deb_het.value[2])  # noisier input → larger error
+end
+
+@testitem "incoherent averaging" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using Statistics
+    using VLBIData.StructArrays
+
+    # High-SNR test: two real-valued visibilities averaged incoherently
+    uvtbl = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+    ])
+    avg = VLBI.average_data(VLBI.Incoherent(), VLBI.FixedTimeIntervals(10u"minute"), uvtbl)
+    @test length(avg) == 1
+    @test avg.spec[1] isa VisSpec
+    @test U.value(avg.value[1]) ≈ 5.0 rtol=0.01
+    @test U.uncertainty(avg.value[1]) < 0.09  # uncertainty should decrease
+
+    # Complex inputs: amplitude and phase preserved
+    uvtbl_complex = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=(3.0+4.0im)±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=(3.0+4.0im)±ᵤ0.1, source="SgrA*"),
+    ])
+    avg_c = VLBI.average_data(VLBI.Incoherent(), VLBI.FixedTimeIntervals(10u"minute"), uvtbl_complex)
+    @test abs(U.value(avg_c.value[1])) ≈ 5.0 rtol=0.01  # |3+4i| = 5
+    @test angle(U.value(avg_c.value[1])) ≈ atan(4, 3) atol=1e-10  # phase preserved
+
+    # Works with VisAmpSpec input (from debias_amplitudes)
+    uvtbl_amp = VLBI.debias_amplitudes(uvtbl_complex)
+    avg_amp = VLBI.average_data(VLBI.Incoherent(), VLBI.FixedTimeIntervals(10u"minute"), uvtbl_amp)
+    @test avg_amp.spec[1] isa VisAmpSpec
+    @test U.value(avg_amp.value[1]) isa Real
+    @test U.value(avg_amp.value[1]) ≈ 5.0 rtol=0.01
+
+    # Coherent explicit: same as default
+    avg_coh_explicit = VLBI.average_data(VLBI.Coherent(), VLBI.FixedTimeIntervals(10u"minute"), uvtbl)
+    avg_coh_default = VLBI.average_data(VLBI.FixedTimeIntervals(10u"minute"), uvtbl)
+    @test avg_coh_explicit == avg_coh_default
+
+    # Works with GapBasedScans
+    uvtbl_scans = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,5,0), spec=VisSpec(Baseline((1,2)), UV(0,3)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+    ])
+    avg_scans = VLBI.average_data(VLBI.Incoherent(), VLBI.GapBasedScans(), uvtbl_scans)
+    @test all(s -> s isa VisSpec, avg_scans.spec)
+    @test length(avg_scans) == 2  # two scans
+
+    # Works with ByFrequency
+    fs1 = 15u"GHz"; fs2 = 16u"GHz"
+    uvtbl_freq = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=fs1, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*", scan_id=1),
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=fs2, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*", scan_id=1),
+    ])
+    avg_freq = VLBI.average_data(VLBI.Incoherent(), VLBI.ByFrequency(), uvtbl_freq)
+    @test length(avg_freq) == 1
+    @test avg_freq.spec[1] isa VisSpec
+
+    # Chained: coherent → debias → incoherent
+    uvtbl_chain = StructArray([
+        # scan 1: 4 points within 1 minute
+        (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,20), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,30), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        # scan 2: 4 points 10 minutes later
+        (datetime=DateTime(2020,1,1,0,10,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,10,10), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,10,20), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,10,30), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+    ])
+    avg_coh = VLBI.average_data(VLBI.Coherent(), VLBI.FixedTimeIntervals(interval=1u"minute"), uvtbl_chain)
+    @test length(avg_coh) == 2  # one per scan
+    avg_incoh = VLBI.average_data(VLBI.Incoherent(), VLBI.FixedTimeIntervals(interval=30u"minute"), VLBI.debias_amplitudes(avg_coh))
+    @test length(avg_incoh) == 1
+    @test avg_incoh.spec[1] isa VisAmpSpec
+    @test U.value(avg_incoh.value[1]) ≈ 5.0 rtol=0.01
+
+    # Constant-error: formula equals old ehtim inc_sig for equal σ
+    vals_equal_σ = [(5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1]
+    r = VLBIData._incoh_avg(vals_equal_σ)
+    N = 4; σ = 0.1; amp0 = abs(U.value(r))
+    # Old formula: snrA = 1/(√(1 + 2/√N · 1/ρ · √(1+1/ρ²)) - 1) where ρ = amp0/σ
+    ρ = amp0 / σ
+    snrA_old = 1 / (√(1 + 2/√N * (1/ρ) * √(1 + 1/ρ^2)) - 1)
+    @test U.uncertainty(r) ≈ amp0 / snrA_old rtol=1e-10
+
+    # Heterogeneous-error: per-visibility σ correctly propagated
+    vals_hetero = [(5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ1.0, (5.0+0.0im)±ᵤ1.0]
+    r_hetero = VLBIData._incoh_avg(vals_hetero)
+    # Error should be between all-low-σ and all-high-σ cases
+    r_all_low = VLBIData._incoh_avg([(5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1, (5.0+0.0im)±ᵤ0.1])
+    r_all_high = VLBIData._incoh_avg([(5.0+0.0im)±ᵤ1.0, (5.0+0.0im)±ᵤ1.0, (5.0+0.0im)±ᵤ1.0, (5.0+0.0im)±ᵤ1.0])
+    @test U.uncertainty(r_all_low) < U.uncertainty(r_hetero) < U.uncertainty(r_all_high)
+    # Verify it differs from median-based approach
+    σ_med = median([0.1, 0.1, 1.0, 1.0])
+    ρ_med = abs(U.value(r_hetero)) / σ_med
+    snrA_median = 1 / (√(1 + 2/√4 * (1/ρ_med) * √(1 + 1/ρ_med^2)) - 1)
+    @test U.uncertainty(r_hetero) != abs(U.value(r_hetero)) / snrA_median
+end
