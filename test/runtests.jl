@@ -174,6 +174,7 @@ end
     @test VLBI.find_errmul(VLBI.CoherentAverageScatter(2u"minute"), uvtbl) ≈ 0.7260 rtol=1e-3
     @test VLBI.find_errmul(VLBI.CoherentAverageScatter(2u"minute", min_cnt_avg=5), uvtbl) ≈ 0.7275 rtol=1e-3
     @test VLBI.find_errmul(VLBI.CoherentAverageScatter(0.7u"minute", min_cnt_avg=5), uvtbl) ≈ 0.6855 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ClosurePhaseConsecutive(), uvtbl) ≈ 0.6856 rtol=1e-3
     @test VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl) ≈ 0.6789 rtol=1e-3
     @test VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.2), uvtbl) ≈ 0.7042 rtol=1e-3
     @test_throws "don't agree" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.05), uvtbl)
@@ -189,6 +190,7 @@ end
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) |> isnothing
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) |> isnothing
     @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) |> isnothing
+    @test VLBI.find_errmul(VLBI.ClosurePhaseConsecutive(), uvtbl) ≈ 1.104 rtol=1e-2
     @test_throws "couldn't be estimated" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl)
 end
 
