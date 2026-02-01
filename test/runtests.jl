@@ -184,14 +184,18 @@ end
     filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 0.4298 rtol=1e-3
     @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 0.4306 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CrossFrequencyScatter(), uvtbl) ≈ 0.4804 rtol=1e-3
 
     uvtbl = VLBI.load(joinpath(pkgdir(VLBI), "test/data/datafile_01-01_230GHz.uvfits")) |> uvtable
     filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) |> isnothing
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) |> isnothing
     @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) |> isnothing
+    @test VLBI.find_errmul(VLBI.CrossFrequencyScatter(), uvtbl) |> isnothing
     @test VLBI.find_errmul(VLBI.ClosurePhaseConsecutive(), uvtbl) ≈ 1.104 rtol=1e-2
     @test_throws "couldn't be estimated" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl)
+    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), VLBI.ClosurePhaseConsecutive()), uvtbl) ≈ 1.104 rtol=1e-2
+    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter()), uvtbl) |> isnothing
 end
 
 @testitem "comradebase" begin
