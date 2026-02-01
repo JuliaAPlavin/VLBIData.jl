@@ -39,7 +39,7 @@ end
 		r = length(closures) / n_ind
 		closures = map(closures) do c
 			@modify(c.value |> U.uncertainty) do err
-				err * √r
+				err * oftype(err, √r)
 			end
 		end
 	end
@@ -79,7 +79,7 @@ end
 		r = length(closures) / n_ind
 		closures = map(closures) do c
 			@modify(c.value |> U.uncertainty) do err
-				err * √r
+				err * oftype(err, √r)
 			end
 		end
 	end
