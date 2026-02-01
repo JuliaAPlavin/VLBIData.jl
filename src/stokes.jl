@@ -1,4 +1,4 @@
-_reverse_stokes(s::Symbol) =
+@stable _reverse_stokes(s::Symbol) =
 	s ∈ (:RR, :LL, :XX, :YY, :I, :total) ? s :
 	s == :RL ? :LR :
 	s == :LR ? :RL :
@@ -14,17 +14,17 @@ _reverse_stokes(s::Symbol) =
 	s == :YL ? :LY :
 	error("Cannot reverse stokes $s")
 
-is_parallel_hands(s::Symbol) =
+@stable is_parallel_hands(s::Symbol) =
 	s ∈ (:RR, :LL, :XX, :YY) ? true :
 	s ∈ (:RL, :LR, :XY, :YX) ? false :
 	error("Parallel vs cross hands doesn't make sense for stokes = $s")
 
-is_cross_hands(s::Symbol) =
+@stable is_cross_hands(s::Symbol) =
 	s ∈ (:RR, :LL, :XX, :YY) ? false :
 	s ∈ (:RL, :LR, :XY, :YX) ? true :
 	error("Parallel vs cross hands doesn't make sense for stokes = $s")
 
-stokes_to_feeds(s::Symbol) =
+@stable stokes_to_feeds(s::Symbol) =
 	s == :RR ? (:R, :R) :
 	s == :LL ? (:L, :L) :
 	s == :XX ? (:X, :X) :
@@ -43,6 +43,6 @@ stokes_to_feeds(s::Symbol) =
 	s == :YL ? (:Y, :L) :
 	error("Cannot convert stokes $s to feed types")
 
-feeds_to_stokes(feeds::NTuple{2,Any}) = Symbol(feeds...)
+@stable feeds_to_stokes(feeds::NTuple{2,Any}) = Symbol(feeds...)
 Accessors.InverseFunctions.inverse(::typeof(stokes_to_feeds)) = feeds_to_stokes
 Accessors.InverseFunctions.inverse(::typeof(feeds_to_stokes)) = stokes_to_feeds

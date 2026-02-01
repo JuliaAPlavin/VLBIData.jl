@@ -5,8 +5,8 @@ abstract type AbstractSpec end
 	x.spec isa AbstractVector ? VisSpec0(x.spec)::T :
 	error("Cannot convert to $T from $(typeof(x.spec))")
 
-visibility(model, spec::AbstractSpec) = visibility(visibility(model), spec)
-visibility(visf::Function, spec::AbstractSpec) = throw(MethodError(visibility, (visf, spec)))
+@stable visibility(model, spec::AbstractSpec) = visibility(visibility(model), spec)
+@stable visibility(visf::Function, spec::AbstractSpec) = throw(MethodError(visibility, (visf, spec)))
 
 struct VisSpec0{TUV<:UV} <: AbstractSpec
 	uv::TUV
@@ -36,14 +36,14 @@ VisAmpSpec(bl::Baseline, uv::UV) = VisAmpSpec(VisSpec(bl, uv))
 @accessor UV(x::VisSpec) = x.uv
 @accessor UV(x::VisAmpSpec) = UV(x.vs)
 
-Base.conj(spec::VisSpec) = @p let
+@stable Base.conj(spec::VisSpec) = @p let
 	spec
 	@modify(conj, Baseline(__))
 	@modify(-, __.uv)
 end
-Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
+@stable Base.conj(spec::VisAmpSpec) = @modify(conj, spec.vs)
 
-visibility(visf::Function, spec::Union{VisSpec0, VisSpec,VisAmpSpec}) = visf(UV(spec))
+@stable visibility(visf::Function, spec::Union{VisSpec0, VisSpec,VisAmpSpec}) = visf(UV(spec))
 
 function Base.show(io::IO, s::AbstractSpec)
 	print(io, chopsuffix(string(typeof(s).name.name), r"Spec\d?"))

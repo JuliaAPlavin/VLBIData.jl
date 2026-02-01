@@ -42,7 +42,7 @@ end
         (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clas = @inferred VLBI.closures_scan(ClosureAmpSpec, uvgr)
+    clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
     @test isconcretetype(eltype(clas))
     nbls = @p clas flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clas) == binomial(4, 4) * Int(factorial(3) / 2) == 3
@@ -67,7 +67,7 @@ end
     @test all(==(6), nbls)
     @test all(c -> c.value === 1±ᵤ0.2, clas)
 
-    cla = @inferred VLBI.closures_all(ClosureAmpSpec, collect(uvgr))
+    cla = VLBI.closures_all(ClosureAmpSpec, collect(uvgr))
     @test length(cla) == 15
     @test cla == collect(clas)
 end
@@ -85,7 +85,7 @@ end
         (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clps = @inferred VLBI.closures_scan(ClosurePhaseSpec, uvgr)
+    clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
     @test isconcretetype(eltype(clps))
     nbls = @p clps flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clps) == binomial(4, 3) * Int(factorial(2) / 2) == 4
@@ -111,7 +111,7 @@ end
     @test all(==(3), nbls)
     @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
 
-    clp = @inferred VLBI.closures_all(ClosurePhaseSpec, collect(uvgr))
+    clp = VLBI.closures_all(ClosurePhaseSpec, collect(uvgr))
     @test length(clp) == 10
     @test clp == collect(clps)
 end

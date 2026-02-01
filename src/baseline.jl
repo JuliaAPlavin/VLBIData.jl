@@ -9,7 +9,7 @@ end
 @accessor antenna_names(bl::Baseline{Antenna}) = map(a -> a.name, bl.antennas)
 antenna_names(bl::Baseline) = error("Not implemented for $(typeof(bl.antennas))")
 
-Base.conj(bl::Baseline) = @modify(reverse, bl.antennas)
+@stable Base.conj(bl::Baseline) = @modify(reverse, bl.antennas)
 
 Base.isless(a::Baseline, b::Baseline) = isless(a.antennas, b.antennas)
 

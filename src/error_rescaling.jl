@@ -264,7 +264,7 @@ function compute_diffs(uvtbl; maxΔt)
     end
 end
 
-multiply_errors(errmul, uvtbl) =
+@stable multiply_errors(errmul, uvtbl) =
     @modify(uvtbl[∗].value |> U.uncertainty) do err
         err * errmul
     end
