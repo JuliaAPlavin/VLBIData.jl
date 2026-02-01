@@ -36,7 +36,7 @@ debiased amplitude ``Â = √max(|V|² - 2σ², 0)``.
 debias_amplitudes(uvtbl::AbstractVector) = debias_amplitudes(StructArray(uvtbl))
 @stable debias_amplitudes(uvtbl::StructArray) = @p let
     uvtbl
-    @modify(VisAmpSpec, __.spec[∗])
+    @modify(s -> VisAmpSpec(s), __.spec[∗])
     @modify(__.value[∗]) do value
         amp = abs(U.value(value))
         σ = U.uncertainty(value)
