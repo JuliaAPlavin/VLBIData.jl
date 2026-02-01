@@ -297,12 +297,12 @@ end
     @test length(ipol_single_ll) == 1
     @test ipol_single_ll[1].value == 7.0
 
-    # IPol: error when no parallel hands
+    # IPol: when no parallel hands
     uvtbl_no_par = [
         (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
         (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
     ]
-    @test_throws "expected 1 or 2 parallel-hand" VLBI.uvtable_values_to(IPol, uvtbl_no_par)
+    @test isempty(VLBI.uvtable_values_to(IPol, uvtbl_no_par))
 end
 
 @testitem "_" begin
