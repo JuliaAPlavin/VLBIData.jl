@@ -11,7 +11,7 @@ using VLBIData.InterferometricModels: visibility
 using VLBIData.DateFormats
 import Comrade
 
-function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, obscoords, objname)
+function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, obscoords=(ra=0., dec=0.), objname="UNKNOWN")
     @assert allunique(a.name for a in antennas)
     tarr = map(antennas) do a
         (;
