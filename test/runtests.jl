@@ -317,6 +317,115 @@ end
     @test isempty(VLBI.uvtable_values_to(IPol, uvtbl_no_par))
 end
 
+@testitem "likelihoods" begin
+    using InterferometricModels
+    using AccessorsExtra
+    using StaticArrays
+    using Uncertain
+
+    model = construct(CircularGaussian, flux=>1.0, fwhm_average=>0.1, coords=>SVector(0., 0.1))
+
+    visspecs = (
+        VisSpec(Baseline((:A, :B)), UV(1, 2)),
+        VisSpec(Baseline((:B, :C)), UV(3, 4)),
+        VisSpec(Baseline((:C, :A)), UV(5, 6)),
+        VisSpec(Baseline((:A, :D)), UV(7, 8)),
+    )
+
+    # --- VisSpec ---
+    modvis = visibility(model, visspecs[1])
+    x_vis = (spec=visspecs[1], value=modvis ±ᵤ 0.1)
+    μ, σ, val = VLBI.loglike_parts(model, x_vis)
+    @test μ ≈ modvis
+    @test val ≈ modvis  # data == model
+    @test σ ≈ 0.1
+    @test isfinite(VLBI.loglike(model, x_vis))
+
+    # perturbed data has lower loglike
+    x_vis_pert = (spec=visspecs[1], value=(modvis + 0.5 + 0.5im) ±ᵤ 0.1)
+    @test VLBI.loglike(model, x_vis) > VLBI.loglike(model, x_vis_pert)
+
+    # --- VisAmpSpec ---
+    aspec = VisAmpSpec(visspecs[1])
+    x_amp = (spec=aspec, value=abs(modvis) ±ᵤ 0.05)
+    μ_a, σ_a, val_a = VLBI.loglike_parts(model, x_amp)
+    @test μ_a ≈ abs(modvis)
+    @test val_a ≈ abs(modvis)
+    @test isfinite(VLBI.loglike(model, x_amp))
+
+    x_amp_pert = (spec=aspec, value=(abs(modvis) + 0.5) ±ᵤ 0.05)
+    @test VLBI.loglike(model, x_amp) > VLBI.loglike(model, x_amp_pert)
+
+    # high SNR: besselix argument val*μ/σ² can be huge
+    m_bright = Point(100.0, SVector(0.0, 0.0))
+    x_amp_hsnr = (spec=aspec, value=100.0 ±ᵤ 0.001)
+    @test isfinite(VLBI.loglike(m_bright, x_amp_hsnr))
+
+    # --- ClosurePhaseSpec ---
+    cpspec = ClosurePhaseSpec(visspecs[1:3])
+    mod_bispec = visibility(model, cpspec)
+    x_cp = (spec=cpspec, value=mod_bispec ±ᵤ 0.01)
+    μ_cp, σ_cp, val_cp = VLBI.loglike_parts(model, x_cp)
+    @test μ_cp ≈ angle(mod_bispec)
+    @test isfinite(VLBI.loglike(model, x_cp))
+
+    # perturbed closure phase
+    x_cp_pert = (spec=cpspec, value=(mod_bispec * cis(0.5)) ±ᵤ 0.01)
+    @test VLBI.loglike(model, x_cp) > VLBI.loglike(model, x_cp_pert)
+
+    # wrapping: phase near π should work
+    x_cp_wrap = (spec=cpspec, value=(-abs(mod_bispec) + 0.0im) ±ᵤ 0.1)
+    @test isfinite(VLBI.loglike(model, x_cp_wrap))
+
+    # --- ClosureAmpSpec ---
+    caspec = ClosureAmpSpec(visspecs[1:4])
+    mod_camp = visibility(model, caspec)
+    x_ca = (spec=caspec, value=abs(mod_camp) ±ᵤ 0.05)
+    μ_ca, σ_ca, val_ca = VLBI.loglike_parts(model, x_ca)
+    @test μ_ca ≈ log(abs(mod_camp))
+    @test isfinite(VLBI.loglike(model, x_ca))
+
+    x_ca_pert = (spec=caspec, value=(abs(mod_camp) * 3) ±ᵤ 0.05)
+    @test VLBI.loglike(model, x_ca) > VLBI.loglike(model, x_ca_pert)
+
+    # --- Cross-check against Distributions.jl ---
+    using Distributions: logpdf, Normal, Rician, VonMises
+
+    # VisSpec: two independent Normals on Re and Im
+    for x_v in [x_vis, x_vis_pert]
+        μ_v, σ_v, val_v = VLBI.loglike_parts(model, x_v)
+        expected = logpdf(Normal(real(μ_v), σ_v), real(val_v)) + logpdf(Normal(imag(μ_v), σ_v), imag(val_v))
+        @test VLBI.loglike(model, x_v) ≈ expected
+    end
+
+    # VisAmpSpec: Rician
+    # XXX: Distributions.jl Rician delegates to Rmath's dnchisq which is inaccurate for large noncentrality parameters (ncp > ~30).
+    # R docs warn: "The code for non-zero ncp is principally intended to be used for moderate values of ncp".
+    # Our besselix formula matches BigFloat series and scipy to machine precision.
+    let
+        μ_a, σ_a, val_a = VLBI.loglike_parts(model, x_amp)
+        @test VLBI.loglike(model, x_amp) ≈ logpdf(Rician(μ_a, σ_a), val_a)
+    end
+    let
+        μ_a, σ_a, val_a = VLBI.loglike_parts(model, x_amp_pert)
+        @test_broken VLBI.loglike(model, x_amp_pert) ≈ logpdf(Rician(μ_a, σ_a), val_a)
+    end
+
+    # ClosurePhaseSpec: VonMises
+    for x_c in [x_cp, x_cp_pert, x_cp_wrap]
+        μ_c, σ_c, val_c = VLBI.loglike_parts(model, x_c)
+        expected = logpdf(VonMises(μ_c, inv(σ_c^2)), val_c)
+        @test VLBI.loglike(model, x_c) ≈ expected
+    end
+
+    # ClosureAmpSpec: Normal
+    for x_l in [x_ca, x_ca_pert]
+        μ_l, σ_l, val_l = VLBI.loglike_parts(model, x_l)
+        expected = logpdf(Normal(μ_l, σ_l), val_l)
+        @test VLBI.loglike(model, x_l) ≈ expected
+    end
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true), ambiguities=(;broken=true))
