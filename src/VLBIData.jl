@@ -19,8 +19,8 @@ import PolarizedTypes as PolT
 using PolarizedTypes: CoherencyMatrix, IPol
 
 import DispatchDoctor
-macro stable(args...)
-    DispatchDoctor.var"@stable"(__source__, __module__, :(default_mode = "disable"), args...)
+macro stable(ex)
+    return esc(:($(DispatchDoctor).@stable default_mode = "disable" $ex))
 end
 
 
