@@ -254,6 +254,33 @@ end
         (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
     ]
     @test_throws "expected 4" VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_err)
+
+    # PolarizedTypes.IPol: from all 4 stokes (picks parallel hands)
+    ipol_tbl = VLBI.uvtable_values_to(PolarizedTypes.IPol, uvtbl)
+    @test length(ipol_tbl) == 2
+    @test ipol_tbl[1].value == (11.0 + 14.0) / 2
+    @test ipol_tbl[2].value == (21.0 + 24.0) / 2
+    @test !haskey(ipol_tbl[1], :stokes)
+
+    # PolarizedTypes.IPol: from only parallel hands
+    uvtbl_par = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=10.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LL, value=20.0),
+    ]
+    ipol_par = VLBI.uvtable_values_to(PolarizedTypes.IPol, uvtbl_par)
+    @test length(ipol_par) == 1
+    @test ipol_par[1].value == 15.0
+
+    # PolarizedTypes.IPol: linear basis
+    uvtbl_lin = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:XX, value=6.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:YY, value=4.0),
+    ]
+    ipol_lin = VLBI.uvtable_values_to(PolarizedTypes.IPol, uvtbl_lin)
+    @test ipol_lin[1].value == 5.0
+
+    # PolarizedTypes.IPol: error when only 1 parallel hand
+    @test_throws "expected 2 parallel-hand" VLBI.uvtable_values_to(PolarizedTypes.IPol, uvtbl_err)
 end
 
 @testitem "vlbiskymodels" begin
