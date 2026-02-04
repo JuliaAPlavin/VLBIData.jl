@@ -61,4 +61,21 @@ function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, ob
         config)
 end
 
+function VLBI.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTVisibilityDatum})
+    cfg = Comrade.arrayconfig(obs)
+    dt = cfg.datatable
+    meas = obs.measurement
+    nse = obs.noise
+    d0 = DateTime(modified_julian_day(cfg.mjd))
+
+    StructArray(map(eachindex(meas)) do i
+        (;
+            datetime = d0 + Millisecond(round(Int64, dt.Ti[i] * 3_600_000)),
+            spec = VisSpec(Baseline(dt.sites[i]), UV(dt.U[i], dt.V[i])),
+            freq_spec = dt.Fr[i] * u"Hz",
+            value = meas[i] ±ᵤ nse[i],
+        )
+    end)
+end
+
 end
