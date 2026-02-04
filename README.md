@@ -2,7 +2,9 @@
 
 Simple, composable data model for interferometric visibilities — and common operations on top of it: averaging, error rescaling, closure computation, polarization conversion, ...
 
-Visibility data is just a `AbstractVector{NamedTuple}`, so you can use standard Julia tools (filtering, mapping, grouping) alongside VLBIData operations. Designed for radio VLBI, but applicable to any interferometric context.
+Started in 2020 and actively maintained since, VLBIData is one of the earliest and most mature Julia packages for interferometric/VLBI data handling.
+
+Visibility data is represented as an `AbstractVector{NamedTuple}`, so you can use standard Julia tools (filtering, mapping, grouping) alongside VLBIData operations. Designed for radio VLBI, but applicable to any interferometric context.
 
 ```julia
 using VLBIFiles, VLBIData
