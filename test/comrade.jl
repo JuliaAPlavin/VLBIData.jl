@@ -20,6 +20,12 @@
     @test result isa StructArray
     @test length(result) == 3
     @test result.spec == [UV(0.1, 0.2), UV(-0.3, 0.4), UV(0.5, -0.1)]
+
+    result_shifted = visibilitymap(shifted(model, 1., 0), uvtbl_spec)
+    @test result_shifted isa StructArray
+    @test length(result_shifted) == 3
+    @test result_shifted.spec == [UV(0.1, 0.2), UV(-0.3, 0.4), UV(0.5, -0.1)]
+    @test log.(result_shifted.value ./ result.value) ≈ [10/16, -30/16, 50/16]*im  rtol=1e-2
 end
 
 @testitem "comrade extract_table" begin
