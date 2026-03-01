@@ -52,7 +52,7 @@ average_data(::Incoherent, strategy, uvtbl) = average_data(strategy, uvtbl; avgv
 
 @stable function _incoh_avg(vals::AbstractVector{<:Number})
     sigmas = U.uncertainty.(vals)
-    amp0 = √mean(v -> abs2(U.value(v))^2, vals)
+    amp0 = √mean(v -> abs2(U.value(v)), vals)
     sigma0 = _incoh_sigma(amp0, sigmas)
     # Preserve phase direction from coherent average
     coh_mean = mean(U.value, vals)
