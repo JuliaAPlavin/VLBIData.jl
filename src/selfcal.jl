@@ -41,10 +41,11 @@ function _solve_amp_gains(rows)
         V_mod = r.model_value
         log(abs(V_obs / V_mod))
     end
-    w = [U.nσ(row.value)^2 for row in rows]
-    
+    sw = [U.nσ(row.value) for row in rows]
+
     # WLS: A * L = r, where A[k,i]=1, A[k,j]=1 for baseline (i,j)
-    # The system L_i + L_j is fully determined (no degeneracy) for a connected array
+    # Solve via rectangular least-squares (pivoted QR) to handle rank-deficient cases
+    # (bipartite baseline graphs: chains, trees, single baselines after flagging)
     N_st = length(stations)
     N_bl = length(r)
     A = zeros(N_bl, N_st)
@@ -54,8 +55,8 @@ function _solve_amp_gains(rows)
         A[k, a1] = 1.0
         A[k, a2] = 1.0
     end
-    WA = w .* A
-    L = (A' * WA) \ (A' * (w .* r))
+    # Explicit pivoted QR: `\` on a square matrix would use LU, which fails for singular systems
+    L = qr(sw .* A, ColumnNorm()) \ (sw .* r)
 
     return Dict(stations[i] => exp(L[i]) for i in 1:N_st)
 end

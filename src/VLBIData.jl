@@ -7,6 +7,7 @@ using StaticArrays
 using StructArrays
 using InterferometricModels
 import InterferometricModels: UV, visibility
+using LinearAlgebra: qr, ColumnNorm
 using Statistics: mean, median, quantile, std
 using SpecialFunctions: besselix
 using Uncertain

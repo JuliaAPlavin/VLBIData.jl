@@ -141,6 +141,43 @@
         @test g.gain ≈ 1.0 rtol=1e-10
     end
 
+    # --- Bipartite baseline graph (chain: A-B, B-C, no A-C) ---
+    chain_bls = [(:A, :B), (:B, :C)]
+    chain_gains = Dict(:A => 1.3, :B => 0.8, :C => 1.1)
+    chain_model = Dict((:A,:B) => 1.0+0.5im, (:B,:C) => 0.9-0.2im)
+    chain_uvtbl = StructArray([
+        (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
+         freq_spec=230, stokes=:RR, source="cal",
+         value=U.Value(chain_gains[bl[1]] * chain_gains[bl[2]] * chain_model[bl], 0.01))
+        for (idx, bl) in enumerate(chain_bls)
+    ])
+    chain_mvis = [complex(chain_model[bl]) for bl in chain_bls]
+    chain_result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), chain_mvis, chain_uvtbl)
+    # Gain products on each baseline must match true products
+    for (i, bl) in enumerate(chain_bls)
+        g1 = only(g for g in chain_result.gains if g.station == bl[1]).gain
+        g2 = only(g for g in chain_result.gains if g.station == bl[2]).gain
+        @test g1 * g2 ≈ chain_gains[bl[1]] * chain_gains[bl[2]] rtol=1e-10
+    end
+
+    # --- Square bipartite graph (4-station cycle: A-B, B-C, C-D, D-A) ---
+    cycle_bls = [(:A, :B), (:B, :C), (:C, :D), (:A, :D)]
+    cycle_gains = Dict(:A => 1.2, :B => 0.9, :C => 1.1, :D => 0.8)
+    cycle_model = Dict((:A,:B) => 1.0+0.5im, (:B,:C) => 0.9-0.2im, (:C,:D) => 0.7+0.3im, (:A,:D) => 0.6-0.1im)
+    cycle_uvtbl = StructArray([
+        (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
+         freq_spec=230, stokes=:RR, source="cal",
+         value=U.Value(cycle_gains[bl[1]] * cycle_gains[bl[2]] * cycle_model[bl], 0.01))
+        for (idx, bl) in enumerate(cycle_bls)
+    ])
+    cycle_mvis = [complex(cycle_model[bl]) for bl in cycle_bls]
+    cycle_result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), cycle_mvis, cycle_uvtbl)
+    for (i, bl) in enumerate(cycle_bls)
+        g1 = only(g for g in cycle_result.gains if g.station == bl[1]).gain
+        g2 = only(g for g in cycle_result.gains if g.station == bl[2]).gain
+        @test g1 * g2 ≈ cycle_gains[bl[1]] * cycle_gains[bl[2]] rtol=1e-10
+    end
+
     # --- apply_gains preserves fields ---
     uvtbl_orig = make_uvtbl(true_gains)
     gains_for_fields = VLBI.solve_gains(VLBI.AmplitudeAnalytic(), mvis, uvtbl_orig)
