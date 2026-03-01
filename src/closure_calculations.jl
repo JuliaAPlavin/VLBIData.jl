@@ -1,17 +1,17 @@
-@stable function closures_all(::Type{T}, data::AbstractVector) where {T}
+@stable function closures_all(::Type{T}, data::AbstractVector; rescale_redundancy::Bool=false) where {T}
 	NT = intersect_nt_type(eltype(data), NamedTuple{(:freq_spec, :stokes, :datetime)})
 	@p let
 		data
 		group_vg(NT)
-		flatmap(closures_scan(T, _))
+		flatmap(closures_scan(T, _; rescale_redundancy))
 	end
 end
 
-@stable function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
+@stable function closures_scan(::Type{T}, data::FlexiGroups.GroupArray; rescale_redundancy::Bool=false) where {T}
 	bls = @p data map(Baseline(_))
 	@assert allunique(bls)
 	all_ant_names = @p bls flatmap(antenna_names) unique sort
-	@p let
+	closures = @p let
 		ant_id_sets_for_closures(T, all_ant_names)
 		filtermap() do ant_names
 			cbls = (
@@ -28,19 +28,29 @@ end
 				isempty(rs) ? nothing : only(rs)
 			end
 			any(isnothing, curdata) && return nothing
-	
+
 			FlexiGroups.Group(key(data), curdata)
 		end
 		map(agg_to_closure(T, _))
-		FlexiGroups.GroupArray(key(data), __)
 	end
+	if rescale_redundancy && !isempty(closures)
+		# n_independent = B - N: gain model g_i + g_j has rank-N design matrix (unsigned incidence matrix)
+		n_ind = length(bls) - length(all_ant_names)
+		r = length(closures) / n_ind
+		closures = map(closures) do c
+			@modify(c.value |> U.uncertainty) do err
+				err * √r
+			end
+		end
+	end
+	FlexiGroups.GroupArray(key(data), closures)
 end
 
-@stable function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
+@stable function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray; rescale_redundancy::Bool=false)
 	bls = @p data map(Baseline(_))
 	@assert allunique(bls)
 	all_ant_names = @p bls flatmap(antenna_names) unique sort
-	@p let
+	closures = @p let
 		Iterators.product(all_ant_names, all_ant_names, all_ant_names)
 		collect
 		filter(allunique ⩓ issorted)
@@ -58,12 +68,22 @@ end
 				isempty(rs) ? nothing : only(rs)
 			end
 			any(isnothing, curdata) && return nothing
-	
+
 			FlexiGroups.Group(key(data), curdata)
 		end
 		map(agg_to_closure(ClosurePhaseSpec, _))
-		FlexiGroups.GroupArray(key(data), __)
 	end
+	if rescale_redundancy && !isempty(closures)
+		# n_independent = B - N + 1: gain model g_i - g_j has rank-(N-1) design matrix (signed incidence matrix)
+		n_ind = length(bls) - length(all_ant_names) + 1
+		r = length(closures) / n_ind
+		closures = map(closures) do c
+			@modify(c.value |> U.uncertainty) do err
+				err * √r
+			end
+		end
+	end
+	FlexiGroups.GroupArray(key(data), closures)
 end
 
 

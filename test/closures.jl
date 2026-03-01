@@ -70,6 +70,11 @@ end
     cla = VLBI.closures_all(ClosureAmpSpec, collect(uvgr))
     @test length(cla) == 15
     @test cla == collect(clas)
+
+    # rescale_redundancy: σ scaled by √r where r = M/(B-N) = 15/5 = 3
+    clas_r = VLBI.closures_scan(ClosureAmpSpec, uvgr; rescale_redundancy=true)
+    @test length(clas_r) == 15
+    @test all(c -> c.value ≈ 1 ±ᵤ (0.2 * √3), clas_r)
 end
 
 @testitem "closure phase calculations" begin
@@ -114,6 +119,11 @@ end
     clp = VLBI.closures_all(ClosurePhaseSpec, collect(uvgr))
     @test length(clp) == 10
     @test clp == collect(clps)
+
+    # rescale_redundancy: σ scaled by √r where r = M/(B-N+1) = 10/6
+    clps_r = VLBI.closures_scan(ClosurePhaseSpec, uvgr; rescale_redundancy=true)
+    @test length(clps_r) == 10
+    @test all(c -> Uncertain.uncertainty(c.value) ≈ 0.17320508075688773 * √(10/6), clps_r)
 end
 
 @testitem "model evaluation" begin
