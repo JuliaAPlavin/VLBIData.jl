@@ -1,4 +1,79 @@
 aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs) |> UV)
+aggspec(bl, specs::AbstractVector{<:VisAmpSpec}) = VisAmpSpec(bl, mean(x->UV(x), specs) |> UV)
+
+"""
+    Coherent()
+
+Coherent (complex) visibility averaging mode. This is the default.
+Averages complex visibilities with inverse-variance weighting, preserving phase.
+"""
+struct Coherent end
+
+"""
+    Incoherent()
+
+Incoherent (RMS amplitude) visibility averaging mode.
+Computes RMS amplitude with phase direction preserved from the coherent average.
+Works with both complex (`VisSpec`) and amplitude-only (`VisAmpSpec`) inputs.
+
+To debias amplitudes before averaging, call [`debias_amplitudes`](@ref) first:
+```julia
+avg_scans = average_data(GapBasedScans(), uvtbl)
+avg_freq  = average_data(Incoherent(), ByFrequency(), debias_amplitudes(avg_scans))
+```
+"""
+struct Incoherent end
+
+"""
+    debias_amplitudes(uvtbl)
+
+Remove Rice distribution amplitude bias from each visibility (Thompson et al. eq. 9.86).
+Returns amplitude-only data with `VisAmpSpec`.
+
+For each visibility with amplitude ``|V|`` and per-component noise ``σ``:
+debiased amplitude ``Â = √max(|V|² - 2σ², 0)``.
+"""
+debias_amplitudes(uvtbl::AbstractVector) = debias_amplitudes(StructArray(uvtbl))
+@stable debias_amplitudes(uvtbl::StructArray) = @p let
+    uvtbl
+    @modify(VisAmpSpec, __.spec[∗])
+    @modify(__.value[∗]) do value
+        amp = abs(U.value(value))
+        σ = U.uncertainty(value)
+        amp0 = √max(amp^2 - 2σ^2, zero(amp^2))
+        sigma0 = _incoh_sigma(amp0, (σ,))
+        U.Value(amp0, sigma0)
+    end
+end
+
+average_data(::Coherent, strategy, uvtbl; kwargs...) = average_data(strategy, uvtbl; kwargs...)
+
+average_data(::Incoherent, strategy, uvtbl) = average_data(strategy, uvtbl; avgvals=_incoh_avg)
+
+@stable function _incoh_avg(vals::AbstractVector{<:Number})
+    sigmas = U.uncertainty.(vals)
+    amp0 = √mean(v -> abs2(U.value(v))^2, vals)
+    sigma0 = _incoh_sigma(amp0, sigmas)
+    # Preserve phase direction from coherent average
+    coh_mean = mean(U.value, vals)
+    direction = abs(coh_mean) > 0 ? coh_mean / abs(coh_mean) : one(coh_mean)
+    return U.Value(amp0 * direction, sigma0)
+end
+
+# Error via variance propagation on Â² = mean(|V_i|² - 2σ_i²)
+# Var(|V_i|²) = 4σ_i²(A² + σ_i²), so inc_σ = √Var(Â²)/2
+# Then delta-method transform from squared-amplitude SNR to amplitude SNR
+@stable function _incoh_sigma(amp0, sigmas)
+    N = length(sigmas)
+    inc_σ = √(amp0^2 * sum(σ -> σ^2, sigmas) + sum(σ -> σ^4, sigmas)) / N
+    s = amp0^2 / (2 * inc_σ)  # SNR of squared-amplitude estimator
+    if s > 0
+        snr_amp = s * (1 + √(1 + 1/s))  # delta-method transform to amplitude SNR
+        snr_amp > 0 ? amp0 / snr_amp : √sum(σ -> σ^2, sigmas) / N
+    else
+        √sum(σ -> σ^2, sigmas) / N
+    end
+end
 
 function average_data(strategy::AbstractScanStrategy, uvtbl; avgvals=U.weightedmean)
     uvtbl_with_scans = add_scan_ids(strategy, uvtbl)
