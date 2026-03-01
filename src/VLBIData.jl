@@ -18,6 +18,11 @@ using UnitfulAngles
 import PolarizedTypes as PolT
 using PolarizedTypes: CoherencyMatrix, IPol
 
+import DispatchDoctor
+macro stable(args...)
+    DispatchDoctor.var"@stable"(__source__, __module__, :(default_mode = "disable"), args...)
+end
+
 
 export VLBI,
 	Antenna, antenna_names, Baseline,
@@ -66,7 +71,7 @@ AccessorsExtra.hasoptic(obj, ::typeof(antenna_names)) = AccessorsExtra.hasoptic(
 @accessor Baseline(x::NamedTuple) = Baseline(x.spec)
 @accessor UV(x::NamedTuple) = UV(x.spec)
 @accessor UVs(x::NamedTuple) = UVs(x.spec)
-conjvis(x::NamedTuple) = @p let
+@stable conjvis(x::NamedTuple) = @p let
 	x
 	modify(conj, __, @o _.value _.spec)
 	modify(_reverse_stokes, __, @maybe _.stokes)

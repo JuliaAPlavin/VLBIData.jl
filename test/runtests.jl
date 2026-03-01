@@ -1,3 +1,6 @@
+using Preferences: set_preferences!
+set_preferences!("VLBIData", "dispatch_doctor_mode" => "error")
+
 using TestItems
 using TestItemRunner
 @run_package_tests

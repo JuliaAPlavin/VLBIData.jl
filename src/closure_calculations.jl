@@ -1,4 +1,4 @@
-function closures_all(::Type{T}, data::AbstractVector) where {T}
+@stable function closures_all(::Type{T}, data::AbstractVector) where {T}
 	NT = intersect_nt_type(eltype(data), NamedTuple{(:freq_spec, :stokes, :datetime)})
 	@p let
 		data
@@ -7,7 +7,7 @@ function closures_all(::Type{T}, data::AbstractVector) where {T}
 	end
 end
 
-function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
+@stable function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
 	bls = @p data map(Baseline(_))
 	@assert allunique(bls)
 	all_ant_names = @p bls flatmap(antenna_names) unique sort
@@ -36,7 +36,7 @@ function closures_scan(::Type{T}, data::FlexiGroups.GroupArray) where {T}
 	end
 end
 
-function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
+@stable function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
 	bls = @p data map(Baseline(_))
 	@assert allunique(bls)
 	all_ant_names = @p bls flatmap(antenna_names) unique sort
@@ -67,12 +67,12 @@ function closures_scan(::Type{<:ClosurePhaseSpec}, data::FlexiGroups.GroupArray)
 end
 
 
-ant_id_sets_for_closures(::Type{<:ClosurePhaseSpec}, ids) = @p let
+@stable ant_id_sets_for_closures(::Type{<:ClosurePhaseSpec}, ids) = @p let
 	Iterators.product(ids, ids, ids)
 	collect
 	filter(allunique ⩓ issorted)
 end
-ant_id_sets_for_closures(::Type{<:ClosureAmpSpec}, ids) = @p let
+@stable ant_id_sets_for_closures(::Type{<:ClosureAmpSpec}, ids) = @p let
 	Iterators.product(ids, ids, ids, ids)
 	collect
 	filter(allunique)
@@ -81,7 +81,7 @@ ant_id_sets_for_closures(::Type{<:ClosureAmpSpec}, ids) = @p let
 end
 
 
-agg_to_closure(::Type{T}, gr) where {T} = @p gr (;
+@stable agg_to_closure(::Type{T}, gr) where {T} = @p gr (;
 	key(__)...,
 	spec=T(map(x->x.spec, __)),
 	value=agg_value_to_closure(T, map(x->x.value, __)),
