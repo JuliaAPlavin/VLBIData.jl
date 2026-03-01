@@ -426,6 +426,27 @@ end
     end
 end
 
+@testitem "loglike ClosureAmpSpec zero allocations" begin
+    using InterferometricModels, Uncertain, StaticArrays, Unitful, UnitfulAngles
+
+    function _test_loglike_allocs()
+        sky = EllipticGaussian(flux=1.0, σ_major=0.5u"mas", ratio_minor_major=0.9,
+            pa_major=0.0, coords=(0.0, 0.0) .* u"mas")
+        vm = Ref(visibility(sky))
+        spec = ClosureAmpSpec((
+            VisSpec(Baseline((:A, :B)), UV(SVector(1f6, 2f6))),
+            VisSpec(Baseline((:B, :C)), UV(SVector(2f6, 1f6))),
+            VisSpec(Baseline((:C, :D)), UV(SVector(1.5f6, 1.5f6))),
+            VisSpec(Baseline((:A, :D)), UV(SVector(0.5f6, 2.5f6))),
+        ))
+        x = Ref((; spec, value=Uncertain.Value(0.8 + 0.0im, 0.1)))
+        VLBI.loglike(vm[], x[])  # compile
+        @allocated VLBI.loglike(vm[], x[])
+    end
+
+    @test _test_loglike_allocs() == 0
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true), ambiguities=(;broken=true))
