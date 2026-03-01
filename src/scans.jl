@@ -5,12 +5,13 @@ abstract type AbstractScanStrategy end
 end
 
 @stable function scan_ids(strategy::GapBasedScans, uvtbl::StructVector)
+    min_gap = strategy.min_gap
+    scan_id_ref = Ref(1)
+    prev_dt_ref = Ref(minimum(uvtbl.datetime))
     @modify($(uvtbl.datetime) |> sort) do datetimes
-        scan_id_ref = Ref(1)
-        prev_dt_ref = Ref(datetimes[1])
         map(datetimes) do dt
             gap = dt - prev_dt_ref[]
-            if gap > strategy.min_gap
+            if gap > min_gap
                 scan_id_ref[] += 1
             end
             prev_dt_ref[] = dt
