@@ -90,7 +90,7 @@ using Reexport
 	AbstractSpec, VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	conjvis, add_conjvis, average_data, closures_scan, closures_all,
 	uvshift,
-	ConsecutiveDifferencesStandard, CoherentAverageScatter, ClosurePhaseConsecutive, ErrMulSame, find_errmul, rescale_visibility_errors,
+	ConsecutiveDifferencesStandard, CoherentAverageScatter, ClosurePhaseConsecutive, CrossFrequencyScatter, ErrMulSame, ErrMulFallback, find_errmul, rescale_visibility_errors,
 	uv_reindex, uvtable, uvtable_values_to,
 	GapBasedScans, FixedTimeIntervals, ByFrequency, add_scan_ids, scan_intervals,
 	is_parallel_hands, is_cross_hands, stokes_to_feeds,

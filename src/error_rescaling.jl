@@ -8,6 +8,10 @@ For each baseline, takes pairs of adjacent-in-time visibilities (within `maxΔt`
 If errors are correct, `|ΔV| / σ_ΔV` follows a Rayleigh distribution.
 The rescaling factor is `quantile(|ΔV|/σ_ΔV, q) / quantile(Rayleigh, q)`.
 
+- `maxΔt`: maximum time gap between consecutive visibilities to form a pair (auto-capped at `3×` the median Δt)
+- `rayleigh_q`: quantile used for the Rayleigh comparison (0.5 = median)
+- `min_cnt`: minimum number of consecutive-difference pairs required; returns `nothing` if fewer
+
 Assumes the true visibility is constant between adjacent points.
 Not robust to station gain drifts between adjacent points: consider [`ClosurePhaseConsecutive`](@ref) for sparsely-sampled data.
 """
@@ -26,6 +30,10 @@ Estimate visibility error rescaling by comparing scatter within time bins to pro
 Coherently averages visibilities in time bins of length `maxΔt`, then computes
 `std(V) / (√N · √2)` (empirical scatter of the mean) vs the propagated weighted-mean error.
 The rescaling factor is `median(scatter / propagated_error)` across all bins.
+
+- `maxΔt`: time bin width for averaging (auto-capped at `15×` the median Δt)
+- `min_cnt_avg`: minimum number of visibilities per time bin; bins with fewer are discarded
+- `min_cnt_after`: minimum number of valid bins required; returns `nothing` if fewer
 
 Assumes the true visibility is constant within each bin.
 Not robust to station gain drifts: consider [`ClosurePhaseConsecutive`](@ref) if gain differences within bins are significant.
@@ -48,6 +56,10 @@ Then takes studentized consecutive differences: `s = Δφ / √(σ₁² + σ₂�
 If errors are correct, `s` is standard normal, so `std(s) ≈ 1`.
 The rescaling factor is `median(std(s))` across all triangles.
 
+- `maxΔt`: maximum time gap between consecutive closure phases to form a pair (auto-capped at `5×` the median Δt)
+- `min_cnt`: minimum number of consecutive-difference pairs per triangle; triangles with fewer are discarded
+- `min_triangles`: minimum number of valid triangles required; returns `nothing` if fewer
+
 Robust to station-based gain drifts (closure phases cancel station gains by construction).
 Based on the approach in eht-imaging (`estimate_noise_rescale_factor`), see EHT Memo 2019-CE-02.
 """
@@ -59,16 +71,59 @@ end
 ClosurePhaseConsecutive(maxΔt; kwargs...) = ClosurePhaseConsecutive(; maxΔt, kwargs...)
 
 """
+    CrossFrequencyScatter(; min_cnt_freqs=3, min_cnt_groups=50)
+
+Estimate visibility error rescaling by comparing scatter across frequency channels to propagated errors.
+
+For each (baseline, time, stokes) group with multiple frequency channels, computes
+`std(V) / (√N · √2)` (empirical scatter of the mean) vs the propagated weighted-mean error.
+The rescaling factor is `median(scatter / propagated_error)` across all groups.
+
+- `min_cnt_freqs`: minimum number of frequency channels per (baseline, time) group; groups with fewer are discarded
+- `min_cnt_groups`: minimum number of valid groups required; returns `nothing` if fewer
+
+Assumes the true visibility is approximately constant across frequency channels
+(valid for narrow fractional bandwidth). Fundamentally different from time-based methods:
+uses frequency diversity rather than temporal proximity.
+"""
+@kwdef struct CrossFrequencyScatter
+    min_cnt_freqs = 3
+    min_cnt_groups = 50
+end
+
+"""
     ErrMulSame(methods...; rtol)
 
 Run multiple error rescaling methods and return their mean, requiring they agree within `rtol`.
 Errors if any method returns `nothing` or if the results disagree beyond `rtol`.
+
+- `methods`: error rescaling method instances to run
+- `rtol`: maximum relative tolerance between the smallest and largest estimate
 """
 struct ErrMulSame
     methods::Tuple
     rtol::Float64
 end
 ErrMulSame(methods...; rtol) = ErrMulSame(methods, rtol)
+
+"""
+    ErrMulFallback(methods...)
+
+Try error rescaling methods in order, returning the first successful (non-`nothing`) result.
+Returns `nothing` only if all methods fail.
+
+Useful for building robust pipelines, e.g.:
+```julia
+ErrMulFallback(
+    ErrMulSame(ConsecutiveDifferencesStandard(), CoherentAverageScatter(); rtol=0.2),
+    ClosurePhaseConsecutive(),
+)
+```
+"""
+struct ErrMulFallback
+    methods::Tuple
+end
+ErrMulFallback(methods...) = ErrMulFallback(methods)
 
 
 function find_errmul(m::CoherentAverageScatter, uvtbl)
@@ -99,11 +154,12 @@ function find_errmul(m::ClosurePhaseConsecutive, uvtbl)
         group_vg((; NT(_)..., tri=antenna_names(_.spec)))
         filtermap() do gr
             @assert issorted(gr, by=:datetime)
+            dt_diffs = diff([r.datetime for r in gr])
             s_list = @p let
                 gr
                 map(angle(_.value))
                 zip(__[begin:end-1], __[begin+1:end])
-                zip(__, diff(gr.datetime))
+                zip(__, dt_diffs)
                 collect
                 filter(_[2] ≤ maxΔt)
                 map() do ((φ1, φ2), _)
@@ -117,6 +173,21 @@ function find_errmul(m::ClosurePhaseConsecutive, uvtbl)
     end
     length(std_list) ≥ m.min_triangles || return nothing
     return median(std_list)
+end
+
+function find_errmul(m::CrossFrequencyScatter, uvtbl)
+    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:stokes,)})
+    ratios = @p let
+        uvtbl
+        group_vg((; NT(_)..., bl=Baseline(_), dt=_.datetime))
+        filtermap() do gr
+            length(gr) ≥ m.min_cnt_freqs || return nothing
+            vals = gr.value
+            std(U.value.(vals)) / √length(vals) / √2 / U.uncertainty(U.weightedmean(vals))
+        end
+    end
+    length(ratios) ≥ m.min_cnt_groups || return nothing
+    return median(ratios)
 end
 
 
@@ -138,6 +209,14 @@ function find_errmul(m::ErrMulSame, uvtbl)
         $(@p zip(m.methods, emuls) map("$(_[1]) => $(_[2])") join(__, "\n"))
         """)
     end
+end
+
+function find_errmul(m::ErrMulFallback, uvtbl)
+    for method in m.methods
+        result = find_errmul(method, uvtbl)
+        isnothing(result) || return result
+    end
+    return nothing
 end
 
 
