@@ -47,7 +47,7 @@ function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, ob
         )
     end |> StructArray
 
-    bandwidth = @p uvtbl map(_.freq_spec) unique sum(_.width) ustrip(u"Hz", __)
+    bandwidth = @p uvtbl map(_.freq_spec) unique map(_.width) uniqueonly() ustrip(u"Hz", __)
     config = Comrade.EHTArrayConfiguration(
         Float64(bandwidth), tarr, scans, mjd(Date(d0)),
         ustrip(u"hourAngle", obscoords.ra), ustrip(u"°", obscoords.dec),
