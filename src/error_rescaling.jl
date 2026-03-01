@@ -219,6 +219,7 @@ function find_errmul(m::ErrMulFallback, uvtbl)
     return nothing
 end
 
+find_errmul(m::Number, uvtbl) = m
 
 function typical_Δt(uvtbl)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:freq_spec, :stokes)})
