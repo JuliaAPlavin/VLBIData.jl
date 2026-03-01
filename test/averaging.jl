@@ -276,7 +276,7 @@ end
     # High-SNR: debiased amp ≈ original amp
     uvtbl = StructArray([
         (datetime=DateTime(2020,1,1,0,0,0), spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=(3.0+4.0im)±ᵤ0.1, source="SgrA*"),
-        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=5.0±ᵤ0.1, source="SgrA*"),
+        (datetime=DateTime(2020,1,1,0,0,10), spec=VisSpec(Baseline((1,2)), UV(0,2)), freq_spec=123, stokes=:RR, value=(5.0+0.0im)±ᵤ0.1, source="SgrA*"),
     ])
     deb = VLBI.debias_amplitudes(uvtbl)
     @test all(s -> s isa VisAmpSpec, deb.spec)
