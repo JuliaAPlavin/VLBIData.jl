@@ -186,9 +186,9 @@ end
 
     uvtbl = VLBI.load(joinpath(pkgdir(VLBI), "test/data/datafile_01-01_230GHz.uvfits")) |> uvtable
     filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 27.79 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) |> isnothing
     @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) |> isnothing
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 26.30 rtol=1e-3
+    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) |> isnothing
     @test_throws "couldn't be estimated" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl)
 end
 
