@@ -278,8 +278,31 @@ end
     ipol_lin = VLBI.uvtable_values_to(IPol, uvtbl_lin)
     @test ipol_lin[1].value == 5.0
 
-    # IPol: error when only 1 parallel hand
-    @test_throws "expected 2 parallel-hand" VLBI.uvtable_values_to(IPol, uvtbl_err)
+    # IPol: from single parallel hand (RR only)
+    uvtbl_single_rr = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+    ]
+    ipol_single = VLBI.uvtable_values_to(IPol, uvtbl_single_rr)
+    @test length(ipol_single) == 1
+    @test ipol_single[1].value == 11.0
+    @test !haskey(ipol_single[1], :stokes)
+
+    # IPol: from single parallel hand (LL only)
+    uvtbl_single_ll = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LL, value=7.0),
+    ]
+    ipol_single_ll = VLBI.uvtable_values_to(IPol, uvtbl_single_ll)
+    @test length(ipol_single_ll) == 1
+    @test ipol_single_ll[1].value == 7.0
+
+    # IPol: error when no parallel hands
+    uvtbl_no_par = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+    ]
+    @test_throws "expected 1 or 2 parallel-hand" VLBI.uvtable_values_to(IPol, uvtbl_no_par)
 end
 
 @testitem "_" begin
