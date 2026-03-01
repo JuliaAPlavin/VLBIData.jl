@@ -8,6 +8,7 @@ using StructArrays
 using InterferometricModels
 import InterferometricModels: UV, visibility
 using Statistics: mean, median, quantile, std
+using SpecialFunctions: besselix
 using Uncertain
 using IntervalSets
 using StructHelpers
@@ -51,6 +52,7 @@ include("error_rescaling.jl")
 include("selfcal.jl")
 include("reindex.jl")
 include("polarizedtypes.jl")
+include("likelihoods.jl")
 
 
 function uvtable end
@@ -97,6 +99,7 @@ using Reexport
 	conjvis, add_conjvis, average_data, debias_amplitudes, closures_scan, closures_all,
 	uvshift,
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ClosurePhaseConsecutive, CrossFrequencyScatter, ErrMulSame, ErrMulFallback, find_errmul, rescale_visibility_errors,
+	loglike_parts, loglike,
 	AmplitudeAnalytic, solve_gains, apply_gains, selfcal,
 	uv_reindex, uvtable, uvtable_values_to,
 	GapBasedScans, FixedTimeIntervals, ByFrequency, Coherent, Incoherent, add_scan_ids, scan_intervals,
