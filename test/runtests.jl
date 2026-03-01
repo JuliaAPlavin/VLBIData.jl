@@ -238,16 +238,19 @@ end
 @testitem "polarizedtypes extension (manual table)" begin
     using VLBIData
 
+    spec1 = VisSpec(Baseline((:A, :B)), UV(1.0, 2.0))
+    spec2 = VisSpec(Baseline((:C, :D)), UV(3.0, 4.0))
+
     # Create a minimal fake uvtable with all 4 stokes
     uvtbl = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=11.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LL, value=14.0),
-        (datetime=2, freq_spec=200.0, spec=2, stokes=:RR, value=21.0),
-        (datetime=2, freq_spec=200.0, spec=2, stokes=:LR, value=22.0),
-        (datetime=2, freq_spec=200.0, spec=2, stokes=:RL, value=23.0),
-        (datetime=2, freq_spec=200.0, spec=2, stokes=:LL, value=24.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=14.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:RR, value=21.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:LR, value=22.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:RL, value=23.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:LL, value=24.0),
     ]
     cm_tbl = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl)
 
@@ -260,9 +263,9 @@ end
 
     # Error case: group with not 4 elements (missing :LL)
     uvtbl_err = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=11.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
     @test_throws "expected 4" VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_err)
 
@@ -275,8 +278,8 @@ end
 
     # IPol: from only parallel hands
     uvtbl_par = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=10.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LL, value=20.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=10.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=20.0),
     ]
     ipol_par = VLBI.uvtable_values_to(IPol, uvtbl_par)
     @test length(ipol_par) == 1
@@ -284,17 +287,17 @@ end
 
     # IPol: linear basis
     uvtbl_lin = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:XX, value=6.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:YY, value=4.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:XX, value=6.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:YY, value=4.0),
     ]
     ipol_lin = VLBI.uvtable_values_to(IPol, uvtbl_lin)
     @test ipol_lin[1].value == 5.0
 
     # IPol: from single parallel hand (RR only)
     uvtbl_single_rr = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RR, value=11.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
     ipol_single = VLBI.uvtable_values_to(IPol, uvtbl_single_rr)
     @test length(ipol_single) == 1
@@ -303,7 +306,7 @@ end
 
     # IPol: from single parallel hand (LL only)
     uvtbl_single_ll = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LL, value=7.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=7.0),
     ]
     ipol_single_ll = VLBI.uvtable_values_to(IPol, uvtbl_single_ll)
     @test length(ipol_single_ll) == 1
@@ -311,21 +314,50 @@ end
 
     # IPol: when no parallel hands
     uvtbl_no_par = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:LR, value=12.0),
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
     @test isempty(VLBI.uvtable_values_to(IPol, uvtbl_no_par))
 
     # IPol: data already has stokes=:I (passthrough)
     uvtbl_stokesI = [
-        (datetime=1, freq_spec=100.0, spec=1, stokes=:I, value=42.0),
-        (datetime=2, freq_spec=200.0, spec=2, stokes=:I, value=99.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:I, value=42.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:I, value=99.0),
     ]
     ipol_from_I = VLBI.uvtable_values_to(IPol, uvtbl_stokesI)
     @test length(ipol_from_I) == 2
     @test ipol_from_I[1].value == 42.0
     @test ipol_from_I[2].value == 99.0
     @test !haskey(ipol_from_I[1], :stokes)
+
+    # Same baseline, different UV per stokes: should still group together
+    bl1 = Baseline((:A, :B))
+    bl2 = Baseline((:C, :D))
+    uvtbl_diffuv = [
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.0, 2.0)),  stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.01, 2.01)), stokes=:LR, value=12.0),
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.02, 2.02)), stokes=:RL, value=13.0),
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.03, 2.03)), stokes=:LL, value=14.0),
+    ]
+    cm_diffuv = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_diffuv)
+    @test length(cm_diffuv) == 1
+    @test cm_diffuv[1].value == [11 13; 12 14]
+
+    ipol_diffuv = VLBI.uvtable_values_to(IPol, uvtbl_diffuv)
+    @test length(ipol_diffuv) == 1
+    @test ipol_diffuv[1].value == (11.0 + 14.0) / 2
+
+    # Multiple baselines with differing UV: groups should be per-baseline
+    uvtbl_multi = [
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.0, 2.0)),  stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.01, 2.01)), stokes=:LL, value=14.0),
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl2, UV(3.0, 4.0)),  stokes=:RR, value=31.0),
+        (datetime=1, freq_spec=100.0, spec=VisSpec(bl2, UV(3.01, 4.01)), stokes=:LL, value=34.0),
+    ]
+    ipol_multi = VLBI.uvtable_values_to(IPol, uvtbl_multi)
+    @test length(ipol_multi) == 2
+    vals = sort([r.value for r in ipol_multi])
+    @test vals == [(11.0 + 14.0) / 2, (31.0 + 34.0) / 2]
 end
 
 @testitem "likelihoods" begin
