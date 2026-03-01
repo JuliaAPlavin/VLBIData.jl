@@ -315,6 +315,17 @@ end
         (datetime=1, freq_spec=100.0, spec=1, stokes=:RL, value=13.0),
     ]
     @test isempty(VLBI.uvtable_values_to(IPol, uvtbl_no_par))
+
+    # IPol: data already has stokes=:I (passthrough)
+    uvtbl_stokesI = [
+        (datetime=1, freq_spec=100.0, spec=1, stokes=:I, value=42.0),
+        (datetime=2, freq_spec=200.0, spec=2, stokes=:I, value=99.0),
+    ]
+    ipol_from_I = VLBI.uvtable_values_to(IPol, uvtbl_stokesI)
+    @test length(ipol_from_I) == 2
+    @test ipol_from_I[1].value == 42.0
+    @test ipol_from_I[2].value == 99.0
+    @test !haskey(ipol_from_I[1], :stokes)
 end
 
 @testitem "likelihoods" begin
