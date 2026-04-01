@@ -19,7 +19,7 @@
 end
 
 @stable function uvtable_values_to(::Type{IPol}, uvtbl)
-	grs = @p uvtbl filter(is_parallel_hands(_.stokes)) group_vg((;_.datetime, _.freq_spec, _.spec))
+	grs = @p uvtbl filter(_.stokes == :I || is_parallel_hands(_.stokes)) group_vg((;_.datetime, _.freq_spec, _.spec))
 	return map(grs) do gr
 		length(gr) ∈ (1, 2) || error("expected 1 or 2 parallel-hand Stokes per group, got $(length(gr))")
 		val = mean(x -> x.value, gr)
