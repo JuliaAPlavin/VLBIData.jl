@@ -84,13 +84,12 @@ end
 function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
     intervals = scan_intervals(uvtbl_with_scans)
     NT = intersect_nt_type(eltype(uvtbl_with_scans), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
-    ntf = x -> NT(x)
-    _average_data_by_scans_inner(ntf, uvtbl_with_scans, const_part, intervals; avgvals)
+    _average_data_by_scans_inner(NT, uvtbl_with_scans, const_part, intervals; avgvals)
 end
 
-_average_data_by_scans_inner(ntf, uvtbl_with_scans, const_part, intervals; avgvals) = @p let
+_average_data_by_scans_inner(::Type{NT}, uvtbl_with_scans, const_part, intervals; avgvals) where {NT} = @p let
     uvtbl_with_scans
-    groupview_vg((;bl=Baseline(_), ntf(_)...))
+    groupview_vg((;bl=Baseline(_), NT(_)...))
     map((;
         const_part...,
         delete(key(_), @o _.bl)...,
@@ -119,27 +118,24 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
         iszero(__) ? oftype(__, 1u"ms") : __
     end
     NT = intersect_nt_type(eltype(src), NamedTuple{(:source, :freq_spec, :stokes)})
-    ntf = x -> NT(x)
-    _average_data_by_time_inner(ntf, src, const_part, mindt, avg_interval; avgvals)
+    _average_data_by_time_inner(NT, src, const_part, mindt, avg_interval; avgvals)
 end
 
-function _average_data_by_time_inner(ntf, src, const_part, mindt, avg_interval; avgvals)
-    @p begin
-        src
-        groupview_vg((;
-            bl=Baseline(_), ntf(_)...,
-            timestep = ((_.datetime - mindt) / avg_interval) |> upreferred |> x->trunc(Int, x),
-        ))
-        map((;
-            const_part...,
-            delete(key(_), @o _.bl _.timestep)...,
-            count = length(_),
-            value = avgvals(_.value),
-            datetime = mindt + (key(_).timestep + 0.5) * avg_interval,
-            spec = aggspec(key(_).bl, _.spec),
-        ))
-        StructArray()
-    end
+_average_data_by_time_inner(::Type{NT}, src, const_part, mindt, avg_interval; avgvals) where {NT} = @p begin
+    src
+    groupview_vg((;
+        bl=Baseline(_), NT(_)...,
+        timestep = ((_.datetime - mindt) / avg_interval) |> upreferred |> x->trunc(Int, x),
+    ))
+    map((;
+        const_part...,
+        delete(key(_), @o _.bl _.timestep)...,
+        count = length(_),
+        value = avgvals(_.value),
+        datetime = mindt + (key(_).timestep + 0.5) * avg_interval,
+        spec = aggspec(key(_).bl, _.spec),
+    ))
+    StructArray()
 end
 
 
@@ -152,24 +148,21 @@ function average_data(::ByFrequency, uvtbl; avgvals=U.weightedmean)
     merged_fs = _aggfreq(unique(uvtbl.freq_spec))
     const_part = @p getproperties(uvtbl) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec, :count, :datetime)]) filter(allequal) map(uniqueonly)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :stokes, :scan_id, :datetime)})
-    ntf = x -> NT(x)
-    _average_data_byfreq_inner(ntf, uvtbl, const_part, merged_fs; avgvals)
+    _average_data_byfreq_inner(NT, uvtbl, const_part, merged_fs; avgvals)
 end
 
-function _average_data_byfreq_inner(ntf, uvtbl, const_part, merged_fs; avgvals)
-    @p begin
-        uvtbl
-        groupview_vg((; bl=Baseline(_), ntf(_)...))
-        map((;
-            const_part...,
-            delete(key(_), @o _.bl)...,
-            freq_spec=merged_fs,
-            count=length(_),
-            value=avgvals(_.value),
-            spec=aggspec(key(_).bl, _.spec),
-        ))
-        StructArray()
-    end
+_average_data_byfreq_inner(::Type{NT}, uvtbl, const_part, merged_fs; avgvals) where {NT} = @p begin
+    uvtbl
+    groupview_vg((; bl=Baseline(_), NT(_)...))
+    map((;
+        const_part...,
+        delete(key(_), @o _.bl)...,
+        freq_spec=merged_fs,
+        count=length(_),
+        value=avgvals(_.value),
+        spec=aggspec(key(_).bl, _.spec),
+    ))
+    StructArray()
 end
 
 
