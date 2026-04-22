@@ -102,7 +102,7 @@ end
 
     @test VLBI.AbstractSpec((;spec)) == spec
     @test VisSpec((;spec)) == spec
-    @test_throws "expected VLBIData.VisAmpSpec" VisAmpSpec((;spec))
+    @test_throws "expected V" VisAmpSpec((;spec))
     @test Baseline((;spec)) == Baseline(spec)
     @test antenna_names((;spec)) == antenna_names(spec)
     @test UV((;spec)) == UV(spec)
