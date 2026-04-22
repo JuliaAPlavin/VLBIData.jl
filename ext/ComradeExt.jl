@@ -27,7 +27,9 @@ function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, ob
         )
     end |> StructArray
 
-    scan_ivs = VLBI.scan_intervals(VLBI.GapBasedScans(), uvtbl)
+    scan_ivs = VLBI.scan_intervals(
+        hasproperty(StructArray(uvtbl), :scan_id) ? nothing : VLBI.GapBasedScans(),
+        uvtbl)
     d0 = minimum(r -> r.datetime, uvtbl)
     scans = @p scan_ivs map((
         start=(leftendpoint(_) - d0) /ₜ Hour - √eps(),
