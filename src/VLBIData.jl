@@ -6,8 +6,9 @@ using Unitful
 using StaticArrays
 using StructArrays
 using InterferometricModels
-import InterferometricModels: UV, visibility
-using LinearAlgebra: qr, ColumnNorm
+import InterferometricModels: UV, visibility, visibilities
+using SkyCoords: AbstractSkyCoords, ICRSCoords
+using LinearAlgebra: qr, ColumnNorm, dot, norm
 using Statistics: mean, median, quantile, std
 using SpecialFunctions: besselix
 using Uncertain
@@ -30,7 +31,7 @@ export VLBI,
 	Antenna, antenna_names, Baseline,
 	UV, UVs, UVarea, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
-	uvtable,
+	uvtable, synthesize_uvtable,
 	is_parallel_hands, is_cross_hands, stokes_to_feeds,
 	CoherencyMatrix, IPol
 
@@ -54,6 +55,7 @@ include("selfcal.jl")
 include("reindex.jl")
 include("polarizedtypes.jl")
 include("likelihoods.jl")
+include("simulate.jl")
 
 
 function uvtable end
@@ -102,7 +104,7 @@ using Reexport
 	ConsecutiveDifferencesStandard, CoherentAverageScatter, ClosurePhaseConsecutive, CrossFrequencyScatter, ErrMulSame, ErrMulFallback, find_errmul, rescale_visibility_errors,
 	loglike_parts, loglike,
 	AmplitudeAnalytic, solve_gains, apply_gains, selfcal,
-	uv_reindex, uvtable, uvtable_values_to,
+	uv_reindex, uvtable, uvtable_values_to, synthesize_uvtable,
 	GapBasedScans, FixedTimeIntervals, ByFrequency, Coherent, Incoherent, add_scan_ids, scan_intervals,
 	is_parallel_hands, is_cross_hands, stokes_to_feeds,
 	CoherencyMatrix, IPol
