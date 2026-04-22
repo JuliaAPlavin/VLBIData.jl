@@ -109,6 +109,8 @@ end
     @test VLBI.conjvis((;spec, value=1+2im)) == (spec=conj(spec), value=1-2im)
     @test VLBI.conjvis((;spec, value=1+2im, stokes=:RR)) == (spec=conj(spec), value=1-2im, stokes=:RR)
     @test VLBI.conjvis((;spec, value=1+2im, stokes=:RL)) == (spec=conj(spec), value=1-2im, stokes=:LR)
+    @test VLBI.conjvis((;spec)) == (spec=conj(spec),)
+    @test VLBI.conjvis((;spec, stokes=:RL)) == (spec=conj(spec), stokes=:LR)
 end
 
 @testitem "frequencies" begin

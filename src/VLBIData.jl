@@ -79,7 +79,8 @@ AccessorsExtra.hasoptic(obj, ::typeof(antenna_names)) = AccessorsExtra.hasoptic(
 @accessor UVs(x::NamedTuple) = UVs(x.spec)
 @stable conjvis(x::NamedTuple) = @p let
 	x
-	modify(conj, __, @o _.value _.spec)
+	modify(conj, __, @o _.spec)
+	modify(conj, __, @maybe _.value)
 	modify(_reverse_stokes, __, @maybe _.stokes)
 end
 @accessor visibility(x::NamedTuple) = x.value
