@@ -92,3 +92,39 @@ end
     @test result[1].datetime == d0
     @test result[2].datetime == d0 + Minute(1)
 end
+
+@testitem "comrade extract_table with scan_id" begin
+    import Comrade
+    using Dates
+    using Unitful
+    using Uncertain
+
+    antennas = [
+        Antenna(:AA, xyz=(1e6, 2e6, 3e6)),
+        Antenna(:BB, xyz=(4e6, 5e6, 6e6)),
+    ]
+
+    d0 = DateTime(2017, 4, 11, 0, 0, 0)
+    # Two rows close in time (no gap) but with different scan_ids.
+    # GapBasedScans would put them in the same scan; pre-set scan_id splits them.
+    uvtbl = [
+        (
+            datetime = d0,
+            spec = VisSpec(Baseline((:AA, :BB)), UV(1e9, 2e9)),
+            freq_spec = (freq=230e9u"Hz", width=2e9u"Hz"),
+            value = (1.0 + 0.5im) ±ᵤ0.1,
+            scan_id = 1,
+        ),
+        (
+            datetime = d0 + Second(10),
+            spec = VisSpec(Baseline((:AA, :BB)), UV(1.1e9, 2.1e9)),
+            freq_spec = (freq=230e9u"Hz", width=2e9u"Hz"),
+            value = (0.9 + 0.4im) ±ᵤ0.15,
+            scan_id = 2,
+        ),
+    ]
+
+    obs = Comrade.extract_table(uvtbl; antennas)
+    # Should have 2 scans (from scan_id), not 1 (from GapBasedScans)
+    @test length(obs.config.scans) == 2
+end
