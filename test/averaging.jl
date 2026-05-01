@@ -28,6 +28,19 @@
         (freq_spec=123, stokes=:LL, source="SgrA*", count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 5.0))),
         (freq_spec=124, stokes=:LL, source="SgrA*", count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 5.0))),
     ]
+
+    # averaging without value field (UV coverage only)
+    uvtbl_noval = [(datetime=r.datetime, spec=r.spec, freq_spec=r.freq_spec) for r in uvtbl_orig]
+    avg_noval = VLBI.average_data(VLBI.FixedTimeIntervals(10u"minute"), uvtbl_noval)
+    @test length(avg_noval) == 4
+    @test !hasproperty(avg_noval, :value)
+    @test hasproperty(avg_noval, :spec)
+    @test avg_noval[1].count == 2
+
+    # averaging with plain Complex value (no uncertainties)
+    uvtbl_plain = [(datetime=r.datetime, spec=r.spec, freq_spec=r.freq_spec, value=complex(1.0)) for r in uvtbl_orig]
+    avg_plain = VLBI.average_data(VLBI.FixedTimeIntervals(10u"minute"), uvtbl_plain)
+    @test avg_plain[1].value ≈ 1.0+0im
 end
 
 @testitem "scan functionality" begin
