@@ -490,6 +490,50 @@ end
     @test _test_loglike_allocs() == 0
 end
 
+@testitem "synthesize_uvtable" begin
+    using VLBIFiles, SkyCoords, Dates, Unitful, UnitfulAngles, StaticArrays, InterferometricModels
+    using StructArrays
+
+    # Load real VLBA observation
+    uv = VLBIFiles.load(VLBIFiles.UVData, joinpath(pkgdir(VLBIFiles), "test/data/vis.fits"))
+    antarr = only(uv.ant_arrays)
+    uvtbl = VLBIFiles.uvtable(uv)
+    h = VLBIFiles.FITSIO.read_header(VLBIFiles.FITSIO.FITS(joinpath(pkgdir(VLBIFiles), "test/data/vis.fits"))[1])
+    ra_deg, dec_deg = h["OBSRA"], h["OBSDEC"]
+    freq = VLBIData.frequency(uvtbl[1].freq_spec)
+
+    # Extract single stokes+freq to get one row per (baseline, time)
+    rr_f1 = filter(r -> r.stokes == :RR && r.freq_spec == uvtbl[1].freq_spec, collect(uvtbl))
+    unique_times = sort(unique(map(r -> r.datetime, rr_f1)))
+    antennas = [Antenna(name=a.name, xyz=a.xyz .+ antarr.array_xyz) for a in values(antarr.antennas)]
+    source = ICRSCoords(deg2rad(ra_deg), deg2rad(dec_deg))
+
+    # Simulate UV coverage
+    sim = synthesize_uvtable(antennas, unique_times, source; frequency=freq)
+
+    # Every real data row must have a matching simulated row (simulation is superset of flagged data)
+    sim_lookup = Dict((antenna_names(r), r.datetime) => UV(r) for r in sim)
+    @test all(r -> haskey(sim_lookup, (antenna_names(r), r.datetime)), rr_f1)
+
+    # UV coordinates match within ~0.3% (Float32 data precision + ERA≈GMST approximation)
+    relerrs = map(rr_f1) do r
+        uv_data = UV(r)
+        uv_sim = sim_lookup[(antenna_names(r), r.datetime)]
+        hypot((uv_data - uv_sim)...) / hypot(uv_data...)
+    end
+    @test maximum(relerrs) < 0.003
+
+    # Elevation filtering: check exact expected count from data (known for this file + threshold)
+    sim_elev = synthesize_uvtable(antennas, unique_times, source; frequency=freq, min_elevation=20u"°")
+    @test length(sim_elev) == 8640
+
+    # Model variant: on-axis point source → all visibilities equal to flux
+    model = Point(flux=2.5, coords=SVector(0., 0.))
+    sim_model = synthesize_uvtable(model, antennas, unique_times, source; frequency=freq)
+    @test hasproperty(sim_model, :value)
+    @test all(v -> v ≈ 2.5, sim_model.value)
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true), ambiguities=(;broken=true))
