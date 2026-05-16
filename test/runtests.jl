@@ -404,6 +404,25 @@ end
     @test length(ipol_multi) == 2
     vals = sort([r.value for r in ipol_multi])
     @test vals == [(11.0 + 14.0) / 2, (31.0 + 34.0) / 2]
+
+    # CoherencyMatrix: partial stokes per group → fill missing slots with NaN
+    uvtbl_partial = [
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=14.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:RR, value=21.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:LR, value=22.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:RL, value=23.0),
+        (datetime=2, freq_spec=200.0, spec=spec2, stokes=:LL, value=24.0),
+    ]
+    cm_partial = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_partial)
+    @test length(cm_partial) == 2
+    # bl1: only :RR (slot [1,1]) and :LL (slot [2,2]) present; cross-hands are NaN
+    @test cm_partial[1].value[1, 1] == 11.0
+    @test cm_partial[1].value[2, 2] == 14.0
+    @test isnan(cm_partial[1].value[2, 1])  # :LR slot
+    @test isnan(cm_partial[1].value[1, 2])  # :RL slot
+    # bl2: complete — all four finite
+    @test cm_partial[2].value == [21 23; 22 24]
 end
 
 @testitem "likelihoods" begin
