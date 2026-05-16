@@ -32,7 +32,7 @@ scan_intervals(strategy, uvtbl) = scan_intervals(strategy, StructArray(uvtbl))
     hasproperty(uvtbl, :scan_id) || error("No scan strategy provided and no scan_id present in the table.")
     @p let
         uvtbl
-        groupview(_.scan_id; restype=Vector)
+        groupview(_.scan_id; into=Vector)
         map() do gr
             Interval(extrema(gr.datetime)...)
         end
@@ -42,7 +42,7 @@ end
     uvtbl = add_scan_ids(strategy, uvtbl)
     @p let
         uvtbl
-        groupview(_.scan_id; restype=Vector)
+        groupview(_.scan_id; into=Vector)
         map() do gr
             Interval(extrema(gr.datetime)...)
         end
