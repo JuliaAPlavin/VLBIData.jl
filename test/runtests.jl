@@ -307,13 +307,18 @@ end
     @test cm_tbl[2].value == [21 23; 22 24]
     @test !haskey(cm_tbl[1], :stokes)
 
-    # Error case: group with not 4 elements (missing :LL)
-    uvtbl_err = [
+    # Partial group (missing :LL) → CoherencyMatrix with NaN in the LL slot
+    uvtbl_missing_LL = [
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
-    @test_throws "expected 4" VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_err)
+    cm_missing_LL = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_missing_LL)
+    @test length(cm_missing_LL) == 1
+    @test cm_missing_LL[1].value[1, 1] == 11.0  # :RR
+    @test cm_missing_LL[1].value[2, 1] == 12.0  # :LR
+    @test cm_missing_LL[1].value[1, 2] == 13.0  # :RL
+    @test isnan(cm_missing_LL[1].value[2, 2])   # :LL filled with NaN
 
     # IPol: from all 4 stokes (picks parallel hands)
     ipol_tbl = VLBI.uvtable_values_to(IPol, uvtbl)
@@ -423,6 +428,31 @@ end
     @test isnan(cm_partial[1].value[1, 2])  # :RL slot
     # bl2: complete — all four finite
     @test cm_partial[2].value == [21 23; 22 24]
+
+    # Parallel-hands-only group (:RR, :LL) → cross-hands NaN, parallel hands finite
+    uvtbl_par_only = [
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=10.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=20.0),
+    ]
+    cm_par_only = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_par_only)
+    @test length(cm_par_only) == 1
+    @test cm_par_only[1].value[1, 1] == 10.0
+    @test cm_par_only[1].value[2, 2] == 20.0
+    @test isnan(cm_par_only[1].value[2, 1])
+    @test isnan(cm_par_only[1].value[1, 2])
+    @test !haskey(cm_par_only[1], :stokes)
+
+    # Duplicate stokes within a group: the affected slot becomes NaN
+    # (hasoptic for filteronly is `count == 1`, so 2+ matches → fallback)
+    uvtbl_dup_RR = [
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=99.0),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=14.0),
+    ]
+    cm_dup = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_dup_RR)
+    @test length(cm_dup) == 1
+    @test isnan(cm_dup[1].value[1, 1])  # :RR duplicated → NaN
+    @test cm_dup[1].value[2, 2] == 14.0 # :LL still finite
 end
 
 @testitem "likelihoods" begin
