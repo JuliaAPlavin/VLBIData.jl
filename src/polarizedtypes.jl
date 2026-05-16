@@ -2,7 +2,7 @@
 	grs = @p uvtbl group_vg((;_.datetime, _.freq_spec, bl=Baseline(_)))
 
 	return map(grs) do gr
-		nan_val = first(gr).value * NaN
+		nan_val = oftype(first(gr).value, NaN)
 		vals = map((:RR, :LR, :RL, :LL)) do stokes
 			@oget filteronly(r -> r.stokes == stokes, $gr).value nan_val
 		end

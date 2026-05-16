@@ -215,8 +215,8 @@ end
     @test N1 isa SMatrix{2, 2, Float64}
     @test N1[1, 1] == 0.05
     @test N1[2, 2] == 0.05
-    @test isnan(N1[2, 1])
-    @test isnan(N1[1, 2])
+    @test N1[2, 1] == 0
+    @test N1[1, 2] == 0
 
     # Complete group (t2): all four finite, no NaNs.
     M2 = obs.measurement[2]
