@@ -169,6 +169,64 @@ end
     @test rows_by_stokes[:RR].spec.bl == Baseline((:FD, :LA))
 end
 
+@testitem "comrade extract_table: coherency with partial polarization" begin
+    import Comrade
+    using StaticArrays, Unitful, UnitfulAngles, Dates, SkyCoords
+    using StructArrays
+    using Uncertain
+    using VLBIData.PolT: CirBasis
+
+    antennas = [
+        Antenna(name=:FD, xyz=SVector(-1324009.337937, -5332181.945962, 3231962.404011),
+                mount_type=VLBIData.AntennaMountType.AltAzimuth, feed_offsets=(0.0, deg2rad(90.0))),
+        Antenna(name=:LA, xyz=SVector(-1449752.516, -4975298.376, 3709123.520),
+                mount_type=VLBIData.AntennaMountType.AltAzimuth, feed_offsets=(0.0, deg2rad(90.0))),
+    ]
+    source = ICRSCoords(deg2rad(187.70595), deg2rad(12.39112))
+    t1 = DateTime(2010, 12, 24, 8, 0, 0)
+    t2 = t1 + Minute(5)
+    spec = VisSpec(Baseline((:FD, :LA)), UV(1.234e6, 5.678e6))
+    fs = (freq=230e9u"Hz", width=2e9u"Hz")
+
+    # t1 group: only parallel hands. t2 group: complete 4. Globally stokes_set == _CIRCULAR_FEEDS,
+    # so the dispatcher routes to the coherency path; the partial t1 group flows through with NaNs.
+    uvtbl = StructArray([
+        (datetime=t1, spec, freq_spec=fs, stokes=:RR, value=(1.5 + 0.1im) ±ᵤ 0.05),
+        (datetime=t1, spec, freq_spec=fs, stokes=:LL, value=(1.4 - 0.05im) ±ᵤ 0.05),
+        (datetime=t2, spec, freq_spec=fs, stokes=:RR, value=(2.5 + 0.1im) ±ᵤ 0.05),
+        (datetime=t2, spec, freq_spec=fs, stokes=:LR, value=(0.3 - 0.05im) ±ᵤ 0.05),
+        (datetime=t2, spec, freq_spec=fs, stokes=:RL, value=(0.3 + 0.05im) ±ᵤ 0.05),
+        (datetime=t2, spec, freq_spec=fs, stokes=:LL, value=(2.4 - 0.05im) ±ᵤ 0.05),
+    ])
+    obs = Comrade.extract_table(uvtbl; antennas, obscoords=source, objname="M87")
+
+    @test obs isa Comrade.EHTObservationTable{<:Comrade.EHTCoherencyDatum}
+    @test length(obs) == 2
+    @test obs.config.datatable.polbasis[1] == (CirBasis(), CirBasis())
+
+    # Partial group (t1): finite parallel hands, NaN cross-hands in both measurement and noise.
+    M1 = obs.measurement[1]
+    @test M1 isa SMatrix{2, 2, ComplexF64}
+    @test M1[1, 1] == 1.5 + 0.1im   # :RR
+    @test M1[2, 2] == 1.4 - 0.05im  # :LL
+    @test isnan(real(M1[2, 1]))     # :LR slot — NaN
+    @test isnan(real(M1[1, 2]))     # :RL slot — NaN
+    N1 = obs.noise[1]
+    @test N1 isa SMatrix{2, 2, Float64}
+    @test N1[1, 1] == 0.05
+    @test N1[2, 2] == 0.05
+    @test isnan(N1[2, 1])
+    @test isnan(N1[1, 2])
+
+    # Complete group (t2): all four finite, no NaNs.
+    M2 = obs.measurement[2]
+    @test M2[1, 1] == 2.5 + 0.1im
+    @test M2[2, 1] == 0.3 - 0.05im
+    @test M2[1, 2] == 0.3 + 0.05im
+    @test M2[2, 2] == 2.4 - 0.05im
+    @test all(==(0.05), obs.noise[2])
+end
+
 @testitem "comrade extract_table: error on unsupported stokes" begin
     import Comrade
     using StaticArrays, Unitful, Dates, SkyCoords, StructArrays
