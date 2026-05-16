@@ -237,6 +237,50 @@ end
     @test uvtbl[10].freq_spec ≈ 230u"GHz"
 end
 
+@testitem "_parallactic_angle" begin
+    using StaticArrays
+
+    # Closed-form standard parallactic angle (geocentric latitude from xyz):
+    # PA = atan2(sin(H_local)*cos(lat), cos(dec)*sin(lat) - sin(dec)*cos(lat)*cos(H_local))
+    # where H_local = H + lon, lat = atan2(z, sqrt(x²+y²)), lon = atan2(y, x)
+    function par_standard(xyz, H, dec)
+        x, y, z = xyz
+        r_xy = hypot(x, y)
+        sin_lat, cos_lat = z / hypot(r_xy, z), r_xy / hypot(r_xy, z)
+        H_local = H + atan(y, x)
+        atan(sin(H_local)*cos_lat, cos(dec)*sin_lat - sin(dec)*cos_lat*cos(H_local))
+    end
+
+    cases = [
+        (SVector(6.378e6 * cos(deg2rad(45)), 0.0, 6.378e6 * sin(deg2rad(45))), 0.0, 0.0),
+        (SVector(6.378e6, 0.0, 0.0), -π/2, 0.0),
+        (SVector(6.378e6 * cos(deg2rad(45)) * cos(deg2rad(30)),
+                 6.378e6 * cos(deg2rad(45)) * sin(deg2rad(30)),
+                 6.378e6 * sin(deg2rad(45))), deg2rad(15), deg2rad(20)),
+        (SVector(6.378e6 * cos(deg2rad(-30)) * cos(deg2rad(120)),
+                 6.378e6 * cos(deg2rad(-30)) * sin(deg2rad(120)),
+                 6.378e6 * sin(deg2rad(-30))), deg2rad(-90), deg2rad(-45)),
+    ]
+    for (xyz, H, dec) in cases
+        @test VLBIData._parallactic_angle(xyz, H, dec) ≈ par_standard(xyz, H, dec) atol=1e-12
+    end
+
+    # Hardcoded reference: VLBA-style antenna at lat=45°N, lon=0°, source at meridian (H=0), dec=0 → PA=0
+    xyz_eq_meridian = SVector(6.378e6 * cos(deg2rad(45)), 0.0, 6.378e6 * sin(deg2rad(45)))
+    @test VLBIData._parallactic_angle(xyz_eq_meridian, 0.0, 0.0) ≈ 0.0 atol=1e-12
+
+    # Hardcoded reference: equator antenna, source rising in east (H=-π/2), dec=0 → PA=-π/2
+    xyz_eq = SVector(6.378e6, 0.0, 0.0)
+    @test VLBIData._parallactic_angle(xyz_eq, -π/2, 0.0) ≈ -π/2 atol=1e-12
+
+    # Hardcoded reference value at a non-trivial configuration:
+    # lat=45°N, lon=30°E, dec=20°, H=15° → PA from independent calc
+    xyz_nontriv = SVector(6.378e6 * cos(deg2rad(45)) * cos(deg2rad(30)),
+                          6.378e6 * cos(deg2rad(45)) * sin(deg2rad(30)),
+                          6.378e6 * sin(deg2rad(45)))
+    @test rad2deg(VLBIData._parallactic_angle(xyz_nontriv, deg2rad(15), deg2rad(20))) ≈ 45.377584812297336 atol=1e-10
+end
+
 @testitem "polarizedtypes extension (manual table)" begin
     using VLBIData
 

@@ -20,6 +20,14 @@ function _source_elevation(xyz_ecef::SVector{3}, H, dec)
     asin(clamp(cos_zenith, -1, 1))
 end
 
+# Parallactic angle of source seen from antenna at given hour angle.
+# Geocentric (uses ECEF radial direction as zenith) — same convention as _source_elevation.
+function _parallactic_angle(xyz_ecef::SVector{3}, H, dec)
+    xyz_rot = _rotate_z(xyz_ecef, H)
+    sin_d, cos_d = sincos(dec)
+    atan(xyz_rot[2], cos_d * xyz_rot[3] - sin_d * xyz_rot[1])
+end
+
 function _rotate_z(xyz::SVector{3}, angle)
     s, c = sincos(angle)
     SVector(c * xyz[1] - s * xyz[2], s * xyz[1] + c * xyz[2], xyz[3])
