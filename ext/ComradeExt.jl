@@ -68,7 +68,7 @@ function VLBI.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTVisibilityDa
     dt = cfg.datatable
     meas = obs.measurement
     nse = obs.noise
-    d0 = DateTime(modified_julian_day(cfg.mjd))
+    d0 = mjd(cfg.mjd)
 
     StructArray(map(eachindex(meas)) do i
         (;
