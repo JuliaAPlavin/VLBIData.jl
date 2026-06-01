@@ -429,6 +429,14 @@ end
     # bl2: complete — all four finite
     @test cm_partial[2].value == [21 23; 22 24]
 
+    # ComplexF32 input must stay ComplexF32 (no Float64 promotion via NaN fallback)
+    uvtbl_partial_f32 = [
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=ComplexF32(11.0f0)),
+        (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=ComplexF32(14.0f0)),
+    ]
+    cm_partial_f32 = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_partial_f32)
+    @test eltype(cm_partial_f32[1].value) === ComplexF32
+
     # Parallel-hands-only group (:RR, :LL) → cross-hands NaN, parallel hands finite
     uvtbl_par_only = [
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=10.0),
