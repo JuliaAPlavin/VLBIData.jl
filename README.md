@@ -122,14 +122,42 @@ VLBIData is designed as the data layer in a composable ecosystem:
 
 [VLBIPlots.jl](https://github.com/JuliaAPlavin/VLBIPlots.jl) — plot visibility data, UV coverage, and models. Understands VLBIData tables natively.
 
+<p align="center">
+  <img src="https://github.com/JuliaAPlavin/VLBIPlots.jl/raw/master/docs/images/vlbi_data_overview.png" width="44%" />
+  <img src="https://github.com/JuliaAPlavin/VLBIPlots.jl/raw/master/docs/images/model_data_comparison.png" width="27%" />
+  <img src="https://github.com/JuliaAPlavin/VLBIPlots.jl/raw/master/docs/images/model_visualization.png" width="27%" />
+</p>
+
 ### InterferometricModels.jl
 
-[InterferometricModels.jl](https://github.com/JuliaAPlavin/InterferometricModels.jl) — analytic source models (Gaussians, disks, rings, etc.) that can be evaluated on VLBIData specs via `visibility(model, spec)`.
+[InterferometricModels.jl](https://github.com/JuliaAPlavin/InterferometricModels.jl) — analytic source models (Gaussians etc) that can be evaluated on VLBIData specs via `visibility(model, spec)`.
 
 ### Comrade.jl
 
 [Comrade.jl](https://github.com/ptiede/Comrade.jl) — Bayesian imaging and modeling framework for VLBI. Data flows both ways:
 
-- `VLBI.uvtable(obs)` — convert a Comrade observation to a VLBIData uvtable
-- `Comrade.extract_table(uvtbl; data_products=...)` — go the other direction
-- `ComradeBase.visibilitymap(model, specs)` — evaluate Comrade sky models on VLBIData UV coordinates
+- `Comrade.extract_table(uvtbl; antennas, obscoords)` — convert a VLBIData uvtable to a Comrade `EHTObservationTable` (Stokes-I or full circular coherency, auto-detected from `stokes`)
+- `VLBI.uvtable(obs)` — convert a Comrade observation back to a VLBIData uvtable
+- `ComradeBase.visibilitymap(model, specs)` — evaluate a Comrade sky model on VLBIData UV coordinates
+
+```julia
+using VLBIFiles, Comrade, SkyCoords
+
+uvf   = VLBI.load("observation.uvfits")
+uvtbl = uvtable(uvf)
+
+# VLBIData uvtable → Comrade observation
+# here, uvtable + antennas + source coords come straight from the file, but they can be edited beforehand
+obs = Comrade.extract_table(uvtbl;
+    antennas  = only(uvf.ant_arrays).antennas |> collect,
+    obscoords = ICRSCoords(uvf))
+
+# Comrade observation → VLBIData uvtable
+uvtbl = VLBI.uvtable(obs)
+
+# Evaluate any Comrade sky model on the uvtable's UV points
+vis = visibilitymap(model, uvtbl)  # returns a uvtable with model visibilities
+```
+
+See [this Pluto notebook](https://pluto.land/n/s8vckb27) for an end-to-end example: loading data, fitting a Comrade model, and inspecting the result.
+<img width="2612" height="1026" alt="image" src="https://github.com/user-attachments/assets/4d8f73c0-ff7e-42cf-bfa0-df0db2ac286e" />
