@@ -1,13 +1,10 @@
 @stable function uvtable_values_to(::Type{CoherencyMatrix}, uvtbl)
 	grs = @p uvtbl group_vg((;_.datetime, _.freq_spec, bl=Baseline(_)))
-	cnts = @p grs map(length) unique sort
-	if cnts != [4]
-		error("expected 4 Stokes parameters per group, got $cnts values")
-	end
 
 	return map(grs) do gr
+		nan_val = first(gr).value * NaN
 		vals = map((:RR, :LR, :RL, :LL)) do stokes
-			@p gr filteronly(_.stokes == stokes) __.value
+			@oget filteronly(r -> r.stokes == stokes, $gr).value nan_val
 		end
 		coher_mat = CoherencyMatrix(vals..., PolT.CirBasis())
 		@p let
