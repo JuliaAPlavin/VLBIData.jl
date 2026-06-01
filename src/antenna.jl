@@ -17,6 +17,7 @@ Base.@kwdef struct Antenna
     xyz::SVector{3, Float64} = SVector(NaN, NaN, NaN)
     mount_type::AntennaMountType.T = AntennaMountType.Unknown
     poltypes::NTuple{2, Symbol} = (:U, :U)
+    feed_offsets::NTuple{2, Float64} = (NaN, NaN)
 end
 @batteries Antenna eq=false
 
