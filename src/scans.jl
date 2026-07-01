@@ -21,13 +21,13 @@ end
 end
 
 function add_scan_ids(strategy::AbstractScanStrategy, uvtbl)
-    uvtbl = StructArray(uvtbl)
+    uvtbl = convert(StructArray, uvtbl)  # no-op if already a StructArray — avoids copying (materializing) lazy columns
     @assert !hasproperty(uvtbl, :scan_id)
     @insert uvtbl.scan_id = scan_ids(strategy, uvtbl)
 end
 
 @stable scan_intervals(uvtbl) = scan_intervals(nothing, uvtbl)
-scan_intervals(strategy, uvtbl) = scan_intervals(strategy, StructArray(uvtbl))
+scan_intervals(strategy, uvtbl) = scan_intervals(strategy, convert(StructArray, uvtbl))
 @stable function scan_intervals(strategy::Nothing, uvtbl::StructArray)
     hasproperty(uvtbl, :scan_id) || error("No scan strategy provided and no scan_id present in the table.")
     @p let
