@@ -637,6 +637,18 @@ end
     @test all(v -> v ≈ 2.5, sim_model.value)
 end
 
+@testitem "coherency linear feeds" begin
+    using VLBIData
+    using VLBIData: PolT
+    LinBasis = PolT.LinBasis
+    bl = Baseline((:A,:B))
+    rows = [(datetime=1, freq_spec=1, spec=VisSpec(bl, UV(0.0,0.0)), stokes=s, value=v)
+            for (s,v) in ((:XX,1.0+0im),(:YY,2.0+0im),(:XY,0.0+0im),(:YX,0.0+0im))]
+    out = only(VLBI.uvtable_values_to(CoherencyMatrix, rows)).value
+    @test out isa CoherencyMatrix{<:LinBasis,<:LinBasis}
+    @test out[1,1] == 1.0+0im && out[2,2] == 2.0+0im
+end
+
 @testitem "feed_slot_map" begin
     using StaticArrays
     using VLBIData: feed_slot_map, feed_basis

@@ -2,11 +2,13 @@
 	grs = @p uvtbl group_vg((;_.datetime, _.freq_spec, bl=Baseline(_)))
 
 	return map(grs) do gr
+		stk = unique(map(r -> r.stokes, gr))
+		slot = feed_slot_map(stk)
 		nan_val = oftype(first(gr).value, NaN)
-		vals = map((:RR, :LR, :RL, :LL)) do stokes
-			@oget filteronly(r -> r.stokes == stokes, $gr).value nan_val
+		vals = map(slot) do i
+			i == 0 ? nan_val : @oget filteronly(r -> r.stokes == stk[i], $gr).value nan_val
 		end
-		coher_mat = CoherencyMatrix(vals..., PolT.CirBasis())
+		coher_mat = CoherencyMatrix(vals, feed_basis(stk))
 		@p let
 			first(gr)
 			@set __.value = coher_mat
