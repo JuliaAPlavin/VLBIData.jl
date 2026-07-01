@@ -637,6 +637,21 @@ end
     @test all(v -> v ≈ 2.5, sim_model.value)
 end
 
+@testitem "feed_slot_map" begin
+    using StaticArrays
+    using VLBIData: feed_slot_map, feed_basis
+    @test feed_slot_map([:RR,:LL,:RL,:LR]) == SMatrix{2,2,Int8}(1, 4, 3, 2)   # [1,1]=RR=1 [2,1]=LR=4 [1,2]=RL=3 [2,2]=LL=2
+    @test feed_slot_map([:RR,:LL])          == SMatrix{2,2,Int8}(1, 0, 0, 2)   # cross hands absent → 0
+    @test feed_slot_map([:RR])              == SMatrix{2,2,Int8}(1, 0, 0, 0)   # single-pol: basis inferred R→(R,L)
+    @test feed_slot_map([:XX])              == SMatrix{2,2,Int8}(1, 0, 0, 0)
+    @test feed_slot_map([:XX,:YY,:XY,:YX])  == SMatrix{2,2,Int8}(1, 4, 3, 2)
+    @test feed_slot_map([:LR,:RL,:LL,:RR])  == SMatrix{2,2,Int8}(4, 1, 2, 3)   # index looked up in the given order
+    @test_throws Exception feed_slot_map([:RR,:XX])     # mixed bases
+    @test_throws Exception feed_slot_map([:I,:Q,:U,:V]) # Stokes parameters are not a coherency
+    @test feed_basis([:RR]) isa typeof(feed_basis([:RR,:LL,:RL,:LR]))   # both circular
+    @test (@inferred feed_slot_map([:RR,:LL,:RL,:LR])) == SMatrix{2,2,Int8}(1, 4, 3, 2)   # type-stable
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true), ambiguities=(;broken=true))
