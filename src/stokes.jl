@@ -67,4 +67,4 @@ end
 	SMatrix{2,2,Int8}(map(t -> something(findfirst(==(t), stokes), 0), targets))
 end
 
-@stable feed_basis(stokes::AbstractVector{Symbol}) = _feed_pair(stokes) == (:R,:L) ? PolT.CirBasis() : PolT.LinBasis()
+feed_basis(stokes::AbstractVector{Symbol}) = _feed_pair(stokes) == (:R,:L) ? PolT.CirBasis() : PolT.LinBasis()

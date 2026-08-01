@@ -1,4 +1,4 @@
-@stable function uvtable_values_to(::Type{CoherencyMatrix}, uvtbl)
+function uvtable_values_to(::Type{CoherencyMatrix}, uvtbl)
 	grs = @p uvtbl group_vg((;_.datetime, _.freq_spec, bl=Baseline(_)))
 
 	return map(grs) do gr
