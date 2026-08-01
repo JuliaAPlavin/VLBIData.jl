@@ -126,6 +126,28 @@ end
     @test_throws ErrorException VLBI.scan_intervals(uvtbl_scans)
 end
 
+@testitem "scans never span sources" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using VLBIData.StructArrays
+
+    # Two sources observed back-to-back, switching with only a 10s gap — well under the
+    # 1-minute threshold. A scan cannot span two sources, so the source change alone must
+    # start a new scan.
+    tbl = StructArray([
+        (datetime=DateTime(2020,1,1,0,0,0),  source="A", spec=VisSpec(Baseline((1,2)), UV(0,1)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
+        (datetime=DateTime(2020,1,1,0,0,10), source="A", spec=VisSpec(Baseline((1,3)), UV(0,2)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
+        (datetime=DateTime(2020,1,1,0,0,20), source="B", spec=VisSpec(Baseline((1,2)), UV(0,3)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
+        (datetime=DateTime(2020,1,1,0,0,30), source="B", spec=VisSpec(Baseline((1,3)), UV(0,4)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
+        (datetime=DateTime(2020,1,1,0,0,40), source="A", spec=VisSpec(Baseline((1,2)), UV(0,5)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
+    ])
+    @test VLBI.add_scan_ids(VLBI.GapBasedScans(min_gap=1u"minute"), tbl).scan_id == [1, 1, 2, 2, 3]
+
+    # A time gap within a single source still splits it (here every 10s gap exceeds 5s).
+    @test VLBI.add_scan_ids(VLBI.GapBasedScans(min_gap=5u"s"), tbl).scan_id == [1, 2, 3, 4, 5]
+end
+
 @testitem "average_data by scans" begin
     using Unitful
     using Dates

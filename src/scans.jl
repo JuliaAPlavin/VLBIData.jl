@@ -6,18 +6,19 @@ end
 
 @stable function scan_ids(strategy::GapBasedScans, uvtbl::StructVector)
     min_gap::typeof(1.0u"s") = strategy.min_gap
-    scan_id_ref = Ref(1)
-    prev_dt_ref = Ref(minimum(uvtbl.datetime))
-    @modify($(uvtbl.datetime) |> sort) do datetimes
-        map(datetimes) do dt
-            gap = dt - prev_dt_ref[]
-            if gap > min_gap
-                scan_id_ref[] += 1
-            end
-            prev_dt_ref[] = dt
-            scan_id_ref[]
-        end
+    order = sortperm(uvtbl.datetime)
+    rows = view(uvtbl, order)   # rows in time order (view, no copy)
+    ids = similar(order)
+    id = 1
+    for (k, i) in enumerate(order)
+        # a new scan starts at a time gap over the threshold, or — since a scan can never span
+        # two sources — at a source change (even within the gap threshold)
+        newscan = k > 1 && (rows.datetime[k] - rows.datetime[k-1] > min_gap ||
+                            (hasproperty(uvtbl, :source) && rows.source[k] != rows.source[k-1]))
+        newscan && (id += 1)
+        ids[i] = id
     end
+    ids
 end
 
 function add_scan_ids(strategy::AbstractScanStrategy, uvtbl)
