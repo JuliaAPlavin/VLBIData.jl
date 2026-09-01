@@ -45,7 +45,7 @@ end
     using Uncertain
     using VLBIData.PolT: CirBasis
 
-    # Two-station synthetic observation, hardcoded reference geometry.
+    # Two-antenna synthetic observation, hardcoded reference geometry.
     # Mixed mount types so fr_coefs branches are exercised.
     ant_FD = Antenna(
         name = :FD, xyz = SVector(-1324009.337937, -5332181.945962, 3231962.404011),
@@ -76,7 +76,7 @@ end
     @test obs.config.source == :M87
     @test length(obs.config.tarr) == 2
 
-    # tarr: per-station AIPS feed-rotation coefficients from mount_type
+    # tarr: per-antenna AIPS feed-rotation coefficients from mount_type
     tarr = obs.config.tarr
     fd_idx = findfirst(==(:FD), tarr.sites)
     la_idx = findfirst(==(:LA), tarr.sites)

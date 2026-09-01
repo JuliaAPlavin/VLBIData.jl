@@ -13,7 +13,7 @@ The rescaling factor is `quantile(|ΔV|/σ_ΔV, q) / quantile(Rayleigh, q)`.
 - `min_cnt`: minimum number of consecutive-difference pairs required; returns `nothing` if fewer
 
 Assumes the true visibility is constant between adjacent points.
-Not robust to station gain drifts between adjacent points: consider [`ClosurePhaseConsecutive`](@ref) for sparsely-sampled data.
+Not robust to antenna gain drifts between adjacent points: consider [`ClosurePhaseConsecutive`](@ref) for sparsely-sampled data.
 """
 @kwdef struct ConsecutiveDifferencesStandard
     maxΔt = 5u"minute"
@@ -36,7 +36,7 @@ The rescaling factor is `median(scatter / propagated_error)` across all bins.
 - `min_cnt_after`: minimum number of valid bins required; returns `nothing` if fewer
 
 Assumes the true visibility is constant within each bin.
-Not robust to station gain drifts: consider [`ClosurePhaseConsecutive`](@ref) if gain differences within bins are significant.
+Not robust to antenna gain drifts: consider [`ClosurePhaseConsecutive`](@ref) if gain differences within bins are significant.
 """
 @kwdef struct CoherentAverageScatter
     maxΔt = 5u"minute"
@@ -50,7 +50,7 @@ CoherentAverageScatter(maxΔt; kwargs...) = CoherentAverageScatter(; maxΔt, kwa
 
 Estimate visibility error rescaling from consecutive closure phase differences.
 
-For each station triangle, computes closure phases `φ = arg(V₁₂·V₂₃·V₃₁)` and their
+For each antenna triangle, computes closure phases `φ = arg(V₁₂·V₂₃·V₃₁)` and their
 uncertainties `σ_φ = σ_bispectrum / |bispectrum|` at each time step.
 Then takes studentized consecutive differences: `s = Δφ / √(σ₁² + σ₂²)`.
 If errors are correct, `s` is standard normal, so `std(s) ≈ 1`.
@@ -60,7 +60,7 @@ The rescaling factor is `median(std(s))` across all triangles.
 - `min_cnt`: minimum number of consecutive-difference pairs per triangle; triangles with fewer are discarded
 - `min_triangles`: minimum number of valid triangles required; returns `nothing` if fewer
 
-Robust to station-based gain drifts (closure phases cancel station gains by construction).
+Robust to antenna-based gain drifts (closure phases cancel antenna gains by construction).
 Based on the approach in eht-imaging (`estimate_noise_rescale_factor`), see EHT Memo 2019-CE-02.
 """
 @kwdef struct ClosurePhaseConsecutive

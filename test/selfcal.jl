@@ -5,8 +5,8 @@
     using InterferometricModels
     using VLBIData.StructArrays
 
-    stations = [:A, :B, :C, :D]
-    bls = [(stations[i], stations[j]) for i in 1:4 for j in i+1:4]
+    antennas = [:A, :B, :C, :D]
+    bls = [(antennas[i], antennas[j]) for i in 1:4 for j in i+1:4]
     dt = DateTime(2020, 1, 1, 0, 0, 0)
     model_vis = Dict(
         (:A,:B) => 1.0+0.5im, (:A,:C) => 0.8-0.3im, (:A,:D) => 0.6+0.2im,
@@ -25,7 +25,7 @@
     result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), mvis, make_uvtbl(true_gains))
     @test length(result.gains) == 4
     for g in result.gains
-        @test g.gain ≈ true_gains[g.station] rtol=1e-10
+        @test g.gain ≈ true_gains[g.antenna] rtol=1e-10
     end
 
     # --- Calibrated data matches model ---
@@ -50,7 +50,7 @@
     gains_scalar = VLBI.solve_gains(VLBI.AmplitudeAnalytic(), Point(1.0, SVector(0.0, 0.0)), point_uvtbl)
     @test length(gains_scalar) == 4
     for g in gains_scalar
-        @test g.gain ≈ point_gains[g.station] rtol=1e-10
+        @test g.gain ≈ point_gains[g.antenna] rtol=1e-10
     end
 
     # --- solve_gains + apply_gains roundtrip ---
@@ -77,9 +77,9 @@
     ))
     multi_dt_mvis = vcat(mvis, mvis)
     multi_dt_result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), multi_dt_mvis, multi_dt_uvtbl)
-    @test length(multi_dt_result.gains) == 8  # 4 stations × 2 times
+    @test length(multi_dt_result.gains) == 8  # 4 antennas × 2 times
     for g in multi_dt_result.gains
-        expected = g.datetime == dt ? gains_t1[g.station] : gains_t2[g.station]
+        expected = g.datetime == dt ? gains_t1[g.antenna] : gains_t2[g.antenna]
         @test g.gain ≈ expected rtol=1e-10
     end
     for (row, mv) in zip(multi_dt_result.data, multi_dt_mvis)
@@ -101,9 +101,9 @@
     ))
     multi_stokes_mvis = vcat(mvis, mvis)
     multi_stokes_gains = VLBI.solve_gains(VLBI.AmplitudeAnalytic(), multi_stokes_mvis, multi_stokes_uvtbl)
-    @test length(multi_stokes_gains) == 8  # 4 stations × 2 stokes
+    @test length(multi_stokes_gains) == 8  # 4 antennas × 2 stokes
     for g in multi_stokes_gains
-        expected = g.stokes == :RR ? gains_rr[g.station] : gains_ll[g.station]
+        expected = g.stokes == :RR ? gains_rr[g.antenna] : gains_ll[g.antenna]
         @test g.gain ≈ expected rtol=1e-10
     end
     multi_stokes_result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), multi_stokes_mvis, multi_stokes_uvtbl)
@@ -124,14 +124,14 @@
     corrupted_gains = VLBI.solve_gains(VLBI.AmplitudeAnalytic(), mvis, corrupted_uvtbl)
     # Gains from non-corrupted baselines should still be approximately correct
     for g in corrupted_gains
-        @test g.gain ≈ true_gains[g.station] rtol=0.1
+        @test g.gain ≈ true_gains[g.antenna] rtol=0.1
     end
 
     # --- Vector-of-NamedTuple input ---
     vec_gains = VLBI.solve_gains(VLBI.AmplitudeAnalytic(), mvis, collect(make_uvtbl(true_gains)))
     @test length(vec_gains) == 4
     for g in vec_gains
-        @test g.gain ≈ true_gains[g.station] rtol=1e-10
+        @test g.gain ≈ true_gains[g.antenna] rtol=1e-10
     end
 
     # --- Idempotence: second pass gives gains ≈ 1.0 ---
@@ -155,12 +155,12 @@
     chain_result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), chain_mvis, chain_uvtbl)
     # Gain products on each baseline must match true products
     for (i, bl) in enumerate(chain_bls)
-        g1 = only(g for g in chain_result.gains if g.station == bl[1]).gain
-        g2 = only(g for g in chain_result.gains if g.station == bl[2]).gain
+        g1 = only(g for g in chain_result.gains if g.antenna == bl[1]).gain
+        g2 = only(g for g in chain_result.gains if g.antenna == bl[2]).gain
         @test g1 * g2 ≈ chain_gains[bl[1]] * chain_gains[bl[2]] rtol=1e-10
     end
 
-    # --- Square bipartite graph (4-station cycle: A-B, B-C, C-D, D-A) ---
+    # --- Square bipartite graph (4-antenna cycle: A-B, B-C, C-D, D-A) ---
     cycle_bls = [(:A, :B), (:B, :C), (:C, :D), (:A, :D)]
     cycle_gains = Dict(:A => 1.2, :B => 0.9, :C => 1.1, :D => 0.8)
     cycle_model = Dict((:A,:B) => 1.0+0.5im, (:B,:C) => 0.9-0.2im, (:C,:D) => 0.7+0.3im, (:A,:D) => 0.6-0.1im)
@@ -173,8 +173,8 @@
     cycle_mvis = [complex(cycle_model[bl]) for bl in cycle_bls]
     cycle_result = VLBI.selfcal(VLBI.AmplitudeAnalytic(), cycle_mvis, cycle_uvtbl)
     for (i, bl) in enumerate(cycle_bls)
-        g1 = only(g for g in cycle_result.gains if g.station == bl[1]).gain
-        g2 = only(g for g in cycle_result.gains if g.station == bl[2]).gain
+        g1 = only(g for g in cycle_result.gains if g.antenna == bl[1]).gain
+        g2 = only(g for g in cycle_result.gains if g.antenna == bl[2]).gain
         @test g1 * g2 ≈ cycle_gains[bl[1]] * cycle_gains[bl[2]] rtol=1e-10
     end
 

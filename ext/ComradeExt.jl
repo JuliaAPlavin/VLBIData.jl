@@ -15,7 +15,7 @@ using VLBIData.StaticArrays
 import Comrade
 
 # AIPS Memo 117 §4.1: per-mount feed-rotation coefficients (fr_elevation, fr_parallactic).
-# fr_offset is per-station and comes from antenna.feed_offsets (POLAA in radians).
+# fr_offset is per-antenna and comes from antenna.feed_offsets (POLAA in radians).
 _fr_coefs(m::VLBIData.AntennaMountType.T) =
     m == VLBIData.AntennaMountType.AltAzimuth ? (0.0,  1.0) :
     m == VLBIData.AntennaMountType.Equatorial ? (0.0,  0.0) :
@@ -34,7 +34,7 @@ function _pointings(ant_xyz_by_name, baseline_antennas, t, ra_rad, dec_rad)
     (el, pa)
 end
 
-# Circular-only: this bridge currently assumes circular feeds (R/L) at every station.
+# Circular-only: this bridge currently assumes circular feeds (R/L) at every antenna.
 const _CIRCULAR_FEEDS = (:RR, :LR, :RL, :LL)
 
 function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, obscoords, objname="UNKNOWN")

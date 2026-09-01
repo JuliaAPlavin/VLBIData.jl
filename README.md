@@ -38,7 +38,7 @@ Most real data also carries `datetime`, `freq_spec` (frequency/bandwidth/channel
 
 ## Core Types
 
-**`Antenna`** — a station, identified by `name::Symbol`, with position and metadata.
+**`Antenna`** — an interferometric endpoint, identified by `name::Symbol`, with position and metadata.
 
 **`Baseline{T}`** — a pair of antennas (or names, or indices): `Baseline((:AA, :AP))`.
 
@@ -63,7 +63,7 @@ Use `UVs(spec)` to get all UV coordinates, and `UVarea(spec)` for the triangle/q
 
 ### Closures
 
-Closure quantities are station-based gain-independent — useful when calibration is uncertain. Compute them from any visibility table:
+Closure quantities are antenna-gain-independent — useful when calibration is uncertain. Compute them from any visibility table:
 
 - `VLBI.closures_all(ClosurePhaseSpec, uvtbl)` — closure phases for the whole table
 - `VLBI.closures_all(ClosureAmpSpec, uvtbl)` — closure amplitudes for the whole table

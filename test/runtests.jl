@@ -730,7 +730,7 @@ end
     @test eltype(wt.source) == Symbol
 
     w = add_scan_ids(GapBasedScans(), wt)
-    # 347 = the session's contiguous single-source runs, also the astrometry pipeline's acceptance count
+    # 347 = the session's contiguous source-aware scan count used by the astrometry application
     @test length(unique(w.scan_id)) == 347
     # exactly one source per scan
     @test length(unique(collect(zip(w.scan_id, w.source)))) == 347
