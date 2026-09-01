@@ -75,7 +75,7 @@ Returns a new uvtable with closure specs, values, and metadata carried over from
 Reduce data volume while preserving signal. `VLBI.average_data(strategy, uvtbl)` supports three strategies:
 
 - `VLBI.FixedTimeIntervals(interval)` — fixed-width time bins (default: 1 minute)
-- `VLBI.GapBasedScans(min_gap)` — average within scans detected by time gaps (default gap: 1 minute)
+- `VLBI.GapBasedScans(min_gap)` — average within scans, split at time gaps (default gap: 1 minute)
 - `VLBI.ByFrequency()` — average across frequency channels
 
 All perform weighted averaging with proper uncertainty propagation. A `count` field is added to each output row. Pass `avgvals` for custom aggregation.

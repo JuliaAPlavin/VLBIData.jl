@@ -1,5 +1,15 @@
 abstract type AbstractScanStrategy end
 
+"""
+    GapBasedScans(; min_gap=1u"minute")
+
+Scans as runs of rows contiguous in time, numbered in time order. A new scan starts at a time gap
+exceeding `min_gap`, or — since a scan never spans two sources — at a change of the `source` column
+when the table has one.
+
+Assumes one source at a time: when different sources share a timestamp the resulting ids depend on
+row order.
+"""
 @kwdef struct GapBasedScans <: AbstractScanStrategy
     min_gap = 1u"minute"
 end

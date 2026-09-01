@@ -15,7 +15,7 @@
     true_gains = Dict(:A => 1.2, :B => 0.9, :C => 1.1, :D => 0.8)
     make_uvtbl(gains) = StructArray([
         (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-         freq_spec=230, stokes=:RR, source="cal",
+         freq_spec=230, stokes=:RR, source=:cal,
          value=U.Value(gains[bl[1]] * gains[bl[2]] * model_vis[bl], 0.01))
         for (idx, bl) in enumerate(bls)
     ])
@@ -43,7 +43,7 @@
     point_gains = Dict(:A => 1.2, :B => 0.9, :C => 1.1, :D => 0.8)
     point_uvtbl = StructArray([
         (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-         freq_spec=230, stokes=:RR, source="cal",
+         freq_spec=230, stokes=:RR, source=:cal,
          value=U.Value(complex(point_gains[bl[1]] * point_gains[bl[2]]), 0.01))
         for (idx, bl) in enumerate(bls)
     ])
@@ -67,11 +67,11 @@
     gains_t2 = Dict(:A => 0.7, :B => 1.3, :C => 0.95, :D => 1.15)
     multi_dt_uvtbl = StructArray(vcat(
         [(datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-          freq_spec=230, stokes=:RR, source="cal",
+          freq_spec=230, stokes=:RR, source=:cal,
           value=U.Value(gains_t1[bl[1]] * gains_t1[bl[2]] * model_vis[bl], 0.01))
          for (idx, bl) in enumerate(bls)],
         [(datetime=dt2, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-          freq_spec=230, stokes=:RR, source="cal",
+          freq_spec=230, stokes=:RR, source=:cal,
           value=U.Value(gains_t2[bl[1]] * gains_t2[bl[2]] * model_vis[bl], 0.01))
          for (idx, bl) in enumerate(bls)],
     ))
@@ -91,11 +91,11 @@
     gains_ll = Dict(:A => 1.05, :B => 1.15, :C => 0.85, :D => 0.95)
     multi_stokes_uvtbl = StructArray(vcat(
         [(datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-          freq_spec=230, stokes=:RR, source="cal",
+          freq_spec=230, stokes=:RR, source=:cal,
           value=U.Value(gains_rr[bl[1]] * gains_rr[bl[2]] * model_vis[bl], 0.01))
          for (idx, bl) in enumerate(bls)],
         [(datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-          freq_spec=230, stokes=:LL, source="cal",
+          freq_spec=230, stokes=:LL, source=:cal,
           value=U.Value(gains_ll[bl[1]] * gains_ll[bl[2]] * model_vis[bl], 0.01))
          for (idx, bl) in enumerate(bls)],
     ))
@@ -118,7 +118,7 @@
         σ = bl == (:A, :B) ? 1e4 : 0.01
         v = bl == (:A, :B) ? 100.0+0im : true_gains[bl[1]] * true_gains[bl[2]] * model_vis[bl]
         (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-         freq_spec=230, stokes=:RR, source="cal",
+         freq_spec=230, stokes=:RR, source=:cal,
          value=U.Value(v, σ))
     end)
     corrupted_gains = VLBI.solve_gains(VLBI.AmplitudeAnalytic(), mvis, corrupted_uvtbl)
@@ -147,7 +147,7 @@
     chain_model = Dict((:A,:B) => 1.0+0.5im, (:B,:C) => 0.9-0.2im)
     chain_uvtbl = StructArray([
         (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-         freq_spec=230, stokes=:RR, source="cal",
+         freq_spec=230, stokes=:RR, source=:cal,
          value=U.Value(chain_gains[bl[1]] * chain_gains[bl[2]] * chain_model[bl], 0.01))
         for (idx, bl) in enumerate(chain_bls)
     ])
@@ -166,7 +166,7 @@
     cycle_model = Dict((:A,:B) => 1.0+0.5im, (:B,:C) => 0.9-0.2im, (:C,:D) => 0.7+0.3im, (:A,:D) => 0.6-0.1im)
     cycle_uvtbl = StructArray([
         (datetime=dt, spec=VisSpec(Baseline(bl), UV(Float64(idx), Float64(idx+1))),
-         freq_spec=230, stokes=:RR, source="cal",
+         freq_spec=230, stokes=:RR, source=:cal,
          value=U.Value(cycle_gains[bl[1]] * cycle_gains[bl[2]] * cycle_model[bl], 0.01))
         for (idx, bl) in enumerate(cycle_bls)
     ])
