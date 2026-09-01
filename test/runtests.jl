@@ -713,10 +713,10 @@ end
     # single row, and a single row per source
     @test scan_ids(GapBasedScans(), tbl[1:1]) == [1]
     @test scan_ids(GapBasedScans(), tbl[[1, 4]]) == [1, 2]
-    # sources sharing a timestamp: only the one-source-per-scan partition is guaranteed, ids are row-order dependent
+    # sources sharing a timestamp: a table that names no antennas has one stream, and one stream
+    # cannot be on two sources at once — refused rather than cut by row order
     tied = StructArray((datetime = fill(DateTime(2020, 1, 1), 4), source = [:B, :A, :B, :A]))
-    tied_ids = scan_ids(GapBasedScans(), tied)
-    @test all(id -> allequal(tied.source[tied_ids .== id]), unique(tied_ids))
+    @test_throws "at the same instant" scan_ids(GapBasedScans(), tied)
 end
 
 @testitem "GapBasedScans on a real session" tags=[:external_data, :local_bigdata] begin

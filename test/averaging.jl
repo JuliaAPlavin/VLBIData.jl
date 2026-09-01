@@ -126,6 +126,55 @@ end
     @test_throws ErrorException VLBI.scan_intervals(uvtbl_scans)
 end
 
+@testitem "GapBasedScans under subnetting: concurrent scans on different sources" begin
+    using Unitful
+    using Dates
+    using VLBIData.StructArrays
+    using VLBIData.IntervalSets
+
+    row(t, a, b, src) = (datetime = DateTime(2020, 1, 1) + Second(t),
+                         spec = VisSpec(Baseline((a, b)), UV(0, 1)), source = src)
+    strategy = VLBI.GapBasedScans(min_gap = 1u"minute")
+
+    # Two disjoint sub-arrays on two sources at the same time: two scans, overlapping in time.
+    subnet = StructArray([row(0, 1, 2, :S), row(10, 1, 2, :S), row(20, 1, 2, :S),
+                          row(5, 3, 4, :T), row(15, 3, 4, :T), row(25, 3, 4, :T)])
+    @test VLBI.add_scan_ids(strategy, subnet).scan_id == [1, 1, 1, 2, 2, 2]
+    ivs = VLBI.scan_intervals(strategy, subnet)
+    @test ivs == [DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 20),
+                  DateTime(2020, 1, 1, 0, 0, 5)..DateTime(2020, 1, 1, 0, 0, 25)]
+    @test !isempty(intersect(ivs[1], ivs[2]))       # a scan is not an interval of the time axis
+    # the numbering is a property of the data, not of the row order
+    @test reverse(VLBI.add_scan_ids(strategy, reverse(subnet)).scan_id) ==
+          VLBI.add_scan_ids(strategy, subnet).scan_id
+
+    # The same source before and after a SHORT scan on another source, on the same antennas: three
+    # scans, because each antenna slewed away in between — a gap rule applied to the source alone
+    # would see 10 s gaps and merge the two S runs into one.
+    revisit = StructArray([row(0, 1, 2, :S), row(10, 1, 2, :S),
+                           row(20, 1, 2, :T), row(30, 1, 2, :T),
+                           row(40, 1, 2, :S), row(50, 1, 2, :S)])
+    @test VLBI.add_scan_ids(strategy, revisit).scan_id == [1, 1, 2, 2, 3, 3]
+
+    # An antenna in two concurrent scans at different times inside them: the rows still separate by
+    # the antenna's own source sequence, and the two scans overlap.
+    shared = StructArray([row(0, 1, 2, :S), row(20, 1, 2, :S),      # antenna 1 on S first
+                          row(10, 3, 4, :T), row(60, 3, 4, :T),     # antenna 3-4 on T throughout
+                          row(40, 1, 3, :T), row(60, 1, 3, :T)])    # antenna 1 joins T later
+    ids = VLBI.add_scan_ids(strategy, shared).scan_id
+    @test ids == [1, 1, 2, 2, 2, 2]
+    ivs2 = VLBI.scan_intervals(strategy, shared)
+    @test ivs2[1] == DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 20)
+    @test ivs2[2] == DateTime(2020, 1, 1, 0, 0, 10)..DateTime(2020, 1, 1, 0, 1, 0)
+
+    # One antenna cannot observe two sources at one instant — the model has nothing to say there
+    @test_throws "antenna ANT1 carries sources" VLBI.add_scan_ids(strategy,
+        StructArray([row(0, 1, 2, :S), row(0, 1, 3, :T)]))
+    # two sub-arrays sharing no antenna may, and that is exactly subnetting
+    @test VLBI.add_scan_ids(strategy,
+        StructArray([row(0, 1, 2, :S), row(0, 3, 4, :T)])).scan_id == [1, 2]
+end
+
 @testitem "average_data never merges sources" begin
     using Unitful
     using Dates
