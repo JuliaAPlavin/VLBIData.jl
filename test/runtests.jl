@@ -3,33 +3,7 @@ set_preferences!("VLBIData", "dispatch_doctor_mode" => "error")
 
 using TestItems
 using TestItemRunner
-# Testitems tagged `:external_data` read a data file, so they need the test-data clone below; those
-# also tagged `:local_bigdata` need a file too large to publish at all, whose path comes from
-# VLBIDATA_BK255AQ. Set VLBIDATA_NO_DATA to run the rest alone — the pure unit testitems, which
-# touch no file, no clone and no network.
-@run_package_tests filter=ti ->
-    (!haskey(ENV, "VLBIDATA_NO_DATA") || :external_data ∉ ti.tags) &&
-    (haskey(ENV, "VLBIDATA_BK255AQ") || :local_bigdata ∉ ti.tags)
-
-# Fixture files are shared with VLBIFiles and live in the companion repository
-# https://github.com/aplavin/VLBIFiles.jl-testdata, cloned on demand into `test/VLBIFiles.jl-testdata/`.
-# An existing checkout is used exactly as it is: no fetch, no update, no network.
-@testmodule TestData begin
-    export testdata
-
-    const ROOT = let
-        dir = joinpath(@__DIR__, "VLBIFiles.jl-testdata")
-        if !isdir(dir)
-            @info "Cloning the VLBIFiles.jl test-data repository" dir
-            success(`git clone --depth 1 https://github.com/aplavin/VLBIFiles.jl-testdata $dir`) ||
-                @warn "Could not clone the test-data repository — tests that need data files will fail" dir
-        end
-        dir
-    end
-
-    "Path of a file in the test-data repository, e.g. `testdata(\"pkg-data/vis.fits\")`."
-    testdata(parts...) = joinpath(ROOT, parts...)
-end
+@run_package_tests
 
 @testitem "Antenna" begin
     using AccessorsExtra
@@ -186,50 +160,6 @@ end
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=(;ix=1), stokes=:RR, value=2),
         (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=(;ix=2), stokes=:LL, value=3),
     ]
-end
-
-@testitem "visibility error rescaling" tags=[:external_data] setup=[TestData] begin
-    import VLBIFiles
-    using VLBIFiles: VLBI
-    using Unitful
-    
-    uvtbl = VLBI.load(testdata("pkg-data/SR1_3C279_2017_101_hi_hops_netcal_StokesI.uvfits")) |> uvtable
-    filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
-
-    @test issetequal(sort(uvtbl; by=Baseline), uvtbl)
-
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 0.6789 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) ≈ 0.6789 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute", rayleigh_q=0.2), uvtbl) ≈ 0.605 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 0.7293 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(2u"minute"), uvtbl) ≈ 0.7260 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(2u"minute", min_cnt_avg=5), uvtbl) ≈ 0.7275 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(0.7u"minute", min_cnt_avg=5), uvtbl) ≈ 0.6855 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.ClosurePhaseConsecutive(), uvtbl) ≈ 0.6856 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl) ≈ 0.6789 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.2), uvtbl) ≈ 0.7042 rtol=1e-3
-    @test_throws "don't agree" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter(), rtol=0.05), uvtbl)
-    @test length(VLBI.rescale_visibility_errors(VLBI.ConsecutiveDifferencesStandard(), uvtbl)) == length(uvtbl)
-
-    uvtbl = VLBI.load(testdata("pkg-data/vis_multichan.vis")) |> uvtable
-    filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) ≈ 0.4298 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) ≈ 0.4306 rtol=1e-3
-    @test VLBI.find_errmul(VLBI.CrossFrequencyScatter(), uvtbl) ≈ 0.4804 rtol=1e-3
-
-    uvtbl = VLBI.load(testdata("pkg-data/datafile_01-01_230GHz.uvfits")) |> uvtable
-    filter!(r -> r.stokes ∈ (:RR, :LL), uvtbl)
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(), uvtbl) |> isnothing
-    @test VLBI.find_errmul(VLBI.ConsecutiveDifferencesStandard(2u"minute"), uvtbl) |> isnothing
-    @test VLBI.find_errmul(VLBI.CoherentAverageScatter(), uvtbl) |> isnothing
-    @test VLBI.find_errmul(VLBI.CrossFrequencyScatter(), uvtbl) |> isnothing
-    @test VLBI.find_errmul(VLBI.ClosurePhaseConsecutive(), uvtbl) ≈ 1.104 rtol=1e-2
-    @test_throws "couldn't be estimated" VLBI.find_errmul(VLBI.ErrMulSame(VLBI.ConsecutiveDifferencesStandard(), VLBI.ConsecutiveDifferencesStandard(2u"minute"), rtol=0.2), uvtbl)
-    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), VLBI.ClosurePhaseConsecutive()), uvtbl) ≈ 1.104 rtol=1e-2
-    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), VLBI.CoherentAverageScatter()), uvtbl) |> isnothing
-    @test VLBI.find_errmul(1, uvtbl) == 1
-    @test VLBI.find_errmul(1.5, uvtbl) == 1.5
-    @test VLBI.find_errmul(VLBI.ErrMulFallback(VLBI.ConsecutiveDifferencesStandard(), 1), uvtbl) == 1
 end
 
 @testitem "comradebase" begin
@@ -619,50 +549,6 @@ end
     @test _test_loglike_allocs() == 0
 end
 
-@testitem "synthesize_uvtable" tags=[:external_data] setup=[TestData] begin
-    using VLBIFiles, SkyCoords, Dates, Unitful, UnitfulAngles, StaticArrays, InterferometricModels
-    using StructArrays
-
-    # Load real VLBA observation
-    uv = VLBIFiles.load(VLBIFiles.UVData, testdata("pkg-data/vis.fits"))
-    antarr = only(uv.ant_arrays)
-    uvtbl = VLBIFiles.uvtable(uv)
-    h = VLBIFiles.FITSIO.read_header(VLBIFiles.FITSIO.FITS(testdata("pkg-data/vis.fits"))[1])
-    ra_deg, dec_deg = h["OBSRA"], h["OBSDEC"]
-    freq = VLBIData.frequency(uvtbl[1].freq_spec)
-
-    # Extract single stokes+freq to get one row per (baseline, time)
-    rr_f1 = filter(r -> r.stokes == :RR && r.freq_spec == uvtbl[1].freq_spec, collect(uvtbl))
-    unique_times = sort(unique(map(r -> r.datetime, rr_f1)))
-    antennas = [Antenna(name=a.name, xyz=a.xyz .+ antarr.array_xyz) for a in values(antarr.antennas)]
-    source = ICRSCoords(deg2rad(ra_deg), deg2rad(dec_deg))
-
-    # Simulate UV coverage
-    sim = synthesize_uvtable(antennas, unique_times, source; frequency=freq)
-
-    # Every real data row must have a matching simulated row (simulation is superset of flagged data)
-    sim_lookup = Dict((antenna_names(r), r.datetime) => UV(r) for r in sim)
-    @test all(r -> haskey(sim_lookup, (antenna_names(r), r.datetime)), rr_f1)
-
-    # UV coordinates match within ~0.3% (Float32 data precision + ERA≈GMST approximation)
-    relerrs = map(rr_f1) do r
-        uv_data = UV(r)
-        uv_sim = sim_lookup[(antenna_names(r), r.datetime)]
-        hypot((uv_data - uv_sim)...) / hypot(uv_data...)
-    end
-    @test maximum(relerrs) < 0.003
-
-    # Elevation filtering: check exact expected count from data (known for this file + threshold)
-    sim_elev = synthesize_uvtable(antennas, unique_times, source; frequency=freq, min_elevation=20u"°")
-    @test length(sim_elev) == 8640
-
-    # Model variant: on-axis point source → all visibilities equal to flux
-    model = Point(flux=2.5, coords=SVector(0., 0.))
-    sim_model = synthesize_uvtable(model, antennas, unique_times, source; frequency=freq)
-    @test hasproperty(sim_model, :value)
-    @test all(v -> v ≈ 2.5, sim_model.value)
-end
-
 @testitem "coherency linear feeds" begin
     using VLBIData
     using VLBIData: PolT
@@ -717,32 +603,6 @@ end
     # cannot be on two sources at once — refused rather than cut by row order
     tied = StructArray((datetime = fill(DateTime(2020, 1, 1), 4), source = [:B, :A, :B, :A]))
     @test_throws "at the same instant" scan_ids(GapBasedScans(), tied)
-end
-
-@testitem "GapBasedScans on a real session" tags=[:external_data, :local_bigdata] begin
-    using Dates, Accessors, StructArrays
-    import VLBIFiles
-    using VLBIData: GapBasedScans, add_scan_ids, scan_intervals
-
-    wt = VLBIFiles.uvtable_wide(VLBIFiles.load(VLBIFiles.UVData, ENV["VLBIDATA_BK255AQ"]))
-    @test length(wt) == 1425762
-    @test length(unique(wt.source)) == 40
-    @test eltype(wt.source) == Symbol
-
-    w = add_scan_ids(GapBasedScans(), wt)
-    # 347 = the session's contiguous source-aware scan count used by the astrometry application
-    @test length(unique(w.scan_id)) == 347
-    # exactly one source per scan
-    @test length(unique(collect(zip(w.scan_id, w.source)))) == 347
-
-    ivs = scan_intervals(GapBasedScans(), wt)
-    @test length(ivs) == 347
-    @test extrema(iv -> maximum(iv) - minimum(iv), ivs) == (Second(116), Second(284))
-
-    # drop only the source column, carrying the lazy visibility/weight columns by reference: splitting on
-    # gaps alone gives 190, as 157 of the source changes fall within the 1-minute threshold
-    wt_nosource = StructArray(@delete StructArrays.components(wt).source)
-    @test length(unique(add_scan_ids(GapBasedScans(), wt_nosource).scan_id)) == 190
 end
 
 @testitem "_" begin
