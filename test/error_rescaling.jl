@@ -65,6 +65,9 @@ end
     pairs = @inferred consecutive_pairs(tbl)
     @test pairs.i == [1, 2, 4, 6]
     @test pairs.j == [2, 3, 5, 7]
+    pairs_view = @inferred consecutive_pairs(view(tbl, 1:5))
+    @test pairs_view.i == [1, 2, 4]
+    @test pairs_view.j == [2, 3, 5]
     # powers 1, 4, 4, 16, k = 2 ⇒ scale = 4/(1/3 + 1/4) = 48/7, multiplier √(24/7)
     @test find_errmul(ConsecutiveDifferencesStandard(; min_cnt=4), tbl) ≈ 1.8516401995451028
 
@@ -83,4 +86,3 @@ end
     @test unit(typical_Δt(tsp)) == u"ms"
     @test typical_Δt(tsp, consecutive_pairs(tsp)) ≈ 10u"s"
 end
-

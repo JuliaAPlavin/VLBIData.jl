@@ -240,7 +240,7 @@ end
 
 find_errmul(m::Number, uvtbl) = m
 
-"""Index pairs `(; i, j)` of time-adjacent rows within each (source, freq_spec, stokes, scan_id, baseline) group."""
+"""Index pairs `(; i, j)` of time-adjacent rows within each group by baseline and whichever of `source`, `freq_spec`, `stokes`, `scan_id` the table has."""
 function consecutive_pairs(uvtbl)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
     @p let
@@ -249,7 +249,7 @@ function consecutive_pairs(uvtbl)
         StructArray((; NT(getproperties(uvtbl))..., bl=__))
         groupfind()
         flatmap() do ix
-            @assert issorted(view(uvtbl.datetime, ix))
+            @assert issorted(@view uvtbl.datetime[ix])
             StructArray(i=@view(ix[begin:end-1]), j=@view(ix[begin+1:end]))
         end
     end
