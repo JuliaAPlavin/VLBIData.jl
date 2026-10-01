@@ -178,9 +178,9 @@ function find_errmul(m::ClosurePhaseConsecutive, uvtbl)
     NT = intersect_nt_type(eltype(cps), NamedTuple{(:freq_spec, :stokes)})
     std_list = @p let
         cps
-        group_vg((; NT(_)..., tri=antenna_names(_.spec)))
+        group_vg(ContainerOptic((; property_lenses(NT)..., tri=@o(antenna_names(_.spec)))))
         filtermap() do gr
-            @assert issorted(gr, by=:datetime)
+            @assert issorted(gr, by=@o(_.datetime))
             s_list = @p zip(@view(gr[begin:end-1]), @view(gr[begin+1:end])) filtermap() do (a, b)
                 b.datetime - a.datetime ≤ maxΔt || return nothing
                 Δcp = mod(angle(b.value) - angle(a.value) + π, 2π) - π
@@ -198,7 +198,7 @@ function find_errmul(m::CrossFrequencyScatter, uvtbl)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:stokes,)})
     ratios = @p let
         uvtbl
-        group_vg((; NT(_)..., bl=Baseline(_), dt=_.datetime))
+        group_vg(ContainerOptic((; property_lenses(NT)..., bl=@o(Baseline(_.spec)), dt=@o(_.datetime))))
         filtermap() do gr
             length(gr) ≥ m.min_cnt_freqs || return nothing
             vals = gr.value

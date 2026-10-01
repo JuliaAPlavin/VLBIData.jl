@@ -21,7 +21,7 @@ function solve_gains(::AmplitudeAnalytic, model, uvtbl_::StructArray)
 
     gain_rows = @p let
         uvtbl
-        group_vg(NT(_))
+        group_vg(ContainerOptic(property_lenses(NT)))
         map() do gr
             k = key(gr)
             g = _solve_amp_gains(gr)
