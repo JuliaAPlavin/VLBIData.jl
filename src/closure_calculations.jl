@@ -2,7 +2,7 @@
 	NT = intersect_nt_type(eltype(data), NamedTuple{(:freq_spec, :stokes, :datetime)})
 	@p let
 		data
-		group_vg(NT)
+		group_vg(ContainerOptic(property_lenses(NT)))
 		flatmap(closures_scan(T, _; rescale_redundancy))
 	end
 end
