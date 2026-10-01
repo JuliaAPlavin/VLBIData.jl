@@ -180,7 +180,7 @@ function find_errmul(m::ClosurePhaseConsecutive, uvtbl)
         cps
         group_vg(ContainerOptic((; property_lenses(NT)..., tri=@o(antenna_names(_.spec)))))
         filtermap() do gr
-            @assert issorted(gr, by=@o(_.datetime))
+            @assert issorted(gr.datetime)
             s_list = @p zip(@view(gr[begin:end-1]), @view(gr[begin+1:end])) filtermap() do (a, b)
                 b.datetime - a.datetime ≤ maxΔt || return nothing
                 Δcp = mod(angle(b.value) - angle(a.value) + π, 2π) - π

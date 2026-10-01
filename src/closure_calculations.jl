@@ -27,7 +27,8 @@ end
 
 			FlexiGroups.Group(key(data), curdata)
 		end
-		map(agg_to_closure(T, _))
+		mapview(agg_to_closure(T, _))
+		StructArray()
 	end
 	if rescale_redundancy && !isempty(closures)
 		r = length(closures) / n_independent(T, length(bls), length(all_ant_names))
