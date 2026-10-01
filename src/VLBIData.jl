@@ -61,10 +61,7 @@ function uvtable end
 
 
 function frequency end
-function frequency(q::Quantity)
-	q |> u"Hz"  # to throw an error
-	q
-end
+frequency(q::Unitful.Frequency) = q
 
 function antenna_names end
 # fallbacks:

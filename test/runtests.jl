@@ -122,6 +122,7 @@ end
     @test frequency((;freq_spec=MyFreq(10))) == 10
     @test frequency(10u"GHz") == 10u"GHz"
     @test frequency((;freq_spec=10u"GHz")) == 10u"GHz"
+    @test_throws MethodError frequency(10u"m")
 end
 
 @testitem "renumbering" begin
