@@ -135,10 +135,15 @@ function find_errmul(m::CoherentAverageScatter, uvtbl)
 end
 
 function find_errmul(m::ConsecutiveDifferencesStandard, uvtbl)
-    diffs = compute_diffs(uvtbl; maxΔt=min(m.maxΔt, 3*typical_Δt(uvtbl)))
-    length(diffs) ≥ m.min_cnt || return nothing
-    powscale = @p diffs map((_.abs / _.err)^2) exp_scale(__; q=m.rayleigh_q)
-    √(powscale / 2)
+    pairs = consecutive_pairs(uvtbl)
+    maxΔt = min(m.maxΔt, 3*typical_Δt(uvtbl, pairs))
+    pows = @p pairs filtermap() do (; i, j)
+        uvtbl.datetime[j] - uvtbl.datetime[i] ≤ maxΔt || return nothing
+        Δ = uvtbl.value[j] - uvtbl.value[i]
+        (abs(U.value(Δ)) / U.uncertainty(Δ))^2
+    end
+    length(pows) ≥ m.min_cnt || return nothing
+    √(exp_scale!(pows; q=m.rayleigh_q) / 2)
 end
 
 """
@@ -241,21 +246,27 @@ end
 
 find_errmul(m::Number, uvtbl) = m
 
-function typical_Δt(uvtbl)
+"""Index pairs `(; i, j)` of time-adjacent rows within each (source, freq_spec, stokes, scan_id, baseline) group."""
+function consecutive_pairs(uvtbl)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
-    Δt = _typical_Δt_inner(NT, uvtbl)
-    1u"s" < Δt < 5u"minute" || @warn "Strange automatic median Δt" Δt
-    Δt
+    @p let
+        uvtbl.spec
+        mapview(Baseline(_))
+        StructArray((; NT(getproperties(uvtbl))..., bl=__))
+        groupfind()
+        flatmap() do ix
+            @assert issorted(view(uvtbl.datetime, ix))
+            StructArray(i=@view(ix[begin:end-1]), j=@view(ix[begin+1:end]))
+        end
+    end
 end
 
-_typical_Δt_inner(::Type{NT}, uvtbl) where {NT} = @p let
-    uvtbl
-    group_vg((;NT(_)..., bl=Baseline(_)))
-    flatmap() do gr
-        diff(gr.datetime)
-    end
-    map(_ |> u"minute" |> float)
-    median
+typical_Δt(uvtbl) = typical_Δt(uvtbl, consecutive_pairs(uvtbl))
+
+function typical_Δt(uvtbl, pairs)
+    Δt = @p pairs map(uvtbl.datetime[_.j] - uvtbl.datetime[_.i]) map(_ |> u"minute" |> float) median
+    1u"s" < Δt < 5u"minute" || @warn "Strange automatic median Δt" Δt
+    Δt
 end
 
 compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
@@ -263,29 +274,6 @@ compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
     # average_vis(uvtbl, avg_t; avgvals=vals -> (std=(mean(abs2∘value, vals) - abs2(mean(value, vals))) / (length(vals) - 1) / 2 |> sqrt, err=1/√(sum(v -> 1/uncertainty(v)^2, vals)) ))  # formula from difmap
     filter(_.count ≥ min_cnt)
     map(_.value)
-end
-
-function compute_diffs(uvtbl; maxΔt)
-    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
-    _compute_diffs_inner(NT, uvtbl; maxΔt)
-end
-
-_compute_diffs_inner(::Type{NT}, uvtbl; maxΔt) where {NT} = @p let
-    uvtbl
-    group_vg((;NT(_)..., bl=Baseline(_)))
-    flatmap() do gr
-        Δs = @p let
-            gr
-            @aside @assert issorted(__, by=:datetime)
-            zip(__[begin:end-1], __[begin+1:end])
-            collect
-            filter(_[2].datetime - _[1].datetime ≤ maxΔt)
-            map(_[2].value - _[1].value)
-        end
-        map(Δs) do Δ
-            (abs=abs(U.value(Δ)), err=U.uncertainty(Δ))
-        end
-    end
 end
 
 @stable multiply_errors(errmul, uvtbl) =
