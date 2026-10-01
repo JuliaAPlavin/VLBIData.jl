@@ -5,11 +5,11 @@ Estimate visibility error rescaling from consecutive visibility differences on e
 
 For each baseline, takes pairs of adjacent-in-time visibilities (within `maxΔt`) and computes
 `|ΔV| / σ_ΔV` where `ΔV = V(t₂) - V(t₁)` and `σ_ΔV = √(σ₁² + σ₂²)`.
-If errors are correct, `|ΔV| / σ_ΔV` follows a Rayleigh distribution.
-The rescaling factor is `quantile(|ΔV|/σ_ΔV, q) / quantile(Rayleigh, q)`.
+If errors are correct, `|ΔV| / σ_ΔV` is Rayleigh, so its square is exponential with mean 2.
+The rescaling factor is `√(exp_scale((|ΔV|/σ_ΔV)²; q) / 2)`.
 
 - `maxΔt`: maximum time gap between consecutive visibilities to form a pair (auto-capped at `3×` the median Δt)
-- `rayleigh_q`: quantile used for the Rayleigh comparison (0.5 = median)
+- `rayleigh_q`: order statistic the scale estimate is taken at (0.5 = median)
 - `min_cnt`: minimum number of consecutive-difference pairs required; returns `nothing` if fewer
 
 Assumes the true visibility is constant between adjacent points.
@@ -137,12 +137,32 @@ end
 function find_errmul(m::ConsecutiveDifferencesStandard, uvtbl)
     diffs = compute_diffs(uvtbl; maxΔt=min(m.maxΔt, 3*typical_Δt(uvtbl)))
     length(diffs) ≥ m.min_cnt || return nothing
-    q = m.rayleigh_q
-    @p diffs map(_.abs / _.err) quantile(__, q) / quantile_rayleigh(q)
+    powscale = @p diffs map((_.abs / _.err)^2) exp_scale(__; q=m.rayleigh_q)
+    √(powscale / 2)
 end
 
-# same as quantile(Rayleigh(), q), but dependency-free
-quantile_rayleigh(q) = √(-2 * log(1 - q))
+"""
+    exp_scale!(x; q=0.5)
+
+Scale (= mean) of the exponential distribution a sample `x` is drawn from, estimated from its
+`q`-th order statistic. Partially sorts `x` in place; [`exp_scale`](@ref) copies instead.
+
+The `k`-th order statistic of `m` iid `Exp(1)` has expectation `H_m - H_{m-k}` exactly, so dividing
+by it is unbiased at every sample size while keeping the order statistic's breakdown point.
+"""
+function exp_scale!(x::AbstractVector; q=0.5)
+    m = length(x)
+    k = round(Int, q * m, RoundNearestTiesUp)
+    @assert 1 ≤ k ≤ m
+    partialsort!(x, k) / sum(j -> 1/j, (m - k + 1):m)
+end
+
+"""
+    exp_scale(x; q=0.5)
+
+Non-mutating [`exp_scale!`](@ref).
+"""
+exp_scale(x; q=0.5) = exp_scale!(copy(x); q)
 
 function find_errmul(m::ClosurePhaseConsecutive, uvtbl)
     maxΔt = min(m.maxΔt, 5*typical_Δt(uvtbl))

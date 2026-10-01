@@ -9,7 +9,7 @@ using InterferometricModels
 import InterferometricModels: UV, visibility, visibilities
 using SkyCoords: AbstractSkyCoords, ICRSCoords
 using LinearAlgebra: qr, ColumnNorm, dot, norm
-using Statistics: mean, median, quantile, std
+using Statistics: mean, median, std
 using SpecialFunctions: besselix
 using Uncertain
 using IntervalSets
