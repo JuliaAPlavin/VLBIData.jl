@@ -242,18 +242,20 @@ end
 find_errmul(m::Number, uvtbl) = m
 
 function typical_Δt(uvtbl)
-    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:freq_spec, :stokes)})
-    Δt = @p let
-        uvtbl
-        group_vg((;NT(_)..., bl=Baseline(_)))
-        flatmap() do gr
-            diff(gr.datetime)
-        end
-        map(_ |> u"minute" |> float)
-        median
-    end
+    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
+    Δt = _typical_Δt_inner(NT, uvtbl)
     1u"s" < Δt < 5u"minute" || @warn "Strange automatic median Δt" Δt
     Δt
+end
+
+_typical_Δt_inner(::Type{NT}, uvtbl) where {NT} = @p let
+    uvtbl
+    group_vg((;NT(_)..., bl=Baseline(_)))
+    flatmap() do gr
+        diff(gr.datetime)
+    end
+    map(_ |> u"minute" |> float)
+    median
 end
 
 compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
@@ -264,22 +266,24 @@ compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
 end
 
 function compute_diffs(uvtbl; maxΔt)
-    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:freq_spec, :stokes)})
-    @p let
-        uvtbl
-        group_vg((;NT(_)..., bl=Baseline(_)))
-        flatmap() do gr
-            Δs = @p let
-                gr
-                @aside @assert issorted(__, by=:datetime)
-                zip(__[begin:end-1], __[begin+1:end])
-                collect
-                filter(_[2].datetime - _[1].datetime ≤ maxΔt)
-                map(_[2].value - _[1].value)
-            end
-            map(Δs) do Δ
-                (abs=abs(U.value(Δ)), err=U.uncertainty(Δ))
-            end
+    NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
+    _compute_diffs_inner(NT, uvtbl; maxΔt)
+end
+
+_compute_diffs_inner(::Type{NT}, uvtbl; maxΔt) where {NT} = @p let
+    uvtbl
+    group_vg((;NT(_)..., bl=Baseline(_)))
+    flatmap() do gr
+        Δs = @p let
+            gr
+            @aside @assert issorted(__, by=:datetime)
+            zip(__[begin:end-1], __[begin+1:end])
+            collect
+            filter(_[2].datetime - _[1].datetime ≤ maxΔt)
+            map(_[2].value - _[1].value)
+        end
+        map(Δs) do Δ
+            (abs=abs(U.value(Δ)), err=U.uncertainty(Δ))
         end
     end
 end

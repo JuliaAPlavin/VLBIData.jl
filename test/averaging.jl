@@ -491,3 +491,37 @@ end
     snrA_median = 1 / (√(1 + 2/√4 * (1/ρ_med) * √(1 + 1/ρ_med^2)) - 1)
     @test U.uncertainty(r_hetero) != abs(U.value(r_hetero)) / snrA_median
 end
+
+@testitem "average_data by fixed time intervals keeps scans apart" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using VLBIData.StructArrays
+
+    # Four points 10 s apart on one baseline/freq/stokes, split into two scans. A 10-minute interval
+    # holds all four, so only the scan key separates them.
+    row(t, v, sc) = (datetime=DateTime(2020, 1, 1) + Second(t), source=:A, scan_id=sc, freq_spec=123,
+                     stokes=:RR, spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=v±ᵤ0.1)
+    tbl = StructArray([row(0, 1.0, 1), row(10, 3.0, 1), row(20, 5.0, 2), row(30, 7.0, 2)])
+
+    avg = VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), tbl)
+    @test length(avg) == 2
+    @test avg.scan_id == [1, 2]
+    @test avg.count == [2, 2]
+    @test U.value.(avg.value) ≈ [2.0, 6.0]
+    @test U.uncertainty.(avg.value) ≈ [0.1/√2, 0.1/√2]
+    @test avg.datetime == fill(DateTime(2020, 1, 1, 0, 5, 0), 2)
+
+    # a scan_id constant over the whole table is still carried, through the key rather than as a
+    # constant column
+    avg_one = VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), tbl[1:2])
+    @test avg_one.scan_id == [1]
+    @test avg_one.count == [2]
+
+    # without the column nothing changes: one cell holding all four rows
+    tbl_noscan = StructArray(map(r -> (; r.datetime, r.source, r.freq_spec, r.stokes, r.spec, r.value), tbl))
+    avg_noscan = VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), tbl_noscan)
+    @test length(avg_noscan) == 1
+    @test avg_noscan.count == [4]
+    @test !hasproperty(avg_noscan, :scan_id)
+end

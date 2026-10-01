@@ -112,7 +112,7 @@ end
 
 function average_data(strategy::FixedTimeIntervals, src_; avgvals=_default_avgvals)
     src = StructArray(src_)
-    const_part = @p getproperties(src) (@delete __[(:source, :freq_spec, :stokes, :value, :spec)]) filter(allequal) map(uniqueonly)
+    const_part = @p getproperties(src) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec)]) filter(allequal) map(uniqueonly)
     return _average_data_by_time(strategy, src, const_part; avgvals)
 end
 
@@ -122,7 +122,7 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
         float(strategy.interval)
         iszero(__) ? oftype(__, 1u"ms") : __
     end
-    NT = intersect_nt_type(eltype(src), NamedTuple{(:source, :freq_spec, :stokes)})
+    NT = intersect_nt_type(eltype(src), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
     _average_data_by_time_inner(NT, src, const_part, mindt, avg_interval; avgvals)
 end
 
