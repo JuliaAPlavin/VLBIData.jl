@@ -126,6 +126,17 @@ end
     @test all(c -> Uncertain.uncertainty(c.value) ≈ 0.17320508075688773 * √(10/6), clps_r)
 end
 
+@testitem "n_independent" begin
+    using VLBIData: n_independent
+
+    # N = 5 antennas, B = 10 baselines: the gain model leaves B - N + 1 free closure phases and
+    # B - N free closure amplitudes
+    @test n_independent(ClosurePhaseSpec, 10, 5) == 6
+    @test n_independent(ClosureAmpSpec, 10, 5) == 5
+    @test n_independent(ClosurePhaseSpec, 6, 4) == 3
+    @test n_independent(ClosureAmpSpec, 6, 4) == 2
+end
+
 @testitem "model evaluation" begin
     using InterferometricModels
     using StaticArrays
