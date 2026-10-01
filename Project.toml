@@ -26,18 +26,15 @@ Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 UnitfulAngles = "6fb2a4bd-7999-5318-a3b2-8ad61056cd98"
 
 [weakdeps]
-Comrade = "99d987ce-9a1e-4df8-bc0b-1ea019aa547b"
 ComradeBase = "6d8c423b-a35f-4ef1-850c-862fe21f82c4"
 VLBISkyModels = "d6343c73-7174-4e0f-bb64-562643efbeca"
 
 [extensions]
 ComradeBaseExt = "ComradeBase"
-ComradeExt = "Comrade"
 VLBISkyModelsExt = "VLBISkyModels"
 
 [compat]
 AccessorsExtra = "0.1.103"
-Comrade = "0.11"
 ComradeBase = "0.8, 0.9"
 DataManipulation = "0.1.12"
 DateFormats = "0.1"

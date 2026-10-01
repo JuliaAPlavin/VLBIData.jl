@@ -134,10 +134,8 @@ VLBIData is designed as the data layer in a composable ecosystem:
 
 ### Comrade.jl
 
-[Comrade.jl](https://github.com/ptiede/Comrade.jl) — Bayesian imaging and modeling framework for VLBI. Data flows both ways:
+[Comrade.jl](https://github.com/ptiede/Comrade.jl) — Bayesian imaging and modeling framework for VLBI.
 
-- `Comrade.extract_table(uvtbl; antennas, obscoords)` — convert a VLBIData uvtable to a Comrade `EHTObservationTable` (Stokes-I or full circular coherency, auto-detected from `stokes`)
-- `uvtable(obs)` — convert a Comrade observation back to a VLBIData uvtable
 - `ComradeBase.visibilitymap(model, specs)` — evaluate a Comrade sky model on VLBIData UV coordinates
 
 ```julia
@@ -146,18 +144,6 @@ using VLBIFiles, Comrade, SkyCoords
 uvf   = VLBIFiles.load("observation.uvfits")
 uvtbl = uvtable(uvf)
 
-# VLBIData uvtable → Comrade observation
-# here, uvtable + antennas + source coords come straight from the file, but they can be edited beforehand
-obs = Comrade.extract_table(uvtbl;
-    antennas  = only(uvf.ant_arrays).antennas |> collect,
-    obscoords = ICRSCoords(uvf))
-
-# Comrade observation → VLBIData uvtable
-uvtbl = uvtable(obs)
-
 # Evaluate any Comrade sky model on the uvtable's UV points
 vis = visibilitymap(model, uvtbl)  # returns a uvtable with model visibilities
 ```
-
-See [this Pluto notebook](https://pluto.land/n/s8vckb27) for an end-to-end example: loading data, fitting a Comrade model, and inspecting the result.
-<img width="2612" height="1026" alt="image" src="https://github.com/user-attachments/assets/4d8f73c0-ff7e-42cf-bfa0-df0db2ac286e" />
