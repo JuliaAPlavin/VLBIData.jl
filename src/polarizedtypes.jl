@@ -21,10 +21,11 @@ end
 	grs = @p uvtbl filter(_.stokes == :I || is_parallel_hands(_.stokes)) group_vg((;_.datetime, _.freq_spec, bl=Baseline(_)))
 	return map(grs) do gr
 		length(gr) ∈ (1, 2) || error("expected 1 or 2 parallel-hand Stokes per group, got $(length(gr))")
-		val = mean(x -> x.value, gr)
 		@p let
 			first(gr)
-			@set __.value = val
+			@set __.value = mean(x -> x.value, gr)
+			@set UV(__) = mean(x -> UV(x), gr)
+			modify(c -> sum(x -> x.count, gr), __, @maybe _.count)
 			@delete __.stokes
 		end
 	end

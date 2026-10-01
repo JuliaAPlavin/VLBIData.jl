@@ -354,6 +354,7 @@ end
     ipol_diffuv = VLBIData.uvtable_values_to(IPol, uvtbl_diffuv)
     @test length(ipol_diffuv) == 1
     @test ipol_diffuv[1].value == (11.0 + 14.0) / 2
+    @test UV(ipol_diffuv[1]) ≈ [1.015, 2.015]
 
     # Multiple baselines with differing UV: groups should be per-baseline
     uvtbl_multi = [
@@ -418,6 +419,44 @@ end
     @test length(cm_dup) == 1
     @test isnan(cm_dup[1].value[1, 1])  # :RR duplicated → NaN
     @test cm_dup[1].value[2, 2] == 14.0 # :LL still finite
+end
+
+@testitem "IPol combined row: uv, count" begin
+    using VLBIData
+    using AccessorsExtra
+    using Uncertain
+    using Dates
+
+    bl = Baseline((:A, :B))
+    t = DateTime(2020, 1, 1, 12, 34, 56, 789)
+    rr = (datetime=t, freq_spec=100.0, spec=VisSpec(bl, UV(1000.0, -2000.0)), stokes=:RR, value=1.0 ±ᵤ 0.1, count=3)
+    ll = (datetime=t, freq_spec=100.0, spec=VisSpec(bl, UV(1010.0, -1990.0)), stokes=:LL, value=3.0 ±ᵤ 0.2, count=5)
+
+    # two hands with different uv → equal-weight mean of values and uv, counts summed
+    for tbl in ([rr, ll], [ll, rr])
+        r = only(@inferred VLBIData.uvtable_values_to(IPol, tbl))
+        @test keys(r) == (:datetime, :freq_spec, :spec, :value, :count)
+        @test r.datetime == t
+        @test r.freq_spec == 100.0
+        @test r.spec == VisSpec(bl, UV(1005.0, -1995.0))
+        @test Uncertain.value(r.value) == 2.0
+        @test Uncertain.uncertainty(r.value) ≈ 0.11180339887498948
+        @test r.count == 8
+    end
+
+    # without a count field
+    r = only(VLBIData.uvtable_values_to(IPol, [Base.structdiff(x, NamedTuple{(:count,)}) for x in (rr, ll)]))
+    @test keys(r) == (:datetime, :freq_spec, :spec, :value)
+    @test r.spec == VisSpec(bl, UV(1005.0, -1995.0))
+
+    # one hand → the row unchanged, without stokes
+    @test VLBIData.uvtable_values_to(IPol, [ll]) == [Base.structdiff(ll, NamedTuple{(:stokes,)})]
+
+    # identical uv → uv exactly unchanged
+    uv = UV(0.1, 0.7)
+    r = only(VLBIData.uvtable_values_to(IPol, [(@set rr.spec = VisSpec(bl, uv)), (@set ll.spec = VisSpec(bl, uv))]))
+    @test UV(r) === uv
+    @test r.datetime === t
 end
 
 @testitem "likelihoods" begin
