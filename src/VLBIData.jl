@@ -2,6 +2,7 @@ module VLBIData
 
 using DataManipulation
 using AccessorsExtra
+using AccessorsExtra: ContainerOptic
 using Unitful
 using StaticArrays
 using StructArrays
@@ -88,6 +89,9 @@ AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec)
 
 
 @generated intersect_nt_type(::Type{<:NamedTuple{KS1}}, ::Type{<:NamedTuple{KS2}}) where {KS1,KS2} = NamedTuple{Tuple(KS1 ∩ KS2)}
+
+"""Property lenses for the keys of `NT`; splat into a `ContainerOptic` so grouping reads only these columns."""
+property_lenses(::Type{<:NamedTuple{KS}}) where {KS} = NamedTuple{KS}(map(k -> PropertyLens{k}(), KS))
 
 
 end

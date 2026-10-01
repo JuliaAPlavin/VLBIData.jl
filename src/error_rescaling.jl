@@ -244,10 +244,8 @@ find_errmul(m::Number, uvtbl) = m
 function consecutive_pairs(uvtbl)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
     @p let
-        uvtbl.spec
-        mapview(Baseline(_))
-        StructArray((; NT(getproperties(uvtbl))..., bl=__))
-        groupfind()
+        uvtbl
+        groupfind(ContainerOptic((; property_lenses(NT)..., bl=@o(Baseline(_.spec)))))
         flatmap() do ix
             @assert issorted(@view uvtbl.datetime[ix])
             StructArray(i=@view(ix[begin:end-1]), j=@view(ix[begin+1:end]))
