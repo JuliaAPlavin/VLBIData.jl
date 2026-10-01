@@ -181,18 +181,10 @@ function find_errmul(m::ClosurePhaseConsecutive, uvtbl)
         group_vg((; NT(_)..., tri=antenna_names(_.spec)))
         filtermap() do gr
             @assert issorted(gr, by=:datetime)
-            dt_diffs = diff([r.datetime for r in gr])
-            s_list = @p let
-                gr
-                map(angle(_.value))
-                zip(__[begin:end-1], __[begin+1:end])
-                zip(__, dt_diffs)
-                collect
-                filter(_[2] ≤ maxΔt)
-                map() do ((φ1, φ2), _)
-                    Δcp = mod(φ2 - φ1 + π, 2π) - π
-                    U.value(Δcp) / U.uncertainty(Δcp)
-                end
+            s_list = @p zip(@view(gr[begin:end-1]), @view(gr[begin+1:end])) filtermap() do (a, b)
+                b.datetime - a.datetime ≤ maxΔt || return nothing
+                Δcp = mod(angle(b.value) - angle(a.value) + π, 2π) - π
+                U.value(Δcp) / U.uncertainty(Δcp)
             end
             length(s_list) ≥ m.min_cnt || return nothing
             std(s_list)
