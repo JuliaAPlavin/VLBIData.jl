@@ -47,7 +47,7 @@ end
     nbls = @p clas flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clas) == binomial(4, 4) * Int(factorial(3) / 2) == 3
     @test all(==(2), nbls)
-    @test all(c -> c.value === 1±ᵤ0.2, clas)
+    @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.2; rtol=1e-14), clas)
 
     uvgr = GroupArray((;), [
         (spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
@@ -65,7 +65,7 @@ end
     nbls = @p clas flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clas) == binomial(5, 4) * Int(factorial(3) / 2) == 15
     @test all(==(6), nbls)
-    @test all(c -> c.value === 1±ᵤ0.2, clas)
+    @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.2; rtol=1e-14), clas)
 
     cla = VLBIData.closures_all(ClosureAmpSpec, collect(uvgr))
     @test length(cla) == 15
@@ -74,7 +74,7 @@ end
     # rescale_redundancy: σ scaled by √r where r = M/(B-N) = 15/5 = 3
     clas_r = VLBIData.closures_scan(ClosureAmpSpec, uvgr; rescale_redundancy=true)
     @test length(clas_r) == 15
-    @test all(c -> c.value ≈ 1 ±ᵤ (0.2 * √3), clas_r)
+    @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.2 * √3; rtol=1e-14), clas_r)
 end
 
 @testitem "closure phase calculations" begin
@@ -95,7 +95,7 @@ end
     nbls = @p clps flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clps) == binomial(4, 3) * Int(factorial(2) / 2) == 4
     @test all(==(2), nbls)
-    @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
+    @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.17320508075688773; rtol=1e-14), clps)
 
 
     uvgr = GroupArray((;), [
@@ -114,7 +114,7 @@ end
     nbls = @p clps flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clps) == binomial(5, 3) * Int(factorial(2) / 2) == 10
     @test all(==(3), nbls)
-    @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
+    @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.17320508075688773; rtol=1e-14), clps)
 
     clp = VLBIData.closures_all(ClosurePhaseSpec, collect(uvgr))
     @test length(clp) == 10
