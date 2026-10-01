@@ -89,7 +89,7 @@ Weights in uvfits files are often miscalibrated. These methods estimate the true
 
 Available methods:
 
-- `VLBIData.ConsecutiveDifferencesStandard(; maxΔt, rayleigh_q=0.5, min_cnt=50)` — from consecutive visibility differences
+- `VLBIData.ConsecutiveDifferencesStandard(; maxΔt, q=0.5, min_cnt=50)` — from consecutive visibility differences
 - `VLBIData.CoherentAverageScatter(; maxΔt, min_cnt_avg=10, min_cnt_after=50)` — from scatter within coherent averages
 - `VLBIData.ErrMulSame(method1, method2, ...; rtol)` — cross-check: require multiple methods to agree within `rtol`
 

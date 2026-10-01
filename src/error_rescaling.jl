@@ -1,5 +1,5 @@
 """
-    ConsecutiveDifferencesStandard(; maxΔt=5u"minute", rayleigh_q=0.5, min_cnt=50)
+    ConsecutiveDifferencesStandard(; maxΔt=5u"minute", q=0.5, min_cnt=50)
 
 Estimate visibility error rescaling from consecutive visibility differences on each baseline.
 
@@ -9,7 +9,7 @@ If errors are correct, `|ΔV| / σ_ΔV` is Rayleigh, so its square is exponentia
 The rescaling factor is `√(exp_scale((|ΔV|/σ_ΔV)²; q) / 2)`.
 
 - `maxΔt`: maximum time gap between consecutive visibilities to form a pair (auto-capped at `3×` the median Δt)
-- `rayleigh_q`: order statistic the scale estimate is taken at (0.5 = median)
+- `q`: order statistic of `(|ΔV|/σ_ΔV)²` the scale estimate is taken at (0.5 = median), see [`exp_scale!`](@ref)
 - `min_cnt`: minimum number of consecutive-difference pairs required; returns `nothing` if fewer
 
 Assumes the true visibility is constant between adjacent points.
@@ -17,7 +17,7 @@ Not robust to antenna gain drifts between adjacent points: consider [`ClosurePha
 """
 @kwdef struct ConsecutiveDifferencesStandard
     maxΔt = 5u"minute"
-    rayleigh_q = 0.5
+    q = 0.5
     min_cnt = 50
 end
 ConsecutiveDifferencesStandard(maxΔt; kwargs...) = ConsecutiveDifferencesStandard(; maxΔt, kwargs...)
@@ -143,7 +143,7 @@ function find_errmul(m::ConsecutiveDifferencesStandard, uvtbl)
         (abs(U.value(Δ)) / U.uncertainty(Δ))^2
     end
     length(pows) ≥ m.min_cnt || return nothing
-    √(exp_scale!(pows; q=m.rayleigh_q) / 2)
+    √(exp_scale!(pows; m.q) / 2)
 end
 
 """
@@ -153,7 +153,9 @@ Scale (= mean) of the exponential distribution a sample `x` is drawn from, estim
 `q`-th order statistic. Partially sorts `x` in place; [`exp_scale`](@ref) copies instead.
 
 The `k`-th order statistic of `m` iid `Exp(1)` has expectation `H_m - H_{m-k}` exactly, so dividing
-by it is unbiased at every sample size while keeping the order statistic's breakdown point.
+by it is unbiased at every sample size for independent samples, while keeping the order statistic's
+breakdown point. Overlapping consecutive differences, as in [`ConsecutiveDifferencesStandard`](@ref),
+are not independent.
 """
 function exp_scale!(x::AbstractVector; q=0.5)
     m = length(x)
@@ -264,14 +266,13 @@ end
 typical_Δt(uvtbl) = typical_Δt(uvtbl, consecutive_pairs(uvtbl))
 
 function typical_Δt(uvtbl, pairs)
-    Δt = @p pairs map(uvtbl.datetime[_.j] - uvtbl.datetime[_.i]) map(_ |> u"minute" |> float) median
+    Δt = @p pairs map(Quantity(uvtbl.datetime[_.j] - uvtbl.datetime[_.i])) median
     1u"s" < Δt < 5u"minute" || @warn "Strange automatic median Δt" Δt
     Δt
 end
 
 compute_avgs(uvtbl; maxΔt, min_cnt) = @p let
     average_data(FixedTimeIntervals(maxΔt), uvtbl; avgvals=vals -> (err=U.uncertainty(U.weightedmean(vals)), std=std(U.value.(vals)) / √length(vals) / √2))
-    # average_vis(uvtbl, avg_t; avgvals=vals -> (std=(mean(abs2∘value, vals) - abs2(mean(value, vals))) / (length(vals) - 1) / 2 |> sqrt, err=1/√(sum(v -> 1/uncertainty(v)^2, vals)) ))  # formula from difmap
     filter(_.count ≥ min_cnt)
     map(_.value)
 end

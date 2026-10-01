@@ -80,6 +80,7 @@ end
     # while the 580 s gap between the scans would pull an ungrouped median to 35 s
     tsp = StructArray(map(row, [0, 10, 20, 600, 660], fill(1.0, 5), fill(:A, 5), [1, 1, 1, 2, 2]))
     @test @inferred(typical_Δt(tsp)) ≈ 10u"s"
+    @test unit(typical_Δt(tsp)) == u"ms"
     @test typical_Δt(tsp, consecutive_pairs(tsp)) ≈ 10u"s"
 end
 
