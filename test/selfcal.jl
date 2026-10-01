@@ -190,3 +190,22 @@
         @test cal.source == orig.source
     end
 end
+
+@testitem "solve_gains on a table without grouping keys" begin
+    using Uncertain
+    using VLBIData.StructArrays
+
+    # no datetime/stokes/freq_spec: one solution over the whole table
+    # unit model, |V| = 6, 15, 10 on A-B, B-C, A-C ⇒ g_A² = 6·10/15 = 4 ⇒ g = (2, 3, 5)
+    tbl = StructArray([
+        (spec=VisSpec(Baseline((:A, :B)), UV(1, 2)), value=U.Value(6.0im, 0.01)),
+        (spec=VisSpec(Baseline((:B, :C)), UV(3, 4)), value=U.Value(-15.0 + 0im, 0.01)),
+        (spec=VisSpec(Baseline((:A, :C)), UV(5, 6)), value=U.Value(10.0 + 0im, 0.01)),
+    ])
+    gains = VLBIData.solve_gains(VLBIData.AmplitudeAnalytic(), ones(ComplexF64, 3), tbl)
+    @test gains isa StructArray
+    @test propertynames(gains) == (:antenna, :gain)
+    @test gains.antenna == [:A, :B, :C]
+    @test gains.gain ≈ [2, 3, 5] rtol=1e-12
+    @test VLBIData.solve_gains(VLBIData.AmplitudeAnalytic(), ones(ComplexF64, 3), collect(tbl)) == gains
+end

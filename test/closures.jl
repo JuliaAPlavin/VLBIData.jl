@@ -25,6 +25,7 @@ end
     using Uncertain
     using DataManipulation
     using DataManipulation.FlexiGroups: GroupArray
+    using VLBIData.StructArrays
 
     # nbl = bin(n, 2) ~ n^2/2
     # n_clamp_dof = nbl - n ~ n^2/2
@@ -68,8 +69,12 @@ end
     @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.2; rtol=1e-14), clas)
 
     cla = VLBIData.closures_all(ClosureAmpSpec, collect(uvgr))
+    @test cla isa StructArray
     @test length(cla) == 15
     @test cla == collect(clas)
+    cla_sa = VLBIData.closures_all(ClosureAmpSpec, StructArray(collect(uvgr)))
+    @test cla_sa isa StructArray
+    @test cla_sa == cla
 
     # rescale_redundancy: σ scaled by √r where r = M/(B-N) = 15/5 = 3
     clas_r = VLBIData.closures_scan(ClosureAmpSpec, uvgr; rescale_redundancy=true)
@@ -81,6 +86,7 @@ end
     using Uncertain
     using DataManipulation
     using DataManipulation.FlexiGroups: GroupArray
+    using VLBIData.StructArrays
 
     uvgr = GroupArray((;), [
         (spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=1±ᵤ0.1,),
@@ -117,13 +123,42 @@ end
     @test all(c -> isapprox(Uncertain.value(c.value), 1; rtol=1e-14) && isapprox(Uncertain.uncertainty(c.value), 0.17320508075688773; rtol=1e-14), clps)
 
     clp = VLBIData.closures_all(ClosurePhaseSpec, collect(uvgr))
+    @test clp isa StructArray
     @test length(clp) == 10
     @test clp == collect(clps)
+    clp_sa = VLBIData.closures_all(ClosurePhaseSpec, StructArray(collect(uvgr)))
+    @test clp_sa isa StructArray
+    @test clp_sa == clp
 
     # rescale_redundancy: σ scaled by √r where r = M/(B-N+1) = 10/6
     clps_r = VLBIData.closures_scan(ClosurePhaseSpec, uvgr; rescale_redundancy=true)
     @test length(clps_r) == 10
     @test all(c -> Uncertain.uncertainty(c.value) ≈ 0.17320508075688773 * √(10/6), clps_r)
+end
+
+@testitem "closures_all on a table without grouping keys" begin
+    using Uncertain
+    using VLBIData.StructArrays
+
+    # no freq_spec/stokes/datetime: the whole table is one group
+    # closure A→B→C→A = V_AB · V_BC · conj(V_AC) = 2 · 3i · (1 - i) = 6 + 6i
+    # σ: |2·3i| step gives √(9·0.01 + 4·0.01) = √0.13; then √(|1-i|²·0.13 + |6i|²·0.01) = √0.62
+    tbl = StructArray([
+        (spec=VisSpec(Baseline((:A, :B)), UV(1, 2)), value=Uncertain.Value(2.0 + 0im, 0.1)),
+        (spec=VisSpec(Baseline((:B, :C)), UV(3, 4)), value=Uncertain.Value(3.0im, 0.1)),
+        (spec=VisSpec(Baseline((:A, :C)), UV(5, 6)), value=Uncertain.Value(1.0 + 1im, 0.1)),
+    ])
+    cps = VLBIData.closures_all(ClosurePhaseSpec, tbl)
+    @test cps isa StructArray
+    @test propertynames(cps) == (:spec, :value, :values)
+    @test only(cps.spec) == ClosurePhaseSpec((
+        VisSpec(Baseline((:A, :B)), UV(1, 2)),
+        VisSpec(Baseline((:B, :C)), UV(3, 4)),
+        VisSpec(Baseline((:C, :A)), UV(-5, -6)),
+    ))
+    @test Uncertain.value(only(cps.value)) ≈ 6 + 6im rtol=1e-14
+    @test Uncertain.uncertainty(only(cps.value)) ≈ 0.7874007874011811 rtol=1e-14
+    @test VLBIData.closures_all(ClosurePhaseSpec, collect(tbl)) == cps
 end
 
 @testitem "n_independent" begin

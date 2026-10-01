@@ -86,3 +86,92 @@ end
     @test unit(typical_Δt(tsp)) == u"ms"
     @test typical_Δt(tsp, consecutive_pairs(tsp)) ≈ 10u"s"
 end
+
+@testitem "find_errmul ClosurePhaseConsecutive" begin
+    using Dates, Unitful, Uncertain
+    using VLBIData.StructArrays
+    using VLBIData: ClosurePhaseConsecutive, find_errmul
+
+    # Triangle A-B-C in channels 1, 2, 5; only A-B carries phase, so the closure phase is arg V_AB.
+    # |V| = 1, σ = 0.1/√6 per visibility ⇒ σ_closure = √3 σ, σ_Δφ = √6 σ = 0.1, so s = Δφ / 0.1.
+    # Channel m has s = m * (1, -1, 1, -1, 3): phases c + 0.1m * (0, 1, 0, 1, 0, 3), with c = π - 0.05
+    # so that successive phases straddle the ±π branch cut.
+    # Gaps are 10 s ×4 then `lastgap`: typical Δt = 10 s, cap = 50 s.
+    # All 5 pairs: std(1, -1, 1, -1, 3) = √(11.2/4) = √2.8; first 4 pairs: std(1, -1, 1, -1) = √(4/3).
+    # Median over channels picks m = 2: 2√2.8 = 3.3466401061363023, 2√(4/3) = 2.309401076758503.
+    function cpc_tbl(lastgap; bls=[(:A, :B), (:B, :C), (:A, :C)])
+        c = π - 0.05
+        σ = 0.1 / √6
+        StructArray([
+            (datetime=DateTime(2020, 1, 1) + Second(t), freq_spec=m, stokes=:RR,
+             spec=VisSpec(Baseline(bl), UV(0, 1)),
+             value=Uncertain.Value(bl == (:A, :B) ? cis(c + 0.1m * k) : complex(1.0), σ))
+            for m in [1, 2, 5] for (t, k) in zip([0, 10, 20, 30, 40, 40 + lastgap], [0, 1, 0, 1, 0, 3]) for bl in bls
+        ])
+    end
+
+    @testset for (lastgap, method, expected) in [
+            # gap exactly at the cap is kept
+            (50, ClosurePhaseConsecutive(; min_cnt=5, min_triangles=3), 3.3466401061363023),
+            # gap just beyond the cap is dropped
+            (51, ClosurePhaseConsecutive(; min_cnt=4, min_triangles=3), 2.309401076758503),
+            (51, ClosurePhaseConsecutive(; min_cnt=5, min_triangles=1), nothing),
+            # explicit maxΔt below the automatic cap
+            (50, ClosurePhaseConsecutive(45u"s"; min_cnt=4, min_triangles=3), 2.309401076758503),
+            (50, ClosurePhaseConsecutive(; min_cnt=6, min_triangles=1), nothing),
+            (50, ClosurePhaseConsecutive(; min_cnt=5, min_triangles=4), nothing),
+        ]
+        res = find_errmul(method, cpc_tbl(lastgap))
+        if isnothing(expected)
+            @test isnothing(res)
+        else
+            @test res ≈ expected rtol=1e-12
+        end
+    end
+
+    # no B-C baseline: no triangle closes
+    @test find_errmul(ClosurePhaseConsecutive(; min_cnt=1, min_triangles=1), cpc_tbl(50; bls=[(:A, :B), (:A, :C)])) |> isnothing
+end
+
+@testitem "find_errmul CrossFrequencyScatter" begin
+    using Dates, Uncertain
+    using VLBIData.StructArrays
+    using VLBIData: CrossFrequencyScatter, find_errmul
+
+    # One baseline; each (stokes, time) group gives std(V)/√N/√2 / σ_wmean:
+    #   t1 RR [0, 1, 2], σ = 1:          std 1, σ_wmean 1/√3 ⇒ 1/√2
+    #   t1 LL [10, 11, 12], σ = 1:       same ⇒ 1/√2 (merged with RR it would not be)
+    #   t2 RR [0, 2, 4], σ = 1:          std 2 ⇒ √2
+    #   t3 RR [1, -1, i], σ = 1, 1, 1/√2: mean i/3, Σ|dev|² = 10/9 + 10/9 + 4/9 = 8/3 ⇒ std 2/√3;
+    #                                    weights 1, 1, 2 ⇒ σ_wmean 1/2 ⇒ (2/3)/√2 / (1/2) = 2√2/3
+    #   t4 RR [0, 10], σ = 1:            std √50, σ_wmean 1/√2 ⇒ √50/2 · √2 = 5
+    # 3+ channels: median(1/√2, 1/√2, 2√2/3, √2) = (1/√2 + 2√2/3)/2 = 7√2/12 = 0.8249579113843055
+    # 2+ channels: median(1/√2, 1/√2, 2√2/3, √2, 5) = 2√2/3 = 0.9428090415820634
+    groups = [
+        (1, :RR, [0, 1, 2], [1, 1, 1]),
+        (1, :LL, [10, 11, 12], [1, 1, 1]),
+        (2, :RR, [0, 2, 4], [1, 1, 1]),
+        (3, :RR, [1, -1, im], [1, 1, 1/√2]),
+        (4, :RR, [0, 10], [1, 1]),
+    ]
+    tbl = StructArray([
+        (datetime=DateTime(2020, 1, 1, 0, t), freq_spec=f, stokes,
+         spec=VisSpec(Baseline((:A, :B)), UV(0, 1)), value=Uncertain.Value(complex(float(v)), float(σ)))
+        for (t, stokes, vs, σs) in groups for (f, v, σ) in zip(1:length(vs), vs, σs)
+    ])
+
+    @testset for (method, expected) in [
+            (CrossFrequencyScatter(; min_cnt_freqs=3, min_cnt_groups=4), 0.8249579113843055),
+            (CrossFrequencyScatter(; min_cnt_freqs=3, min_cnt_groups=5), nothing),
+            (CrossFrequencyScatter(; min_cnt_freqs=2, min_cnt_groups=5), 0.9428090415820634),
+            (CrossFrequencyScatter(; min_cnt_freqs=2, min_cnt_groups=6), nothing),
+            (CrossFrequencyScatter(; min_cnt_freqs=4, min_cnt_groups=1), nothing),
+        ]
+        res = find_errmul(method, tbl)
+        if isnothing(expected)
+            @test isnothing(res)
+        else
+            @test res ≈ expected rtol=1e-12
+        end
+    end
+end
