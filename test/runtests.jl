@@ -65,15 +65,15 @@ end
     using AccessorsExtra
     using StaticArrays
 
-    spec = VLBI.VisSpec0(UV(10, -20))
+    spec = VLBIData.VisSpec0(UV(10, -20))
     @test UV(spec) == UV(10, -20)
     @test !hasoptic(spec, Baseline)
     @test hasoptic(spec, UV)
     @test !hasoptic(spec, antenna_names)
-    @test_broken conj(spec) == VLBI.VisSpec0(UV(-10, 20))
+    @test_broken conj(spec) == VLBIData.VisSpec0(UV(-10, 20))
     @test string(spec) == "Vis, 22.4"
-    @test spec == VLBI.VisSpec0(UV(10, -20.))
-    @test spec != VLBI.VisSpec0(UV(10, -21))
+    @test spec == VLBIData.VisSpec0(UV(10, -20.))
+    @test spec != VLBIData.VisSpec0(UV(10, -21))
 
     spec = VisSpec(Baseline((2, 3)), UV(10, -20))
     @test Baseline(spec) == Baseline((2, 3))
@@ -100,17 +100,17 @@ end
     @test aspec != VisAmpSpec(Baseline((2, 4)), UV(10, -20))
     @test aspec != VisAmpSpec(Baseline((2, 3)), UV(10, -21))
 
-    @test VLBI.AbstractSpec((;spec)) == spec
+    @test VLBIData.AbstractSpec((;spec)) == spec
     @test VisSpec((;spec)) == spec
     @test_throws "expected V" VisAmpSpec((;spec))
     @test Baseline((;spec)) == Baseline(spec)
     @test antenna_names((;spec)) == antenna_names(spec)
     @test UV((;spec)) == UV(spec)
-    @test VLBI.conjvis((;spec, value=1+2im)) == (spec=conj(spec), value=1-2im)
-    @test VLBI.conjvis((;spec, value=1+2im, stokes=:RR)) == (spec=conj(spec), value=1-2im, stokes=:RR)
-    @test VLBI.conjvis((;spec, value=1+2im, stokes=:RL)) == (spec=conj(spec), value=1-2im, stokes=:LR)
-    @test VLBI.conjvis((;spec)) == (spec=conj(spec),)
-    @test VLBI.conjvis((;spec, stokes=:RL)) == (spec=conj(spec), stokes=:LR)
+    @test VLBIData.conjvis((;spec, value=1+2im)) == (spec=conj(spec), value=1-2im)
+    @test VLBIData.conjvis((;spec, value=1+2im, stokes=:RR)) == (spec=conj(spec), value=1-2im, stokes=:RR)
+    @test VLBIData.conjvis((;spec, value=1+2im, stokes=:RL)) == (spec=conj(spec), value=1-2im, stokes=:LR)
+    @test VLBIData.conjvis((;spec)) == (spec=conj(spec),)
+    @test VLBIData.conjvis((;spec, stokes=:RL)) == (spec=conj(spec), stokes=:LR)
 end
 
 @testitem "frequencies" begin
@@ -118,7 +118,7 @@ end
     struct MyFreq
         freq::Float64
     end
-    VLBI.frequency(x::MyFreq) = x.freq
+    VLBIData.frequency(x::MyFreq) = x.freq
     @test frequency((;freq_spec=MyFreq(10))) == 10
     @test frequency(10u"GHz") == 10u"GHz"
     @test frequency((;freq_spec=10u"GHz")) == 10u"GHz"
@@ -126,14 +126,14 @@ end
 
 @testitem "renumbering" begin
     uvtbl_orig = [
-        (spec=VLBI.VisSpec0(UV(0, 1)), freq_spec=123, stokes=:RR, value=1),
-        (spec=VLBI.VisSpec0(UV(0, 2)), freq_spec=123, stokes=:RR, value=2),
-        (spec=VLBI.VisSpec0(UV(0, 5)), freq_spec=124, stokes=:LL, value=3),
+        (spec=VLBIData.VisSpec0(UV(0, 1)), freq_spec=123, stokes=:RR, value=1),
+        (spec=VLBIData.VisSpec0(UV(0, 2)), freq_spec=123, stokes=:RR, value=2),
+        (spec=VLBIData.VisSpec0(UV(0, 5)), freq_spec=124, stokes=:LL, value=3),
     ]
-    @test VLBI.uv_reindex(uvtbl_orig) == [
-        (spec=VLBI.VisSpec0(UV(0, 1)), freq_spec=123, stokes=:RR, value=1),
-        (spec=VLBI.VisSpec0(UV(0, 2)), freq_spec=123, stokes=:RR, value=2),
-        (spec=VLBI.VisSpec0(UV(0, 5)), freq_spec=124, stokes=:LL, value=3),
+    @test VLBIData.uv_reindex(uvtbl_orig) == [
+        (spec=VLBIData.VisSpec0(UV(0, 1)), freq_spec=123, stokes=:RR, value=1),
+        (spec=VLBIData.VisSpec0(UV(0, 2)), freq_spec=123, stokes=:RR, value=2),
+        (spec=VLBIData.VisSpec0(UV(0, 5)), freq_spec=124, stokes=:LL, value=3),
     ]
 
     uvtbl_orig = [
@@ -141,21 +141,21 @@ end
         (spec=VisSpec(Baseline((:A, :B)), UV(0, 2)), stokes=:RR, value=2),
         (spec=VisSpec(Baseline((:C, :B)), UV(0, 5)), stokes=:LL, value=3),
     ]
-    @test VLBI.uv_reindex(uvtbl_orig) == uvtbl_orig
+    @test VLBIData.uv_reindex(uvtbl_orig) == uvtbl_orig
 
     uvtbl_orig = [
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 1))), freq_spec=123, stokes=:RR, value=1),
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=123, stokes=:RR, value=2),
         (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=124, stokes=:LL, value=3),
     ]
-    @test VLBI.uv_reindex(uvtbl_orig) == uvtbl_orig
+    @test VLBIData.uv_reindex(uvtbl_orig) == uvtbl_orig
 
     uvtbl_orig = [
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 1))), freq_spec=(;ix=123), stokes=:RR, value=1),
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=(;ix=123), stokes=:RR, value=2),
         (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=(;ix=124), stokes=:LL, value=3),
     ]
-    @test VLBI.uv_reindex(uvtbl_orig) == [
+    @test VLBIData.uv_reindex(uvtbl_orig) == [
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 1))), freq_spec=(;ix=1), stokes=:RR, value=1),
         (spec=VisAmpSpec(VisSpec(Baseline((:A, :B)), UV(0, 2))), freq_spec=(;ix=1), stokes=:RR, value=2),
         (spec=VisAmpSpec(VisSpec(Baseline((:C, :B)), UV(0, 5))), freq_spec=(;ix=2), stokes=:LL, value=3),
@@ -169,7 +169,7 @@ end
     p = (; U = 0.1 * randn(60), V = 0.1 * randn(60), Ti = collect(Float64, 1:60), Fr = fill(230.0e9, 60))
     d = rand(60)
     m = CB.UnstructuredMap(d, CB.UnstructuredDomain(p))
-    uvtbl = VLBI.uvtable(m)
+    uvtbl = uvtable(m)
     @test length(uvtbl) == 60
     @test issetequal(keys(uvtbl[10]), (:spec, :freq_spec, :value, :datetime))
     @test uvtbl[10].spec::UV == UV(p.U[10], p.V[10])
@@ -178,14 +178,14 @@ end
     @test uvtbl[10].datetime == p.Ti[10]
 
     m = CB.UnstructuredMap(d, CB.UnstructuredDomain(p[(:U, :V)]))
-    uvtbl = VLBI.uvtable(m)
+    uvtbl = uvtable(m)
     @test length(uvtbl) == 60
     @test issetequal(keys(uvtbl[10]), (:spec, :value))
     @test uvtbl[10].spec::UV == UV(p.U[10], p.V[10])
     @test uvtbl[10].value == d[10]
 
     m = CB.UnstructuredMap(d, CB.UnstructuredDomain(p[(:U, :V, :Fr)]))
-    uvtbl = VLBI.uvtable(m)
+    uvtbl = uvtable(m)
     @test length(uvtbl) == 60
     @test issetequal(keys(uvtbl[10]), (:spec, :value, :freq_spec))
     @test uvtbl[10].spec::UV == UV(p.U[10], p.V[10])
@@ -254,7 +254,7 @@ end
         (datetime=2, freq_spec=200.0, spec=spec2, stokes=:RL, value=23.0),
         (datetime=2, freq_spec=200.0, spec=spec2, stokes=:LL, value=24.0),
     ]
-    cm_tbl = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl)
+    cm_tbl = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl)
 
     @test length(cm_tbl) == 2
     @test cm_tbl[1].value isa CoherencyMatrix
@@ -269,7 +269,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
-    cm_missing_LL = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_missing_LL)
+    cm_missing_LL = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl_missing_LL)
     @test length(cm_missing_LL) == 1
     @test cm_missing_LL[1].value[1, 1] == 11.0  # :RR
     @test cm_missing_LL[1].value[2, 1] == 12.0  # :LR
@@ -277,7 +277,7 @@ end
     @test isnan(cm_missing_LL[1].value[2, 2])   # :LL filled with NaN
 
     # IPol: from all 4 stokes (picks parallel hands)
-    ipol_tbl = VLBI.uvtable_values_to(IPol, uvtbl)
+    ipol_tbl = VLBIData.uvtable_values_to(IPol, uvtbl)
     @test length(ipol_tbl) == 2
     @test ipol_tbl[1].value == (11.0 + 14.0) / 2
     @test ipol_tbl[2].value == (21.0 + 24.0) / 2
@@ -288,7 +288,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=10.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=20.0),
     ]
-    ipol_par = VLBI.uvtable_values_to(IPol, uvtbl_par)
+    ipol_par = VLBIData.uvtable_values_to(IPol, uvtbl_par)
     @test length(ipol_par) == 1
     @test ipol_par[1].value == 15.0
 
@@ -297,7 +297,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:XX, value=6.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:YY, value=4.0),
     ]
-    ipol_lin = VLBI.uvtable_values_to(IPol, uvtbl_lin)
+    ipol_lin = VLBIData.uvtable_values_to(IPol, uvtbl_lin)
     @test ipol_lin[1].value == 5.0
 
     # IPol: from single parallel hand (RR only)
@@ -306,7 +306,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
-    ipol_single = VLBI.uvtable_values_to(IPol, uvtbl_single_rr)
+    ipol_single = VLBIData.uvtable_values_to(IPol, uvtbl_single_rr)
     @test length(ipol_single) == 1
     @test ipol_single[1].value == 11.0
     @test !haskey(ipol_single[1], :stokes)
@@ -315,7 +315,7 @@ end
     uvtbl_single_ll = [
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=7.0),
     ]
-    ipol_single_ll = VLBI.uvtable_values_to(IPol, uvtbl_single_ll)
+    ipol_single_ll = VLBIData.uvtable_values_to(IPol, uvtbl_single_ll)
     @test length(ipol_single_ll) == 1
     @test ipol_single_ll[1].value == 7.0
 
@@ -324,14 +324,14 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LR, value=12.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RL, value=13.0),
     ]
-    @test isempty(VLBI.uvtable_values_to(IPol, uvtbl_no_par))
+    @test isempty(VLBIData.uvtable_values_to(IPol, uvtbl_no_par))
 
     # IPol: data already has stokes=:I (passthrough)
     uvtbl_stokesI = [
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:I, value=42.0),
         (datetime=2, freq_spec=200.0, spec=spec2, stokes=:I, value=99.0),
     ]
-    ipol_from_I = VLBI.uvtable_values_to(IPol, uvtbl_stokesI)
+    ipol_from_I = VLBIData.uvtable_values_to(IPol, uvtbl_stokesI)
     @test length(ipol_from_I) == 2
     @test ipol_from_I[1].value == 42.0
     @test ipol_from_I[2].value == 99.0
@@ -346,11 +346,11 @@ end
         (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.02, 2.02)), stokes=:RL, value=13.0),
         (datetime=1, freq_spec=100.0, spec=VisSpec(bl1, UV(1.03, 2.03)), stokes=:LL, value=14.0),
     ]
-    cm_diffuv = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_diffuv)
+    cm_diffuv = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl_diffuv)
     @test length(cm_diffuv) == 1
     @test cm_diffuv[1].value == [11 13; 12 14]
 
-    ipol_diffuv = VLBI.uvtable_values_to(IPol, uvtbl_diffuv)
+    ipol_diffuv = VLBIData.uvtable_values_to(IPol, uvtbl_diffuv)
     @test length(ipol_diffuv) == 1
     @test ipol_diffuv[1].value == (11.0 + 14.0) / 2
 
@@ -361,7 +361,7 @@ end
         (datetime=1, freq_spec=100.0, spec=VisSpec(bl2, UV(3.0, 4.0)),  stokes=:RR, value=31.0),
         (datetime=1, freq_spec=100.0, spec=VisSpec(bl2, UV(3.01, 4.01)), stokes=:LL, value=34.0),
     ]
-    ipol_multi = VLBI.uvtable_values_to(IPol, uvtbl_multi)
+    ipol_multi = VLBIData.uvtable_values_to(IPol, uvtbl_multi)
     @test length(ipol_multi) == 2
     vals = sort([r.value for r in ipol_multi])
     @test vals == [(11.0 + 14.0) / 2, (31.0 + 34.0) / 2]
@@ -375,7 +375,7 @@ end
         (datetime=2, freq_spec=200.0, spec=spec2, stokes=:RL, value=23.0),
         (datetime=2, freq_spec=200.0, spec=spec2, stokes=:LL, value=24.0),
     ]
-    cm_partial = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_partial)
+    cm_partial = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl_partial)
     @test length(cm_partial) == 2
     # bl1: only :RR (slot [1,1]) and :LL (slot [2,2]) present; cross-hands are NaN
     @test cm_partial[1].value[1, 1] == 11.0
@@ -390,7 +390,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=ComplexF32(11.0f0)),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=ComplexF32(14.0f0)),
     ]
-    cm_partial_f32 = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_partial_f32)
+    cm_partial_f32 = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl_partial_f32)
     @test eltype(cm_partial_f32[1].value) === ComplexF32
 
     # Parallel-hands-only group (:RR, :LL) → cross-hands NaN, parallel hands finite
@@ -398,7 +398,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=10.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=20.0),
     ]
-    cm_par_only = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_par_only)
+    cm_par_only = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl_par_only)
     @test length(cm_par_only) == 1
     @test cm_par_only[1].value[1, 1] == 10.0
     @test cm_par_only[1].value[2, 2] == 20.0
@@ -413,7 +413,7 @@ end
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=99.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:LL, value=14.0),
     ]
-    cm_dup = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl_dup_RR)
+    cm_dup = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl_dup_RR)
     @test length(cm_dup) == 1
     @test isnan(cm_dup[1].value[1, 1])  # :RR duplicated → NaN
     @test cm_dup[1].value[2, 2] == 14.0 # :LL still finite
@@ -437,67 +437,67 @@ end
     # --- VisSpec ---
     modvis = visibility(model, visspecs[1])
     x_vis = (spec=visspecs[1], value=modvis ±ᵤ 0.1)
-    μ, σ, val = VLBI.loglike_parts(model, x_vis)
+    μ, σ, val = VLBIData.loglike_parts(model, x_vis)
     @test μ ≈ modvis
     @test val ≈ modvis  # data == model
     @test σ ≈ 0.1
-    @test isfinite(VLBI.loglike(model, x_vis))
+    @test isfinite(VLBIData.loglike(model, x_vis))
 
     # perturbed data has lower loglike
     x_vis_pert = (spec=visspecs[1], value=(modvis + 0.5 + 0.5im) ±ᵤ 0.1)
-    @test VLBI.loglike(model, x_vis) > VLBI.loglike(model, x_vis_pert)
+    @test VLBIData.loglike(model, x_vis) > VLBIData.loglike(model, x_vis_pert)
 
     # --- VisAmpSpec ---
     aspec = VisAmpSpec(visspecs[1])
     x_amp = (spec=aspec, value=abs(modvis) ±ᵤ 0.05)
-    μ_a, σ_a, val_a = VLBI.loglike_parts(model, x_amp)
+    μ_a, σ_a, val_a = VLBIData.loglike_parts(model, x_amp)
     @test μ_a ≈ abs(modvis)
     @test val_a ≈ abs(modvis)
-    @test isfinite(VLBI.loglike(model, x_amp))
+    @test isfinite(VLBIData.loglike(model, x_amp))
 
     x_amp_pert = (spec=aspec, value=(abs(modvis) + 0.5) ±ᵤ 0.05)
-    @test VLBI.loglike(model, x_amp) > VLBI.loglike(model, x_amp_pert)
+    @test VLBIData.loglike(model, x_amp) > VLBIData.loglike(model, x_amp_pert)
 
     # high SNR: besselix argument val*μ/σ² can be huge
     m_bright = Point(100.0, SVector(0.0, 0.0))
     x_amp_hsnr = (spec=aspec, value=100.0 ±ᵤ 0.001)
-    @test isfinite(VLBI.loglike(m_bright, x_amp_hsnr))
+    @test isfinite(VLBIData.loglike(m_bright, x_amp_hsnr))
 
     # --- ClosurePhaseSpec ---
     cpspec = ClosurePhaseSpec(visspecs[1:3])
     mod_bispec = visibility(model, cpspec)
     x_cp = (spec=cpspec, value=mod_bispec ±ᵤ 0.01)
-    μ_cp, σ_cp, val_cp = VLBI.loglike_parts(model, x_cp)
+    μ_cp, σ_cp, val_cp = VLBIData.loglike_parts(model, x_cp)
     @test μ_cp ≈ angle(mod_bispec)
-    @test isfinite(VLBI.loglike(model, x_cp))
+    @test isfinite(VLBIData.loglike(model, x_cp))
 
     # perturbed closure phase
     x_cp_pert = (spec=cpspec, value=(mod_bispec * cis(0.5)) ±ᵤ 0.01)
-    @test VLBI.loglike(model, x_cp) > VLBI.loglike(model, x_cp_pert)
+    @test VLBIData.loglike(model, x_cp) > VLBIData.loglike(model, x_cp_pert)
 
     # wrapping: phase near π should work
     x_cp_wrap = (spec=cpspec, value=(-abs(mod_bispec) + 0.0im) ±ᵤ 0.1)
-    @test isfinite(VLBI.loglike(model, x_cp_wrap))
+    @test isfinite(VLBIData.loglike(model, x_cp_wrap))
 
     # --- ClosureAmpSpec ---
     caspec = ClosureAmpSpec(visspecs[1:4])
     mod_camp = visibility(model, caspec)
     x_ca = (spec=caspec, value=abs(mod_camp) ±ᵤ 0.05)
-    μ_ca, σ_ca, val_ca = VLBI.loglike_parts(model, x_ca)
+    μ_ca, σ_ca, val_ca = VLBIData.loglike_parts(model, x_ca)
     @test μ_ca ≈ log(abs(mod_camp))
-    @test isfinite(VLBI.loglike(model, x_ca))
+    @test isfinite(VLBIData.loglike(model, x_ca))
 
     x_ca_pert = (spec=caspec, value=(abs(mod_camp) * 3) ±ᵤ 0.05)
-    @test VLBI.loglike(model, x_ca) > VLBI.loglike(model, x_ca_pert)
+    @test VLBIData.loglike(model, x_ca) > VLBIData.loglike(model, x_ca_pert)
 
     # --- Cross-check against Distributions.jl ---
     using Distributions: logpdf, Normal, Rician, VonMises
 
     # VisSpec: two independent Normals on Re and Im
     for x_v in [x_vis, x_vis_pert]
-        μ_v, σ_v, val_v = VLBI.loglike_parts(model, x_v)
+        μ_v, σ_v, val_v = VLBIData.loglike_parts(model, x_v)
         expected = logpdf(Normal(real(μ_v), σ_v), real(val_v)) + logpdf(Normal(imag(μ_v), σ_v), imag(val_v))
-        @test VLBI.loglike(model, x_v) ≈ expected
+        @test VLBIData.loglike(model, x_v) ≈ expected
     end
 
     # VisAmpSpec: Rician
@@ -505,26 +505,26 @@ end
     # R docs warn: "The code for non-zero ncp is principally intended to be used for moderate values of ncp".
     # Our besselix formula matches BigFloat series and scipy to machine precision.
     let
-        μ_a, σ_a, val_a = VLBI.loglike_parts(model, x_amp)
-        @test VLBI.loglike(model, x_amp) ≈ logpdf(Rician(μ_a, σ_a), val_a)
+        μ_a, σ_a, val_a = VLBIData.loglike_parts(model, x_amp)
+        @test VLBIData.loglike(model, x_amp) ≈ logpdf(Rician(μ_a, σ_a), val_a)
     end
     let
-        μ_a, σ_a, val_a = VLBI.loglike_parts(model, x_amp_pert)
-        @test_broken VLBI.loglike(model, x_amp_pert) ≈ logpdf(Rician(μ_a, σ_a), val_a)
+        μ_a, σ_a, val_a = VLBIData.loglike_parts(model, x_amp_pert)
+        @test_broken VLBIData.loglike(model, x_amp_pert) ≈ logpdf(Rician(μ_a, σ_a), val_a)
     end
 
     # ClosurePhaseSpec: VonMises
     for x_c in [x_cp, x_cp_pert, x_cp_wrap]
-        μ_c, σ_c, val_c = VLBI.loglike_parts(model, x_c)
+        μ_c, σ_c, val_c = VLBIData.loglike_parts(model, x_c)
         expected = logpdf(VonMises(μ_c, inv(σ_c^2)), val_c)
-        @test VLBI.loglike(model, x_c) ≈ expected
+        @test VLBIData.loglike(model, x_c) ≈ expected
     end
 
     # ClosureAmpSpec: Normal
     for x_l in [x_ca, x_ca_pert]
-        μ_l, σ_l, val_l = VLBI.loglike_parts(model, x_l)
+        μ_l, σ_l, val_l = VLBIData.loglike_parts(model, x_l)
         expected = logpdf(Normal(μ_l, σ_l), val_l)
-        @test VLBI.loglike(model, x_l) ≈ expected
+        @test VLBIData.loglike(model, x_l) ≈ expected
     end
 end
 
@@ -542,8 +542,8 @@ end
             VisSpec(Baseline((:A, :D)), UV(SVector(0.5f6, 2.5f6))),
         ))
         x = Ref((; spec, value=Uncertain.Value(0.8 + 0.0im, 0.1)))
-        VLBI.loglike(vm[], x[])  # compile
-        @allocated VLBI.loglike(vm[], x[])
+        VLBIData.loglike(vm[], x[])  # compile
+        @allocated VLBIData.loglike(vm[], x[])
     end
 
     @test _test_loglike_allocs() == 0
@@ -556,7 +556,7 @@ end
     bl = Baseline((:A,:B))
     rows = [(datetime=1, freq_spec=1, spec=VisSpec(bl, UV(0.0,0.0)), stokes=s, value=v)
             for (s,v) in ((:XX,1.0+0im),(:YY,2.0+0im),(:XY,0.0+0im),(:YX,0.0+0im))]
-    out = only(VLBI.uvtable_values_to(CoherencyMatrix, rows)).value
+    out = only(VLBIData.uvtable_values_to(CoherencyMatrix, rows)).value
     @test out isa CoherencyMatrix{<:LinBasis,<:LinBasis}
     @test out[1,1] == 1.0+0im && out[2,2] == 2.0+0im
 end

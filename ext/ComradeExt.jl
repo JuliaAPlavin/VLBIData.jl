@@ -55,8 +55,8 @@ function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, ob
         )
     end |> StructArray
 
-    scan_ivs = VLBI.scan_intervals(
-        hasproperty(StructArray(uvtbl), :scan_id) ? nothing : VLBI.GapBasedScans(),
+    scan_ivs = VLBIData.scan_intervals(
+        hasproperty(StructArray(uvtbl), :scan_id) ? nothing : VLBIData.GapBasedScans(),
         uvtbl)
     d0 = DateTime(Date(minimum(r -> r.datetime, uvtbl)))   # midnight of first row's date; Ti = hours since
     scans = @p scan_ivs map((
@@ -101,7 +101,7 @@ function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, ob
 
     elseif stokes_set == Set(_CIRCULAR_FEEDS)
         # Coherency path — circular feeds (R/L) only.
-        cm_tbl = VLBI.uvtable_values_to(CoherencyMatrix, uvtbl)
+        cm_tbl = VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl)
 
         datatable = map(cm_tbl) do r
             el, pa = _pointings(ant_xyz_by_name, Tuple(r.spec.bl.antennas), r.datetime, ra_rad, dec_rad)
@@ -134,7 +134,7 @@ function Comrade.extract_table(uvtbl::AbstractVector{<:NamedTuple}; antennas, ob
     end
 end
 
-function VLBI.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTVisibilityDatum})
+function VLBIData.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTVisibilityDatum})
     cfg = Comrade.arrayconfig(obs)
     dt = cfg.datatable
     meas = obs.measurement
@@ -151,7 +151,7 @@ function VLBI.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTVisibilityDa
     end)
 end
 
-function VLBI.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTCoherencyDatum})
+function VLBIData.uvtable(obs::Comrade.EHTObservationTable{<:Comrade.EHTCoherencyDatum})
     cfg = Comrade.arrayconfig(obs)
     dt = cfg.datatable
     meas = obs.measurement

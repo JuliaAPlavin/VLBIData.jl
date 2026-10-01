@@ -101,7 +101,7 @@ end
     @test dt.polbasis[1] == (CirBasis(), CirBasis())
 
     # round-trip: EHTObservationTable → uvtable
-    rt = VLBI.uvtable(obs)
+    rt = uvtable(obs)
     @test length(rt) == 2
     @test issetequal(keys(rt[1]), (:datetime, :spec, :freq_spec, :value))
     @test rt[1].spec == spec_a
@@ -157,7 +157,7 @@ end
     @test all(==(0.05), N)
 
     # Reverse path: 2x2 → 4 rows with stokes labels
-    rt = VLBI.uvtable(obs)
+    rt = uvtable(obs)
     @test length(rt) == 4
     rows_by_stokes = Dict(r.stokes => r for r in rt)
     @test issetequal(keys(rows_by_stokes), [:RR, :LR, :RL, :LL])

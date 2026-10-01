@@ -9,15 +9,15 @@ Visibility data is represented as an `AbstractVector{NamedTuple}`, so you can us
 ```julia
 using VLBIFiles, VLBIData
 
-uvtbl = load_uvfits("observation.uvfits")        # load with VLBIFiles
-uvtbl = VLBI.rescale_visibility_errors(           # fix noise estimates
-    VLBI.ConsecutiveDifferencesStandard(), uvtbl)
-uvtbl = VLBI.average_data(                        # average to 30s bins
-    VLBI.FixedTimeIntervals(30u"s"), uvtbl)
-cps = VLBI.closures_all(ClosurePhaseSpec, uvtbl)  # compute closure phases
+uvtbl = VLBIFiles.load("observation.uvfits") |> uvtable  # load and tabulate
+uvtbl = VLBIData.rescale_visibility_errors(              # fix noise estimates
+    VLBIData.ConsecutiveDifferencesStandard(), uvtbl)
+uvtbl = VLBIData.average_data(                           # average to 30s bins
+    VLBIData.FixedTimeIntervals(30u"s"), uvtbl)
+cps = VLBIData.closures_all(ClosurePhaseSpec, uvtbl)     # compute closure phases
 ```
 
-Most functions live in the `VLBI` namespace (e.g. `VLBI.average_data`), while commonly used types are also exported directly (`Antenna`, `Baseline`, `UV`, `VisSpec`, etc.).
+Types and the common accessors (`Antenna`, `Baseline`, `UV`, `VisSpec`, `uvtable`, `visibility`, `frequency`, ...) are exported; the other functions are called package-qualified, e.g. `VLBIData.average_data`.
 
 ## Visibility Table Convention
 
@@ -65,18 +65,18 @@ Use `UVs(spec)` to get all UV coordinates, and `UVarea(spec)` for the triangle/q
 
 Closure quantities are antenna-gain-independent — useful when calibration is uncertain. Compute them from any visibility table:
 
-- `VLBI.closures_all(ClosurePhaseSpec, uvtbl)` — closure phases for the whole table
-- `VLBI.closures_all(ClosureAmpSpec, uvtbl)` — closure amplitudes for the whole table
+- `VLBIData.closures_all(ClosurePhaseSpec, uvtbl)` — closure phases for the whole table
+- `VLBIData.closures_all(ClosureAmpSpec, uvtbl)` — closure amplitudes for the whole table
 
 Returns a new uvtable with closure specs, values, and metadata carried over from the input.
 
 ### Averaging
 
-Reduce data volume while preserving signal. `VLBI.average_data(strategy, uvtbl)` supports three strategies:
+Reduce data volume while preserving signal. `VLBIData.average_data(strategy, uvtbl)` supports three strategies:
 
-- `VLBI.FixedTimeIntervals(interval)` — fixed-width time bins (default: 1 minute)
-- `VLBI.GapBasedScans(min_gap)` — average within scans, split at time gaps (default gap: 1 minute)
-- `VLBI.ByFrequency()` — average across frequency channels
+- `VLBIData.FixedTimeIntervals(interval)` — fixed-width time bins (default: 1 minute)
+- `VLBIData.GapBasedScans(min_gap)` — average within scans, split at time gaps (default gap: 1 minute)
+- `VLBIData.ByFrequency()` — average across frequency channels
 
 All perform weighted averaging with proper uncertainty propagation. A `count` field is added to each output row. Pass `avgvals` for custom aggregation.
 
@@ -84,26 +84,26 @@ All perform weighted averaging with proper uncertainty propagation. A `count` fi
 
 Weights in uvfits files are often miscalibrated. These methods estimate the true noise level from the data itself:
 
-- `VLBI.rescale_visibility_errors(method, uvtbl)` — returns a table with corrected uncertainties
-- `VLBI.find_errmul(method, uvtbl)` — just get the multiplication factor
+- `VLBIData.rescale_visibility_errors(method, uvtbl)` — returns a table with corrected uncertainties
+- `VLBIData.find_errmul(method, uvtbl)` — just get the multiplication factor
 
 Available methods:
 
-- `VLBI.ConsecutiveDifferencesStandard(; maxΔt, rayleigh_q=0.5, min_cnt=50)` — from consecutive visibility differences
-- `VLBI.CoherentAverageScatter(; maxΔt, min_cnt_avg=10, min_cnt_after=50)` — from scatter within coherent averages
-- `VLBI.ErrMulSame(method1, method2, ...; rtol)` — cross-check: require multiple methods to agree within `rtol`
+- `VLBIData.ConsecutiveDifferencesStandard(; maxΔt, rayleigh_q=0.5, min_cnt=50)` — from consecutive visibility differences
+- `VLBIData.CoherentAverageScatter(; maxΔt, min_cnt_avg=10, min_cnt_after=50)` — from scatter within coherent averages
+- `VLBIData.ErrMulSame(method1, method2, ...; rtol)` — cross-check: require multiple methods to agree within `rtol`
 
 ### UV Data Manipulation
 
-- `VLBI.uvshift(center, uvtbl)` — phase-shift visibilities to a new phase center
-- `VLBI.add_conjvis(uvtbl)` — append conjugate visibilities (common for Stokes-I imaging and plotting)
+- `VLBIData.uvshift(center, uvtbl)` — phase-shift visibilities to a new phase center
+- `VLBIData.add_conjvis(uvtbl)` — append conjugate visibilities (common for Stokes-I imaging and plotting)
 
 ## Polarization
 
 Convert between polarization representations:
 
-- `VLBI.uvtable_values_to(CoherencyMatrix, uvtbl)` — group 4 feed correlation rows into coherency matrix–valued rows (for full-polarization work)
-- `VLBI.uvtable_values_to(IPol, uvtbl)` — average parallel hands into Stokes I (the common case when you just want total intensity)
+- `VLBIData.uvtable_values_to(CoherencyMatrix, uvtbl)` — group 4 feed correlation rows into coherency matrix–valued rows (for full-polarization work)
+- `VLBIData.uvtable_values_to(IPol, uvtbl)` — average parallel hands into Stokes I (the common case when you just want total intensity)
 
 Convenience utilities for working with Stokes/feed symbols:
 
@@ -137,13 +137,13 @@ VLBIData is designed as the data layer in a composable ecosystem:
 [Comrade.jl](https://github.com/ptiede/Comrade.jl) — Bayesian imaging and modeling framework for VLBI. Data flows both ways:
 
 - `Comrade.extract_table(uvtbl; antennas, obscoords)` — convert a VLBIData uvtable to a Comrade `EHTObservationTable` (Stokes-I or full circular coherency, auto-detected from `stokes`)
-- `VLBI.uvtable(obs)` — convert a Comrade observation back to a VLBIData uvtable
+- `uvtable(obs)` — convert a Comrade observation back to a VLBIData uvtable
 - `ComradeBase.visibilitymap(model, specs)` — evaluate a Comrade sky model on VLBIData UV coordinates
 
 ```julia
 using VLBIFiles, Comrade, SkyCoords
 
-uvf   = VLBI.load("observation.uvfits")
+uvf   = VLBIFiles.load("observation.uvfits")
 uvtbl = uvtable(uvf)
 
 # VLBIData uvtable → Comrade observation
@@ -153,7 +153,7 @@ obs = Comrade.extract_table(uvtbl;
     obscoords = ICRSCoords(uvf))
 
 # Comrade observation → VLBIData uvtable
-uvtbl = VLBI.uvtable(obs)
+uvtbl = uvtable(obs)
 
 # Evaluate any Comrade sky model on the uvtable's UV points
 vis = visibilitymap(model, uvtbl)  # returns a uvtable with model visibilities

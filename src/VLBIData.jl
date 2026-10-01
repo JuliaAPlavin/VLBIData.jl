@@ -27,8 +27,7 @@ macro stable(ex)
 end
 
 
-export VLBI,
-	Antenna, antenna_names, Baseline,
+export Antenna, antenna_names, Baseline,
 	UV, UVs, UVarea, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	uvtable, synthesize_uvtable,
@@ -93,22 +92,5 @@ AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec)
 
 @generated intersect_nt_type(::Type{<:NamedTuple{KS1}}, ::Type{<:NamedTuple{KS2}}) where {KS1,KS2} = NamedTuple{Tuple(KS1 ∩ KS2)}
 
-
-baremodule VLBI
-using Reexport
-@reexport import ..VLBIData:
-	Antenna, antenna_names, Baseline,
-	UV, UVs, UVarea, visibility, frequency,
-	AbstractSpec, VisSpec, VisSpec0, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
-	conjvis, add_conjvis, average_data, debias_amplitudes, closures_scan, closures_all,
-	uvshift,
-	ConsecutiveDifferencesStandard, CoherentAverageScatter, ClosurePhaseConsecutive, CrossFrequencyScatter, ErrMulSame, ErrMulFallback, find_errmul, rescale_visibility_errors,
-	loglike_parts, loglike,
-	AmplitudeAnalytic, solve_gains, apply_gains, selfcal,
-	uv_reindex, uvtable, uvtable_values_to, synthesize_uvtable,
-	GapBasedScans, FixedTimeIntervals, ByFrequency, Coherent, Incoherent, add_scan_ids, scan_intervals,
-	is_parallel_hands, is_cross_hands, stokes_to_feeds,
-	CoherencyMatrix, IPol
-end
 
 end

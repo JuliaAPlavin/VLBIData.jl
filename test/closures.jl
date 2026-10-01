@@ -42,7 +42,7 @@ end
         (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
+    clas = VLBIData.closures_scan(ClosureAmpSpec, uvgr)
     @test isconcretetype(eltype(clas))
     nbls = @p clas flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clas) == binomial(4, 4) * Int(factorial(3) / 2) == 3
@@ -61,18 +61,18 @@ end
         (spec=VisSpec(Baseline((3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline((4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clas = VLBI.closures_scan(ClosureAmpSpec, uvgr)
+    clas = VLBIData.closures_scan(ClosureAmpSpec, uvgr)
     nbls = @p clas flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clas) == binomial(5, 4) * Int(factorial(3) / 2) == 15
     @test all(==(6), nbls)
     @test all(c -> c.value === 1±ᵤ0.2, clas)
 
-    cla = VLBI.closures_all(ClosureAmpSpec, collect(uvgr))
+    cla = VLBIData.closures_all(ClosureAmpSpec, collect(uvgr))
     @test length(cla) == 15
     @test cla == collect(clas)
 
     # rescale_redundancy: σ scaled by √r where r = M/(B-N) = 15/5 = 3
-    clas_r = VLBI.closures_scan(ClosureAmpSpec, uvgr; rescale_redundancy=true)
+    clas_r = VLBIData.closures_scan(ClosureAmpSpec, uvgr; rescale_redundancy=true)
     @test length(clas_r) == 15
     @test all(c -> c.value ≈ 1 ±ᵤ (0.2 * √3), clas_r)
 end
@@ -90,7 +90,7 @@ end
         (spec=VisSpec(Baseline((2, 4)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline((3, 4)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
+    clps = VLBIData.closures_scan(ClosurePhaseSpec, uvgr)
     @test isconcretetype(eltype(clps))
     nbls = @p clps flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clps) == binomial(4, 3) * Int(factorial(2) / 2) == 4
@@ -110,18 +110,18 @@ end
         (spec=VisSpec(Baseline((3, 5)), UV(0, 1)), value=1±ᵤ0.1,),
         (spec=VisSpec(Baseline((4, 5)), UV(0, 1)), value=1±ᵤ0.1,),
     ])
-    clps = VLBI.closures_scan(ClosurePhaseSpec, uvgr)
+    clps = VLBIData.closures_scan(ClosurePhaseSpec, uvgr)
     nbls = @p clps flatmap(_.spec.vses, antenna_names(_2.bl)) map(extrema) groupmap(length)
     @test length(clps) == binomial(5, 3) * Int(factorial(2) / 2) == 10
     @test all(==(3), nbls)
     @test all(c -> c.value ≈ 1 ±ᵤ 0.17320508075688773, clps)
 
-    clp = VLBI.closures_all(ClosurePhaseSpec, collect(uvgr))
+    clp = VLBIData.closures_all(ClosurePhaseSpec, collect(uvgr))
     @test length(clp) == 10
     @test clp == collect(clps)
 
     # rescale_redundancy: σ scaled by √r where r = M/(B-N+1) = 10/6
-    clps_r = VLBI.closures_scan(ClosurePhaseSpec, uvgr; rescale_redundancy=true)
+    clps_r = VLBIData.closures_scan(ClosurePhaseSpec, uvgr; rescale_redundancy=true)
     @test length(clps_r) == 10
     @test all(c -> Uncertain.uncertainty(c.value) ≈ 0.17320508075688773 * √(10/6), clps_r)
 end
