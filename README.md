@@ -2,12 +2,10 @@
 
 Simple, composable data model for interferometric visibilities — and common operations on top of it: averaging, error rescaling, closure computation, polarization conversion, ...
 
-Started in 2020 and actively maintained since, VLBIData is one of the earliest and most mature Julia packages for interferometric/VLBI data handling.
-
 Visibility data is represented as an `AbstractVector{NamedTuple}`, so you can use standard Julia tools (filtering, mapping, grouping) alongside VLBIData operations. Designed for radio VLBI, but applicable to any interferometric context.
 
 ```julia
-using VLBIFiles, VLBIData
+using VLBIFiles, VLBIData, Unitful
 
 uvtbl = VLBIFiles.load("observation.uvfits") |> uvtable  # load and tabulate
 uvtbl = VLBIData.rescale_visibility_errors(              # fix noise estimates
@@ -74,8 +72,8 @@ Returns a new uvtable with closure specs, values, and metadata carried over from
 
 Reduce data volume while preserving signal. `VLBIData.average_data(strategy, uvtbl)` supports these strategies:
 
-- `VLBIData.FixedTimeIntervals(interval)` — fixed-width time bins (default: 1 minute)
-- `VLBIData.GapBasedScans(min_gap)` — average within scans, split at time gaps (default gap: 1 minute)
+- `VLBIData.FixedTimeIntervals(interval)` — fixed-width time bins
+- `VLBIData.GapBasedScans(min_gap)` — average within scans, split at time gaps
 - `VLBIData.IntegrationGridScans(min_gap)` — as `GapBasedScans`, also split where the integration grid jumps
 - `VLBIData.ByFrequency()` — average across frequency channels
 
@@ -88,11 +86,7 @@ Weights in uvfits files are often miscalibrated. These methods estimate the true
 - `VLBIData.rescale_visibility_errors(method, uvtbl)` — returns a table with corrected uncertainties
 - `VLBIData.find_errmul(method, uvtbl)` — just get the multiplication factor
 
-Available methods:
-
-- `VLBIData.ConsecutiveDifferencesStandard(; maxΔt, q=0.5, min_cnt=50)` — from consecutive visibility differences
-- `VLBIData.CoherentAverageScatter(; maxΔt, min_cnt_avg=10, min_cnt_after=50)` — from scatter within coherent averages
-- `VLBIData.ErrMulSame(method1, method2, ...; rtol)` — cross-check: require multiple methods to agree within `rtol`
+Methods estimate the factor from consecutive visibility differences (`VLBIData.ConsecutiveDifferencesStandard`), from the scatter within coherent averages, across frequency channels, or from consecutive closure-phase differences, which are robust to antenna gain drifts. `VLBIData.ErrMulSame(method1, method2, ...; rtol)` requires several methods to agree.
 
 ### UV Data Manipulation
 
