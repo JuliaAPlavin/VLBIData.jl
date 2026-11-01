@@ -87,10 +87,13 @@ end
     end
 end
 
+# The columns with one value in every row, carried to each averaged row; averaged and grouping columns and `extra` excluded.
+_const_part(tbl, extra = ()) =
+    @p getproperties(tbl) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec, extra...)]) filter(allequal) map(uniqueonly)
+
 function average_data(strategy::AbstractScanStrategy, uvtbl; avgvals=_default_avgvals)
     uvtbl_with_scans = add_scan_ids(strategy, uvtbl)
-    const_part = @p getproperties(uvtbl_with_scans) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec)]) filter(allequal) map(uniqueonly)
-    return _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
+    return _average_data_by_scans(uvtbl_with_scans, _const_part(uvtbl_with_scans); avgvals)
 end
 
 function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
@@ -117,8 +120,7 @@ end
 
 function average_data(strategy::FixedTimeIntervals, src_; avgvals=_default_avgvals)
     src = StructArray(src_)
-    const_part = @p getproperties(src) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec)]) filter(allequal) map(uniqueonly)
-    return _average_data_by_time(strategy, src, const_part; avgvals)
+    return _average_data_by_time(strategy, src, _const_part(src); avgvals)
 end
 
 function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; avgvals)
@@ -154,8 +156,7 @@ _aggfreq(freq_specs::AbstractVector{<:Number}) = mean(freq_specs)
 function average_data(::ByFrequency, uvtbl; avgvals=_default_avgvals)
     uvtbl = StructArray(uvtbl)
     merged_fs = _aggfreq(unique(uvtbl.freq_spec))
-    const_part = @p getproperties(uvtbl) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec, :count, :datetime)]) filter(allequal) map(uniqueonly)
-    _average_data_by_frequency(uvtbl, const_part, merged_fs; avgvals)
+    _average_data_by_frequency(uvtbl, _const_part(uvtbl, (:count, :datetime)), merged_fs; avgvals)
 end
 
 function _average_data_by_frequency(uvtbl, const_part, merged_fs; avgvals)
