@@ -70,7 +70,10 @@ function _union!(parent::Vector{Int}, a::Int, b::Int)
     nothing
 end
 
-@stable function scan_ids(strategy::GapBasedScans, uvtbl::StructVector)
+scan_ids(strategy::GapBasedScans, uvtbl::StructVector) = _scan_ids(strategy, uvtbl)
+
+# The per-antenna run loop shared by the scan strategies.
+@stable function _scan_ids(strategy, uvtbl::StructVector)
     min_gap::typeof(1.0u"s") = strategy.min_gap
     times = uvtbl.datetime
     ants = _row_antennas(uvtbl)
