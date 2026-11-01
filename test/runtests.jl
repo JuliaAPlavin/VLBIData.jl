@@ -650,12 +650,13 @@ end
     using VLBIData: GapBasedScans, IntegrationGridScans, scan_ids, grid_position, on_grid
 
     t0 = DateTime(2020, 1, 1)
-    @test grid_position(t0 + Second(9), t0, 2.0u"s") == 9//2
-    @test grid_position(t0 + Millisecond(2010), t0, 2.0f0u"s") == 201//200
-    @test grid_position(t0 + Millisecond(131), t0, 0.125f0u"s") == 131//125
-    @test on_grid(201//200)
-    @test !on_grid(203//200)
-    @test on_grid(-1//100)
+    @test grid_position(t0 + Second(9), t0, 2.0u"s") === 4.5
+    @test grid_position(t0 + Millisecond(2010), t0, 2.0f0u"s") ≈ 1.005
+    @test grid_position(t0 + Millisecond(81131), t0, 0.131072f0u"s") isa Float64
+    @test grid_position(t0 + Millisecond(81131), t0, 0.131072f0u"s") ≈ 81.131 / 0.131072  rtol=1e-6
+    @test on_grid(1.005)
+    @test !on_grid(1.015)
+    @test on_grid(-0.01)
 
     # three antennas, all baselines at each instant, 2 s integrations
     rows(ts, dt) = StructArray([(datetime = t0 + Millisecond(round(Int, 1000t)), baseline = Baseline(bl), source = :S, int_time = dt)

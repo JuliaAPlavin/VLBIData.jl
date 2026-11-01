@@ -44,11 +44,11 @@ end
 "Largest offset from an integration grid, in steps, of a sample still on it."
 const GRID_TOLERANCE = 1e-2
 
-"Position of `t`, in steps of `Δ`, on the grid anchored at `t0`: exact, integer milliseconds over the step."
-grid_position(t, t0, Δ) = ustrip(u"ms", t - t0) // (1000 * Rational(ustrip(u"s", Δ)))
+"Position of `t`, in steps of `Δ`, on the grid anchored at `t0`, in Float64 whatever `Δ`'s precision."
+grid_position(t, t0, Δ) = NoUnits(float(Quantity(t - t0)) / Δ)
 
 "Whether grid position `x` lies within [`GRID_TOLERANCE`](@ref) of a grid point."
-on_grid(x::Rational) = abs(x - round(x)) ≤ GRID_TOLERANCE
+on_grid(x::Real) = abs(x - round(x)) ≤ GRID_TOLERANCE
 
 # Each row's antennas. A uv table names its baseline directly (`baseline`, the wide per-record shape)
 # or inside `spec` (the narrow per-datum shape); `nothing` when it names none.
