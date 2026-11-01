@@ -3,6 +3,7 @@
     using Dates
     using Uncertain
     using VLBIData.StructArrays
+    using VLBIData.AccessorsExtra
 
     uvtbl_orig = [
         (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 1)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1, source=Symbol("SgrA*")),
@@ -13,21 +14,32 @@
         (datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 5)), freq_spec=124, stokes=:LL, value=1±ᵤ0.1, source=Symbol("SgrA*")),
     ]
 
-    @test VLBIData.average_data(VLBIData.FixedTimeIntervals(0u"minute"), uvtbl_orig)::StructArray == [
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 1))),
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 2))),
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 0, 20), spec=VisSpec(Baseline((1, 3)), UV(0, 3))),
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 4))),
-        (freq_spec=123, stokes=:LL, source=Symbol("SgrA*"), count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 5))),
-        (freq_spec=124, stokes=:LL, source=Symbol("SgrA*"), count=1, value=1±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 20, 10), spec=VisSpec(Baseline((1, 2)), UV(0, 5))),
+    avg0 = VLBIData.average_data(VLBIData.FixedTimeIntervals(0u"minute"), uvtbl_orig)::StructArray
+    @test (@delete (@delete avg0.value).spec) == [
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 0, 0)),
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 0, 10)),
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 0, 20)),
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 20, 0)),
+        (freq_spec=123, stokes=:LL, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 20, 10)),
+        (freq_spec=124, stokes=:LL, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 20, 10)),
     ]
-    @test VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), uvtbl_orig)::StructArray == [
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=2, value=1±ᵤ0.07071067811865475, datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 1.5))),
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 5, 0), spec=VisSpec(Baseline((1, 3)), UV(0, 3.0))),
-        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 4.0))),
-        (freq_spec=123, stokes=:LL, source=Symbol("SgrA*"), count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 5.0))),
-        (freq_spec=124, stokes=:LL, source=Symbol("SgrA*"), count=1, value=1.0±ᵤ0.1, datetime=DateTime(2020, 1, 1, 0, 25, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 5.0))),
+    @test Baseline.(avg0.spec) == Baseline.([(1, 2), (1, 2), (1, 3), (1, 2), (1, 2), (1, 2)])
+    @test UV.(avg0.spec) ≈ [UV(0, 1), UV(0, 2), UV(0, 3), UV(0, 4), UV(0, 5), UV(0, 5)]
+    @test U.value.(avg0.value) ≈ fill(1, 6)
+    @test U.uncertainty.(avg0.value) ≈ fill(0.1, 6)
+
+    avg10 = VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), uvtbl_orig)::StructArray
+    @test (@delete (@delete avg10.value).spec) == [
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=2, datetime=DateTime(2020, 1, 1, 0, 5, 0)),
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 5, 0)),
+        (freq_spec=123, stokes=:RR, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 25, 0)),
+        (freq_spec=123, stokes=:LL, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 25, 0)),
+        (freq_spec=124, stokes=:LL, source=Symbol("SgrA*"), count=1, datetime=DateTime(2020, 1, 1, 0, 25, 0)),
     ]
+    @test Baseline.(avg10.spec) == Baseline.([(1, 2), (1, 3), (1, 2), (1, 2), (1, 2)])
+    @test UV.(avg10.spec) ≈ [UV(0, 1.5), UV(0, 3), UV(0, 4), UV(0, 5), UV(0, 5)]
+    @test U.value.(avg10.value) ≈ fill(1, 5)
+    @test U.uncertainty.(avg10.value) ≈ [0.1/√2, 0.1, 0.1, 0.1, 0.1]
 
     # averaging without value field (UV coverage only)
     uvtbl_noval = [(datetime=r.datetime, spec=r.spec, freq_spec=r.freq_spec) for r in uvtbl_orig]
@@ -198,7 +210,8 @@ end
     @test averaged.datetime == [DateTime(2020,1,1,0,0,5), DateTime(2020,1,1,0,0,25)]
     @test U.value.(averaged.value) ≈ [3.0, 15.0]
     @test U.uncertainty.(averaged.value) ≈ [0.1/√2, 0.1/√2]
-    @test averaged.spec == [VisSpec(Baseline((1,2)), UV(0,1.5)), VisSpec(Baseline((1,2)), UV(0,3.5))]
+    @test Baseline.(averaged.spec) == [Baseline((1,2)), Baseline((1,2))]
+    @test UV.(averaged.spec) ≈ [UV(0,1.5), UV(0,3.5)]
 end
 
 @testitem "average_data by scans" begin
@@ -251,8 +264,8 @@ end
     
     @test U.uncertainty.(averaged.value) ≈ [
         √2 * 0.1 / 2,      # (1,2) RR scan1 - uncertainty from weighted mean
+        0.1,                # (1,3) RR scan1 - single uncertainty
         0.1,                # (1,2) LL scan1 - single uncertainty
-        0.1,                # (1,3) RR scan1 - single uncertainty  
         √2 * 0.1 / 2       # (1,2) RR scan2 - uncertainty from weighted mean
     ]
     
@@ -328,10 +341,7 @@ end
     @test U.uncertainty.(averaged.value) ≈ [√2*0.1/2, √2*0.2/2, 0.1, √2*0.1/2]
 
     # spec aggregated: UV coordinates averaged per group
-    @test UV(averaged.spec[1]) == UV(0, 1.5)  # mean of UV(0,1) and UV(0,2)
-    @test UV(averaged.spec[2]) == UV(0, 3.5)  # mean of UV(0,3) and UV(0,4)
-    @test UV(averaged.spec[3]) == UV(0, 5.0)  # single: UV(0,5)
-    @test UV(averaged.spec[4]) == UV(0, 6.5)  # mean of UV(0,6) and UV(0,7)
+    @test UV.(averaged.spec) ≈ [UV(0, 1.5), UV(0, 3.5), UV(0, 5), UV(0, 6.5)]
 
     # Edge case: single frequency channel — effectively a no-op
     uvtbl_single = StructArray([
@@ -373,6 +383,7 @@ end
         @test UV(avg_spec(@modify(VisAmpSpec, tbl.spec[∗]))::VisAmpSpec) ≈ UV(0, 1.4)
         @test UV(avg_spec(@set tbl.value = [1.0, 2.0])) ≈ UV(0, 2)
         @test UV(avg_spec(@delete tbl.value)) ≈ UV(0, 2)
+        @test UV(only(VLBIData.average_data(VLBIData.Incoherent(), strategy, tbl).spec)) ≈ UV(0, 1.4)
     end
 end
 
@@ -533,6 +544,9 @@ end
     @test U.value.(avg.value) ≈ [2.0, 6.0]
     @test U.uncertainty.(avg.value) ≈ [0.1/√2, 0.1/√2]
     @test avg.datetime == fill(DateTime(2020, 1, 1, 0, 5, 0), 2)
+    # the row-building step infers; the constant-column split before it depends on the data
+    @test (@inferred VLBIData._average_data_by_time(VLBIData.FixedTimeIntervals(10u"minute"), tbl, (;);
+                                                     avgvals=VLBIData._default_avgvals)).count == [2, 2]
 
     # a scan_id constant over the whole table is still carried, through the key rather than as a
     # constant column

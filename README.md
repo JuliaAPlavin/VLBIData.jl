@@ -78,7 +78,7 @@ Reduce data volume while preserving signal. `VLBIData.average_data(strategy, uvt
 - `VLBIData.GapBasedScans(min_gap)` — average within scans, split at time gaps (default gap: 1 minute)
 - `VLBIData.ByFrequency()` — average across frequency channels
 
-All perform weighted averaging with proper uncertainty propagation; uv coordinates are weighted like the values (a plain mean when the values carry no uncertainties or are absent). A `count` field is added to each output row. Pass `avgvals` for custom aggregation.
+All perform weighted averaging with proper uncertainty propagation; uv coordinates are 1/σ²-weighted when the values carry uncertainties, a plain mean otherwise or without values. A `count` field is added to each output row. Pass `avgvals` for custom aggregation.
 
 ### Error Rescaling
 

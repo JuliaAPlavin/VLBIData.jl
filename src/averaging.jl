@@ -1,4 +1,4 @@
-# uv weighted like the values: 1/σ² for uncertain values, plain mean otherwise
+# uv: 1/σ²-weighted when the values carry uncertainties, a plain mean otherwise or without values
 aggspec(specs, vals) = set(first(specs), UV, _avg_uv(specs, vals))
 
 _avg_uv(specs, vals::AbstractVector{<:U.Value}) =
@@ -111,8 +111,8 @@ function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
     end
 end
 
-@kwdef struct FixedTimeIntervals
-    interval = 1u"minute"
+@kwdef struct FixedTimeIntervals{T}
+    interval::T = 1u"minute"
 end
 
 function average_data(strategy::FixedTimeIntervals, src_; avgvals=_default_avgvals)
