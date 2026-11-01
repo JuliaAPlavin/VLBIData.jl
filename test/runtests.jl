@@ -645,6 +645,41 @@ end
     @test_throws "at the same instant" scan_ids(GapBasedScans(), tied)
 end
 
+@testitem "IntegrationGridScans" begin
+    using Dates, Unitful, StructArrays
+    using VLBIData: GapBasedScans, IntegrationGridScans, scan_ids, grid_position, on_grid
+
+    t0 = DateTime(2020, 1, 1)
+    @test grid_position(t0 + Second(9), t0, 2.0u"s") == 9//2
+    @test grid_position(t0 + Millisecond(2010), t0, 2.0f0u"s") == 201//200
+    @test grid_position(t0 + Millisecond(131), t0, 0.125f0u"s") == 131//125
+    @test on_grid(201//200)
+    @test !on_grid(203//200)
+    @test on_grid(-1//100)
+
+    # three antennas, all baselines at each instant, 2 s integrations
+    rows(ts, dt) = StructArray([(datetime = t0 + Millisecond(round(Int, 1000t)), baseline = Baseline(bl), source = :S, int_time = dt)
+                                for t in ts for bl in ((:A, :B), (:A, :C), (:B, :C))])
+    # the grid jumps by half a step: one scan by gaps, two on the grid
+    jump = rows([0, 2, 4, 6, 9, 11, 13], 2.0u"s")
+    @test scan_ids(GapBasedScans(), jump) == fill(1, 21)
+    @test scan_ids(IntegrationGridScans(), jump) == [fill(1, 12); fill(2, 9)]
+    # within the tolerance of the grid: one scan
+    @test scan_ids(IntegrationGridScans(), rows([0, 2, 4, 6.01, 8, 10.02], 2.0u"s")) == fill(1, 18)
+    # off it: a new run anchored at that row, so the next row is off the new grid too
+    @test scan_ids(IntegrationGridScans(), rows([0, 2, 4, 6.03, 8], 2.0u"s")) == [fill(1, 9); fill(2, 3); fill(3, 3)]
+    # a different int_time starts a new run, on grid or not
+    change = [rows([0, 2, 4, 6], 2.0u"s"); rows([8, 9, 10], 1.0u"s")]
+    @test scan_ids(GapBasedScans(), change) == fill(1, 21)
+    @test scan_ids(IntegrationGridScans(), change) == [fill(1, 12); fill(2, 9)]
+    # gaps and sources still cut
+    @test scan_ids(IntegrationGridScans(), rows([0, 2, 100, 102], 2.0u"s")) == [fill(1, 6); fill(2, 6)]
+    @test (@inferred scan_ids(IntegrationGridScans(), jump)) == scan_ids(IntegrationGridScans(), jump[end:-1:1])[end:-1:1]
+    @test_throws "IntegrationGridScans: antenna A carries sources" scan_ids(IntegrationGridScans(),
+        StructArray([(datetime = t0, baseline = Baseline((:A, :B)), source = :S, int_time = 2.0u"s"),
+                     (datetime = t0, baseline = Baseline((:A, :C)), source = :T, int_time = 2.0u"s")]))
+end
+
 @testitem "_" begin
     import Aqua
     Aqua.test_all(VLBIData; piracies=(;broken=true), ambiguities=(;broken=true))

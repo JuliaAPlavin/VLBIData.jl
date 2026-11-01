@@ -29,6 +29,27 @@ rather than being cut by row order.
     min_gap = 1u"minute"
 end
 
+"""
+    IntegrationGridScans(; min_gap=1u"minute")
+
+[`GapBasedScans`](@ref) that also ends an antenna's run where its next row leaves the integration grid the
+run started on: a different `int_time`, or more than [`GRID_TOLERANCE`](@ref) steps off the grid of step
+`int_time` anchored at the run's first row. DiFX aligns integrations to each correlator scan's start, so
+such a jump marks a correlator scan boundary. Needs an `int_time` column.
+"""
+@kwdef struct IntegrationGridScans <: AbstractScanStrategy
+    min_gap = 1u"minute"
+end
+
+"Largest offset from an integration grid, in steps, of a sample still on it."
+const GRID_TOLERANCE = 1e-2
+
+"Position of `t`, in steps of `Δ`, on the grid anchored at `t0`: exact, integer milliseconds over the step."
+grid_position(t, t0, Δ) = ustrip(u"ms", t - t0) // (1000 * Rational(ustrip(u"s", Δ)))
+
+"Whether grid position `x` lies within [`GRID_TOLERANCE`](@ref) of a grid point."
+on_grid(x::Rational) = abs(x - round(x)) ≤ GRID_TOLERANCE
+
 # Each row's antennas. A uv table names its baseline directly (`baseline`, the wide per-record shape)
 # or inside `spec` (the narrow per-datum shape); `nothing` when it names none.
 function _row_antennas(uvtbl::StructVector)
@@ -70,7 +91,13 @@ function _union!(parent::Vector{Int}, a::Int, b::Int)
     nothing
 end
 
-scan_ids(strategy::GapBasedScans, uvtbl::StructVector) = _scan_ids(strategy, uvtbl)
+scan_ids(strategy::Union{GapBasedScans, IntegrationGridScans}, uvtbl::StructVector) = _scan_ids(strategy, uvtbl)
+
+# Whether row `i` leaves the integration grid of the run anchored at row `a`.
+_leaves_grid(::GapBasedScans, uvtbl, i, a) = false
+_leaves_grid(::IntegrationGridScans, uvtbl, i, a) =
+    uvtbl.int_time[i] != uvtbl.int_time[a] ||
+    !on_grid(grid_position(uvtbl.datetime[i], uvtbl.datetime[a], uvtbl.int_time[a]))
 
 # The per-antenna run loop shared by the scan strategies.
 @stable function _scan_ids(strategy, uvtbl::StructVector)
@@ -83,14 +110,18 @@ scan_ids(strategy::GapBasedScans, uvtbl::StructVector) = _scan_ids(strategy, uvt
         # `(time, index)` and not time alone: only rows at the same instant can tie, they join the
         # same run whichever way the tie falls, but the order still has to be fixed.
         sort!(ix; by = i -> (times[i], i))
+        a = first(ix)   # the current run's first row
         for k in 2:length(ix)
             i = ix[k]; j = ix[k - 1]
             (times[i] == times[j] && _source_changed(srcs, i, j)) &&
-                error("GapBasedScans: $(ant == Symbol("") ? "the table" : "antenna $ant") carries " *
+                error("$(nameof(typeof(strategy))): $(ant == Symbol("") ? "the table" : "antenna $ant") carries " *
                       "sources $(_source_of(srcs, j)) and $(_source_of(srcs, i)) at the same instant " *
                       "$(times[i]) — one antenna observes one source at a time, so a scan is not " *
                       "defined here; a subnetting schedule needs the table to name its antennas")
-            (times[i] - times[j] > min_gap || _source_changed(srcs, i, j)) && continue
+            if times[i] - times[j] > min_gap || _source_changed(srcs, i, j) || _leaves_grid(strategy, uvtbl, i, a)
+                a = i
+                continue
+            end
             _union!(parent, j, i)
         end
     end
