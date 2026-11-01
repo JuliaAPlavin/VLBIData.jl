@@ -74,8 +74,8 @@ Returns a new uvtable with closure specs, values, and metadata carried over from
 
 Reduce data volume while preserving signal. `VLBIData.average_data(strategy, uvtbl)` supports these strategies:
 
-- `VLBIData.FixedTimeIntervals(interval)` — fixed-width time bins
-- `VLBIData.GapBasedScans(min_gap)` — average within scans, split at time gaps
+- `VLBIData.FixedTimeIntervals(interval)` — fixed-width time bins (default: 1 minute)
+- `VLBIData.GapBasedScans(min_gap)` — average within scans, split at time gaps (default gap: 1 minute)
 - `VLBIData.IntegrationGridScans(min_gap)` — as `GapBasedScans`, also split where the integration grid jumps
 - `VLBIData.ByFrequency()` — average across frequency channels
 
@@ -88,7 +88,13 @@ Weights in uvfits files are often miscalibrated. These methods estimate the true
 - `VLBIData.rescale_visibility_errors(method, uvtbl)` — returns a table with corrected uncertainties
 - `VLBIData.find_errmul(method, uvtbl)` — just get the multiplication factor
 
-Methods estimate the factor from consecutive visibility differences (`VLBIData.ConsecutiveDifferencesStandard`), from the scatter within coherent averages, across frequency channels, or from consecutive closure-phase differences, which are robust to antenna gain drifts. `VLBIData.ErrMulSame(method1, method2, ...; rtol)` requires several methods to agree.
+Available methods:
+
+- `VLBIData.ConsecutiveDifferencesStandard(; maxΔt, q=0.5, min_cnt=50)` — from consecutive visibility differences
+- `VLBIData.CoherentAverageScatter(; maxΔt, min_cnt_avg=10, min_cnt_after=50)` — from scatter within coherent averages
+- `VLBIData.CrossFrequencyScatter(; min_cnt_freqs=3, min_cnt_groups=50)` — from scatter across frequency channels
+- `VLBIData.ClosurePhaseConsecutive(; maxΔt, min_cnt=10, min_triangles=5)` — from consecutive closure-phase differences, robust to antenna gain drifts
+- `VLBIData.ErrMulSame(method1, method2, ...; rtol)` — cross-check: require multiple methods to agree within `rtol`
 
 ### UV Data Manipulation
 
