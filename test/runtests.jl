@@ -642,7 +642,7 @@ end
     # sources sharing a timestamp: a table that names no antennas has one stream, and one stream
     # cannot be on two sources at once — refused rather than cut by row order
     tied = StructArray((datetime = fill(DateTime(2020, 1, 1), 4), source = [:B, :A, :B, :A]))
-    @test_throws "at one instant" scan_ids(GapBasedScans(), tied)
+    @test_throws "at one instant 2020-01-01T00:00:00; a subnetting schedule needs antenna columns" scan_ids(GapBasedScans(), tied)
 end
 
 @testitem "IntegrationGridScans" begin

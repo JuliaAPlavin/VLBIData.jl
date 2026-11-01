@@ -99,8 +99,9 @@ _leaves_grid(::IntegrationGridScans, uvtbl, i, a) =
         for k in 2:length(ix)
             i = ix[k]; j = ix[k - 1]
             (times[i] == times[j] && _source_changed(srcs, i, j)) &&
-                error("$(nameof(typeof(strategy))): $(ant == Symbol("") ? "the table (no antenna columns)" : "antenna $ant") " *
-                      "observes $(_source_of(srcs, j)) and $(_source_of(srcs, i)) at one instant $(times[i])")
+                error("$(nameof(typeof(strategy))): $(ant == Symbol("") ? "the table" : "antenna $ant") observes " *
+                      "$(_source_of(srcs, j)) and $(_source_of(srcs, i)) at one instant $(times[i])" *
+                      (ant == Symbol("") ? "; a subnetting schedule needs antenna columns" : ""))
             if times[i] - times[j] > min_gap || _source_changed(srcs, i, j) || _leaves_grid(strategy, uvtbl, i, a)
                 a = i
                 continue
