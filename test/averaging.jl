@@ -354,6 +354,28 @@ end
     @test !hasproperty(avg_noscan, :scan_id)
 end
 
+@testitem "average_data weights uv like the values" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using VLBIData.StructArrays
+    using VLBIData.AccessorsExtra
+
+    row(t, f, uv, value) = (datetime=DateTime(2020, 1, 1) + Second(t), source=:A, freq_spec=f, stokes=:RR,
+                            spec=VisSpec(Baseline((1, 2)), uv), value)
+    in_time = StructArray([row(0, 123, UV(0, 1), 1±ᵤ0.1), row(10, 123, UV(0, 3), 2±ᵤ0.2)])
+    in_freq = StructArray([row(0, 123, UV(0, 1), 1±ᵤ0.1), row(0, 124, UV(0, 3), 2±ᵤ0.2)])
+    @testset for (strategy, tbl) in [(VLBIData.GapBasedScans(), in_time),
+                                     (VLBIData.FixedTimeIntervals(10u"minute"), in_time),
+                                     (VLBIData.ByFrequency(), in_freq)]
+        avg_spec(t) = only(VLBIData.average_data(strategy, t).spec)
+        @test UV(avg_spec(tbl)::VisSpec) ≈ UV(0, 1.4)
+        @test UV(avg_spec(@modify(VisAmpSpec, tbl.spec[∗]))::VisAmpSpec) ≈ UV(0, 1.4)
+        @test UV(avg_spec(@set tbl.value = [1.0, 2.0])) ≈ UV(0, 2)
+        @test UV(avg_spec(@delete tbl.value)) ≈ UV(0, 2)
+    end
+end
+
 @testitem "debias_amplitudes" begin
     using Unitful
     using Dates

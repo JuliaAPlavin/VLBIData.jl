@@ -1,10 +1,17 @@
-aggspec(bl, specs::AbstractVector{<:VisSpec}) = VisSpec(bl, mean(x->UV(x), specs) |> UV)
-aggspec(bl, specs::AbstractVector{<:VisAmpSpec}) = VisAmpSpec(bl, mean(x->UV(x), specs) |> UV)
+# uv weighted like the values: 1/σ² for uncertain values, plain mean otherwise
+aggspec(specs, vals) = set(first(specs), UV, _avg_uv(specs, vals))
+
+_avg_uv(specs, vals::AbstractVector{<:U.Value}) =
+    U.value(U.weightedmean(Iterators.map((s, v) -> U.Value(UV(s), U.uncertainty(v)), specs, vals)))
+_avg_uv(specs, ::Union{AbstractVector, Nothing}) = mean(s -> UV(s), specs)
 
 _default_avgvals(vals::AbstractVector{<:U.Value}) = U.weightedmean(vals)
 _default_avgvals(vals::AbstractVector) = mean(vals)
 
-_avg_value_part(avgvals, gr) = hasfield(eltype(gr), :value) ? (value = avgvals(gr.value),) : (;)
+_group_values(gr) = hasfield(eltype(gr), :value) ? gr.value : nothing
+
+_avg_value_part(avgvals, vals) = (value = avgvals(vals),)
+_avg_value_part(avgvals, ::Nothing) = (;)
 
 """
     Coherent()
@@ -96,9 +103,9 @@ function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
             const_part...,
             delete(key(_), @o _.bl)...,
             count = length(_),
-            _avg_value_part(avgvals, _)...,
+            _avg_value_part(avgvals, _group_values(_))...,
             datetime = _mean(intervals[key(_).scan_id]),
-            spec = aggspec(key(_).bl, _.spec),
+            spec = aggspec(_.spec, _group_values(_)),
         ))
         StructArray()
     end
@@ -131,9 +138,9 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
             const_part...,
             delete(key(_), @o _.bl _.timestep)...,
             count = length(_),
-            _avg_value_part(avgvals, _)...,
+            _avg_value_part(avgvals, _group_values(_))...,
             datetime = mindt + (key(_).timestep + 0.5) * avg_interval,
-            spec = aggspec(key(_).bl, _.spec),
+            spec = aggspec(_.spec, _group_values(_)),
         ))
         StructArray()
     end
@@ -161,8 +168,8 @@ function _average_data_by_frequency(uvtbl, const_part, merged_fs; avgvals)
             delete(key(_), @o _.bl)...,
             freq_spec=merged_fs,
             count=length(_),
-            _avg_value_part(avgvals, _)...,
-            spec=aggspec(key(_).bl, _.spec),
+            _avg_value_part(avgvals, _group_values(_))...,
+            spec=aggspec(_.spec, _group_values(_)),
         ))
         StructArray()
     end
