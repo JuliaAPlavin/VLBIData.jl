@@ -126,9 +126,13 @@ end
 ErrMulFallback(methods...) = ErrMulFallback(methods)
 
 
+# Outside these, the time scale is likely wrong for VLBI data: a warning, the estimate still runs.
+const PLAUSIBLE_AVERAGING_TIME = OpenInterval(30u"s", 16u"minute")
+const PLAUSIBLE_SAMPLING_INTERVAL = OpenInterval(1u"s", 5u"minute")
+
 function find_errmul(m::CoherentAverageScatter, uvtbl)
     avg_t = min(m.maxΔt, 15*typical_Δt(uvtbl))
-    30u"s" < avg_t < 16u"minute" || @warn "Strange Δt for averaging, consider specifying maxΔt explicitly" Δt=avg_t
+    avg_t ∈ PLAUSIBLE_AVERAGING_TIME || @warn "Strange Δt for averaging, consider specifying maxΔt explicitly" Δt=avg_t
     uvtbl_avg = @p compute_avgs(uvtbl; maxΔt=avg_t, min_cnt=m.min_cnt_avg) map(_.std / _.err)
     length(uvtbl_avg) ≥ m.min_cnt_after || return nothing
     return median(uvtbl_avg)
@@ -257,7 +261,7 @@ typical_Δt(uvtbl) = typical_Δt(uvtbl, consecutive_pairs(uvtbl))
 
 function typical_Δt(uvtbl, pairs)
     Δt = @p pairs map(Quantity(uvtbl.datetime[_.j] - uvtbl.datetime[_.i])) median
-    1u"s" < Δt < 5u"minute" || @warn "Strange automatic median Δt" Δt
+    Δt ∈ PLAUSIBLE_SAMPLING_INTERVAL || @warn "Strange automatic median Δt" Δt
     Δt
 end
 
