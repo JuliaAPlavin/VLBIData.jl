@@ -161,7 +161,7 @@ function exp_scale!(x::AbstractVector; q=0.5)
     m = length(x)
     k = round(Int, q * m, RoundNearestTiesUp)
     @assert 1 ≤ k ≤ m
-    partialsort!(x, k) / sum(j -> 1/j, (m - k + 1):m)
+    sort!(x; alg = PartialQuickSort(k))[k] / sum(j -> 1/j, (m - k + 1):m)
 end
 
 """
