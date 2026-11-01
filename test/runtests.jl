@@ -642,7 +642,7 @@ end
     # sources sharing a timestamp: a table that names no antennas has one stream, and one stream
     # cannot be on two sources at once — refused rather than cut by row order
     tied = StructArray((datetime = fill(DateTime(2020, 1, 1), 4), source = [:B, :A, :B, :A]))
-    @test_throws "at the same instant" scan_ids(GapBasedScans(), tied)
+    @test_throws "at one instant" scan_ids(GapBasedScans(), tied)
 end
 
 @testitem "IntegrationGridScans" begin
@@ -676,7 +676,7 @@ end
     # gaps and sources still cut
     @test scan_ids(IntegrationGridScans(), rows([0, 2, 100, 102], 2.0u"s")) == [fill(1, 6); fill(2, 6)]
     @test (@inferred scan_ids(IntegrationGridScans(), jump)) == scan_ids(IntegrationGridScans(), jump[end:-1:1])[end:-1:1]
-    @test_throws "IntegrationGridScans: antenna A carries sources" scan_ids(IntegrationGridScans(),
+    @test_throws "IntegrationGridScans: antenna A observes S and T" scan_ids(IntegrationGridScans(),
         StructArray([(datetime = t0, baseline = Baseline((:A, :B)), source = :S, int_time = 2.0u"s"),
                      (datetime = t0, baseline = Baseline((:A, :C)), source = :T, int_time = 2.0u"s")]))
 end

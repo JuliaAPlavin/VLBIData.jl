@@ -62,7 +62,7 @@ end
     using VLBIData.StructArrays
     using VLBIData.IntervalSets
 
-    # Create test data with clear scan gaps (>1 minute)
+    # three scans, separated by gaps over 1 minute
     uvtbl_scans = StructArray([
         # Scan 1: 3 observations within 30 seconds
         (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline((1, 2)), UV(0, 1)), freq_spec=123, stokes=:RR, value=1±ᵤ0.1),
@@ -82,44 +82,38 @@ end
     ])
 
     strategy = VLBIData.GapBasedScans(min_gap=1u"minute")
-    
-    # Test add_scan_ids
+
     uvtbl_with_scans = VLBIData.add_scan_ids(strategy, uvtbl_scans)
     @test uvtbl_with_scans.scan_id == [1, 1, 1, 2, 2, 3]
     
-    # Test that other columns remain unchanged after adding scan_ids
+    # other columns unchanged
     @test uvtbl_with_scans.datetime == uvtbl_scans.datetime
 
-    # Test add_scan_ids with arbitrary time order
+    # row order does not matter
     uvtbl_with_scans_shuf = VLBIData.add_scan_ids(strategy, reverse(uvtbl_scans))
     sort!(uvtbl_with_scans_shuf, by=x->x.datetime)
     @test uvtbl_with_scans_shuf.scan_id == uvtbl_with_scans.scan_id
     @test uvtbl_with_scans_shuf == uvtbl_with_scans
-    
-    # Test scan_intervals
+
     intervals = VLBIData.scan_intervals(strategy, uvtbl_scans)
     @test length(intervals) == 3
     @test intervals[1] == DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 30)
     @test intervals[2] == DateTime(2020, 1, 1, 0, 5, 30)..DateTime(2020, 1, 1, 0, 5, 50)
     @test intervals[3] == DateTime(2020, 1, 1, 0, 8, 50)..DateTime(2020, 1, 1, 0, 8, 50)
     
-    # Test with different gap threshold
+    # the 20 s gaps 0:00:10–0:00:30 and 0:05:30–0:05:50 exceed 15 s
     uvtbl_short_gaps = VLBIData.add_scan_ids(VLBIData.GapBasedScans(min_gap=15u"s"), uvtbl_scans)
-    # Should create more scans due to shorter threshold
-    # Gap between 0:00:10 and 0:00:30 is 20s > 15s threshold, so new scan
-    # Gap between 0:05:30 and 0:05:50 is 20s > 15s threshold, so new scan
     @test uvtbl_short_gaps.scan_id::Vector{Int} == [1, 1, 2, 3, 4, 5]
     
-    # Test with very large gap threshold
+    # all gaps under 10 minutes: one scan
     uvtbl_long_gaps = VLBIData.add_scan_ids(VLBIData.GapBasedScans(min_gap=10u"minute"), uvtbl_scans)
-    # Should create only one scan since all gaps are < 10 minutes
     @test uvtbl_long_gaps.scan_id::Vector{Int} == [1, 1, 1, 1, 1, 1]
     
-    # Test scan_intervals with strategy=nothing on data that already has scan_id
+    # no strategy: the table's own scan_id
     intervals_from_existing = VLBIData.scan_intervals(uvtbl_with_scans)
-    @test intervals_from_existing == intervals  # Should be same as when computed with strategy
+    @test intervals_from_existing == intervals
     
-    # Test that scan_intervals results are always in scan order (1, 2, 3, ...) even with unordered scan_ids
+    # intervals are indexed by scan id whatever the row order
     uvtbl_unordered = StructArray([
         (datetime=DateTime(2020, 1, 1, 0, 5, 0), scan_id=2),   # Scan 2 first
         (datetime=DateTime(2020, 1, 1, 0, 0, 0), scan_id=1),   # Scan 1 second
@@ -129,12 +123,11 @@ end
     ])
     intervals_unordered = VLBIData.scan_intervals(uvtbl_unordered)
     @test length(intervals_unordered) == 3
-    # Should be ordered by scan_id: scan 1, scan 2, scan 3
     @test intervals_unordered[1] == DateTime(2020, 1, 1, 0, 0, 0)..DateTime(2020, 1, 1, 0, 0, 30)   # Scan 1
     @test intervals_unordered[2] == DateTime(2020, 1, 1, 0, 5, 0)..DateTime(2020, 1, 1, 0, 5, 30)   # Scan 2  
     @test intervals_unordered[3] == DateTime(2020, 1, 1, 0, 10, 0)..DateTime(2020, 1, 1, 0, 10, 0)  # Scan 3
     
-    # Test that scan_intervals with strategy=nothing fails on data without scan_id
+    # neither a strategy nor a scan_id column
     @test_throws ErrorException VLBIData.scan_intervals(uvtbl_scans)
 end
 
@@ -160,7 +153,7 @@ end
     @test reverse(VLBIData.add_scan_ids(strategy, reverse(subnet)).scan_id) ==
           VLBIData.add_scan_ids(strategy, subnet).scan_id
 
-    # The same source before and after a SHORT scan on another source, on the same antennas: three
+    # The same source before and after a short scan on another source, on the same antennas: three
     # scans, because each antenna slewed away in between — a gap rule applied to the source alone
     # would see 10 s gaps and merge the two S runs into one.
     revisit = StructArray([row(0, 1, 2, :S), row(10, 1, 2, :S),
@@ -180,7 +173,7 @@ end
     @test ivs2[2] == DateTime(2020, 1, 1, 0, 0, 10)..DateTime(2020, 1, 1, 0, 1, 0)
 
     # One antenna cannot observe two sources at one instant — the model has nothing to say there
-    @test_throws "antenna ANT1 carries sources" VLBIData.add_scan_ids(strategy,
+    @test_throws "antenna ANT1 observes S and T" VLBIData.add_scan_ids(strategy,
         StructArray([row(0, 1, 2, :S), row(0, 1, 3, :T)]))
     # two sub-arrays sharing no antenna may, and that is exactly subnetting
     @test VLBIData.add_scan_ids(strategy,
@@ -220,7 +213,7 @@ end
     using Uncertain
     using VLBIData.StructArrays
 
-    # Create test data with multiple observations per scan for the same baseline/freq/stokes
+    # several rows per scan on one baseline/freq/stokes
     uvtbl_for_avg = StructArray([
         # Scan 1: observations in chronological order
         (datetime=DateTime(2020, 1, 1, 0, 0, 0), spec=VisSpec(Baseline((1, 2)), UV(1, 1)), freq_spec=123, stokes=:RR, value=2±ᵤ0.1, source=:M87),
@@ -236,25 +229,20 @@ end
     ])
 
     strategy = VLBIData.GapBasedScans(min_gap=1u"minute")
-    
-    # Test average_data
+
     averaged = VLBIData.average_data(strategy, uvtbl_for_avg)
-    
-    # Should have 4 rows: baseline (1,2) RR in scan 1, baseline (1,2) RR in scan 2, baseline (1,3) RR in scan 1, baseline (1,2) LL in scan 1
+    # (1,2) RR, (1,3) RR and (1,2) LL in scan 1, (1,2) RR in scan 2
     @test length(averaged) == 4
-    
-    # Test explicit scan_id values
     @test averaged.scan_id == [1, 1, 1, 2]
     
-    # Test explicit datetime values (order should be deterministic based on grouping)
+    # each scan's midpoint
     @test averaged.datetime == [
         DateTime(2020, 1, 1, 0, 0, 22, 500),
         DateTime(2020, 1, 1, 0, 0, 22, 500),
         DateTime(2020, 1, 1, 0, 0, 22, 500),
         DateTime(2020, 1, 1, 0, 5, 15, 0),
     ]
-    
-    # Test explicit value array (averaged values and uncertainties)
+
     @test U.value.(averaged.value) ≈ [
         3.0,   # (1,2) RR scan1 - weighted mean of 2±0.1 and 4±0.1
         10.0,  # (1,3) RR scan1 - single value 10±0.1
@@ -268,8 +256,7 @@ end
         0.1,                # (1,2) LL scan1 - single uncertainty
         √2 * 0.1 / 2       # (1,2) RR scan2 - uncertainty from weighted mean
     ]
-    
-    # Test stokes parameters
+
     @test averaged.stokes == [
         :RR,
         :RR,
@@ -277,7 +264,7 @@ end
         :RR,
     ]
     
-    # Test that source column is maintained
+    # the source column is kept
     @test averaged.source == [
         :M87,  # (1,2) RR scan1
         :M87,  # (1,3) RR scan1

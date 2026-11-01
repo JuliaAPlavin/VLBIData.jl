@@ -6,6 +6,7 @@ abstract type AbstractSpec end
 	error("Cannot convert to $T from $(typeof(x.spec))")
 
 @stable visibility(model, spec::AbstractSpec) = visibility(visibility(model), spec)
+# resolves the ambiguity with InterferometricModels' `visibility(f::Function, args...)`
 @stable visibility(visf::Function, spec::AbstractSpec) = throw(MethodError(visibility, (visf, spec)))
 
 struct VisSpec0{TUV<:UV} <: AbstractSpec

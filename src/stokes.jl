@@ -47,8 +47,7 @@
 Accessors.InverseFunctions.inverse(::typeof(stokes_to_feeds)) = feeds_to_stokes
 Accessors.InverseFunctions.inverse(::typeof(feeds_to_stokes)) = stokes_to_feeds
 
-# The two feeds of a stokes axis, in canonical slot order (R/X first, L/Y second). The basis family is
-# detected by scanning the axis (no temporary collections), so single-pol axes (e.g. [:RR]) still resolve.
+# The two feeds of a stokes axis, R/X first; single-pol axes (e.g. [:RR]) resolve too.
 @stable function _feed_pair(stokes::AbstractVector{Symbol})
 	circ = any(s -> s ∈ (:RR, :LL, :RL, :LR), stokes)
 	lin  = any(s -> s ∈ (:XX, :YY, :XY, :YX), stokes)
@@ -57,10 +56,8 @@ Accessors.InverseFunctions.inverse(::typeof(feeds_to_stokes)) = stokes_to_feeds
 	error("stokes $stokes are not a single circular/linear basis")
 end
 
-# Map the STOKES axis to coherency-matrix positions: [p,q] is the index, into the given `stokes` vector,
-# of the product (antenna-1 feed p × antenna-2 feed q), or 0 if absent. Slot 1 = R/X, slot 2 = L/Y, so
-# [p,q] aligns with a CoherencyMatrix's [RR RL; LR LL]. Single-pol axes give e.g. [:RR] → (1,0,0,0).
-# Callers pass the exact stokes vector they will index with the result.
+# [p,q]: the index in `stokes` of antenna-1 feed p × antenna-2 feed q, or 0 if absent; slot 1 is R/X and
+# slot 2 L/Y, as in a CoherencyMatrix [RR RL; LR LL].
 @stable function feed_slot_map(stokes::AbstractVector{Symbol})
 	(f1, f2) = _feed_pair(stokes)
 	targets = SMatrix{2,2,Symbol}(Symbol(f1, f1), Symbol(f2, f1), Symbol(f1, f2), Symbol(f2, f2))

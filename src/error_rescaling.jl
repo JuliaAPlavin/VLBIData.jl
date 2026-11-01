@@ -261,7 +261,7 @@ typical_Δt(uvtbl) = typical_Δt(uvtbl, consecutive_pairs(uvtbl))
 
 function typical_Δt(uvtbl, pairs)
     Δt = @p pairs map(Quantity(uvtbl.datetime[_.j] - uvtbl.datetime[_.i])) median
-    Δt ∈ PLAUSIBLE_SAMPLING_INTERVAL || @warn "Strange automatic median Δt" Δt
+    Δt ∈ PLAUSIBLE_SAMPLING_INTERVAL || @warn "Median Δt between time-adjacent visibilities is implausible for VLBI; check the times" Δt
     Δt
 end
 

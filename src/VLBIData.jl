@@ -35,7 +35,7 @@ export Antenna, antenna_names, Baseline,
 	CoherencyMatrix, IPol
 
 
-# before Julia 1.11:
+# Base has no `filter` on NamedTuples before Julia 1.11
 filter(f, xs) = Base.filter(f, xs)
 filter(f, xs::NamedTuple) = xs[Base.filter(k -> f(xs[k]), keys(xs))]
 
@@ -81,7 +81,7 @@ AccessorsExtra.hasoptic(obj, ::typeof(antenna_names)) = AccessorsExtra.hasoptic(
 end
 @accessor visibility(x::NamedTuple) = x.value
 
-# XXX: hasoptic should be handled by @accessor
+# AccessorsExtra's fallback `hasoptic` reports every optic as present; these check the row's `spec`
 AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UV}) = hasproperty(x, :spec) && hasoptic(x.spec, UV)
 AccessorsExtra.hasoptic(x::NamedTuple, ::Type{UVs}) = hasproperty(x, :spec) && hasoptic(x.spec, UVs)
 AccessorsExtra.hasoptic(x::NamedTuple, ::Type{Baseline}) = hasproperty(x, :spec) && hasoptic(x.spec, Baseline)

@@ -1,5 +1,5 @@
 @enumx AntennaMountType begin
-    # codes 0-6 must correspond those from the uvfits standard:
+    # 0-6 are the FITS MNTSTA codes, converted by value
     AltAzimuth = 0
     Equatorial = 1
     Orbiting = 2

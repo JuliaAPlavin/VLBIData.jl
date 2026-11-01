@@ -3,27 +3,12 @@ abstract type AbstractScanStrategy end
 """
     GapBasedScans(; min_gap=1u"minute")
 
-Scans as maximal sets of rows that share one source and are contiguous in time for every antenna
-taking part.
-
-Each antenna's own rows are sorted by time and cut where the gap exceeds `min_gap` or the source
-changes. Per antenna that cut is exact — an antenna points at one source at a time — and it is the
-only place the source enters. Rows are then joined into scans through the antennas they share, so a
-scan is a connected set of baselines observing one source over one stretch of time.
-
-A schedule may SUBNET: disjoint sub-arrays observing different sources at the same time. Those are
-different scans whose time spans OVERLAP, so a scan is not an interval of the session's time axis and
-[`scan_intervals`](@ref) may return overlapping intervals. On a schedule that observes one source at
-a time this gives the same runs, numbered the same way, as cutting the globally time-sorted rows at
-gaps and source changes.
-
-Ids are numbered by `(first time, first antenna, source)` — properties of the data, so they never
-depend on row order.
-
-A table that names no antennas (neither a `baseline` column nor a `spec` one) has ONE stream and the
-rule degenerates to cutting the whole time-sorted table. That is the same definition with a single
-antenna set, and the one case where the difference shows — two sources at one instant — fails loud
-rather than being cut by row order.
+Scans as maximal sets of rows on one source that are contiguous in time for every antenna taking part:
+each antenna's time-sorted rows are cut at gaps over `min_gap` and at source changes (an antenna points
+at one source at a time), and the runs are joined into scans through the antennas they share. Subnetting
+sub-arrays give concurrent scans, so [`scan_intervals`](@ref) may overlap. Ids are numbered by
+`(first time, first antenna, source)`, independent of row order. A table that names no antennas (no
+`baseline` or `spec` column) is one stream, where two sources at one instant are an error.
 """
 @kwdef struct GapBasedScans <: AbstractScanStrategy
     min_gap = 1u"minute"
@@ -114,10 +99,8 @@ _leaves_grid(::IntegrationGridScans, uvtbl, i, a) =
         for k in 2:length(ix)
             i = ix[k]; j = ix[k - 1]
             (times[i] == times[j] && _source_changed(srcs, i, j)) &&
-                error("$(nameof(typeof(strategy))): $(ant == Symbol("") ? "the table" : "antenna $ant") carries " *
-                      "sources $(_source_of(srcs, j)) and $(_source_of(srcs, i)) at the same instant " *
-                      "$(times[i]) — one antenna observes one source at a time, so a scan is not " *
-                      "defined here; a subnetting schedule needs the table to name its antennas")
+                error("$(nameof(typeof(strategy))): $(ant == Symbol("") ? "the table (no antenna columns)" : "antenna $ant") " *
+                      "observes $(_source_of(srcs, j)) and $(_source_of(srcs, i)) at one instant $(times[i])")
             if times[i] - times[j] > min_gap || _source_changed(srcs, i, j) || _leaves_grid(strategy, uvtbl, i, a)
                 a = i
                 continue
@@ -152,7 +135,7 @@ end
     scan_intervals([strategy], uvtbl) -> Vector{Interval}
 
 Each scan's `[first, last]` time, indexed by scan id. Concurrent scans on different sources give
-OVERLAPPING intervals — see [`GapBasedScans`](@ref).
+overlapping intervals, see [`GapBasedScans`](@ref).
 """
 @stable scan_intervals(uvtbl) = scan_intervals(nothing, uvtbl)
 scan_intervals(strategy, uvtbl) = scan_intervals(strategy, convert(StructArray, uvtbl))
