@@ -21,6 +21,28 @@ using TestItemRunner
     @test string(a) == "Antenna MyAnt"
 end
 
+@testitem "lonlatalt" begin
+    using StaticArrays
+    A = 6378137.0; f = 1 / 298.257223563; B = A * (1 - f); e2 = f * (2 - f)
+    # analytic anchors pin the ellipsoid constants
+    g0 = lonlatalt(Antenna(:E, xyz=(A + 100, 0, 0)))        # equator on the prime meridian, 100 m up
+    @test g0.lon ≈ 0 atol=1e-12
+    @test g0.lat ≈ 0 atol=1e-9
+    @test g0.alt ≈ 100 atol=1e-6
+    gp = lonlatalt(Antenna(:P, xyz=(0, 0, B + 50)))         # north pole, 50 m up (division-free alt)
+    @test gp.lat ≈ π/2 atol=1e-9
+    @test gp.alt ≈ 50 atol=1e-6
+    # round-trip: geodetic → ECEF (forward) → lonlatalt must invert it
+    lon0, lat0, alt0 = deg2rad(-108.12), deg2rad(34.30), 2365.0
+    N = A / sqrt(1 - e2 * sin(lat0)^2)
+    xyz = SVector((N + alt0) * cos(lat0) * cos(lon0), (N + alt0) * cos(lat0) * sin(lon0), (N * (1 - e2) + alt0) * sin(lat0))
+    g = lonlatalt(Antenna(:R, xyz=xyz))
+    @test g.lon ≈ lon0 atol=1e-10
+    @test g.lat ≈ lat0 atol=1e-10
+    @test g.alt ≈ alt0 atol=1e-4
+    @test abs(g.lat) < π/2                                   # bare RADIANS, not degrees
+end
+
 @testitem "Baseline" begin
     using AccessorsExtra
     using StaticArrays

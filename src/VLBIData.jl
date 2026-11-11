@@ -27,7 +27,7 @@ macro stable(ex)
 end
 
 
-export Antenna, antenna_names, Baseline,
+export Antenna, antenna_names, lonlatalt, Baseline,
 	UV, UVs, UVarea, visibility, frequency,
 	VisSpec, VisAmpSpec, ClosurePhaseSpec, ClosureAmpSpec,
 	uvtable, synthesize_uvtable,
