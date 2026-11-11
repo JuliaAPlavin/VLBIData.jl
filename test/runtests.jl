@@ -431,7 +431,6 @@ end
     @test !haskey(cm_par_only[1], :stokes)
 
     # Duplicate stokes within a group: the affected slot becomes NaN
-    # (hasoptic for filteronly is `count == 1`, so 2+ matches → fallback)
     uvtbl_dup_RR = [
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=11.0),
         (datetime=1, freq_spec=100.0, spec=spec1, stokes=:RR, value=99.0),

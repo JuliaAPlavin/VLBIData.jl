@@ -56,11 +56,16 @@ Accessors.InverseFunctions.inverse(::typeof(feeds_to_stokes)) = stokes_to_feeds
 	error("stokes $stokes are not a single circular/linear basis")
 end
 
+# The four feed products (p×q) of a basis in coherency-matrix layout [RR RL; LR LL]. Precomputed
+# constants — building them per call via `Symbol(f, f)` interns a fresh String every time.
+const _PRODUCTS_CIR = SMatrix{2,2,Symbol}(:RR, :LR, :RL, :LL)
+const _PRODUCTS_LIN = SMatrix{2,2,Symbol}(:XX, :YX, :XY, :YY)
+_feed_products(stokes) = _feed_pair(stokes) == (:R, :L) ? _PRODUCTS_CIR : _PRODUCTS_LIN
+
 # [p,q]: the index in `stokes` of antenna-1 feed p × antenna-2 feed q, or 0 if absent; slot 1 is R/X and
 # slot 2 L/Y, as in a CoherencyMatrix [RR RL; LR LL].
 @stable function feed_slot_map(stokes::AbstractVector{Symbol})
-	(f1, f2) = _feed_pair(stokes)
-	targets = SMatrix{2,2,Symbol}(Symbol(f1, f1), Symbol(f2, f1), Symbol(f1, f2), Symbol(f2, f2))
+	targets = _feed_products(stokes)
 	SMatrix{2,2,Int8}(map(t -> something(findfirst(==(t), stokes), 0), targets))
 end
 
