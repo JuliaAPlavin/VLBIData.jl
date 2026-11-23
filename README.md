@@ -79,7 +79,7 @@ Reduce data volume while preserving signal. `VLBIData.average_data(strategy, uvt
 - `VLBIData.IntegrationGridScans(min_gap)` — as `GapBasedScans`, also split where the integration grid jumps
 - `VLBIData.ByFrequency()` — average across frequency channels
 
-All perform weighted averaging with proper uncertainty propagation; uv coordinates are 1/σ²-weighted when the values carry uncertainties, a plain mean otherwise or without values. A `count` field is added to each output row. Pass `avgvals` for custom aggregation.
+All perform weighted averaging with proper uncertainty propagation; uv coordinates are 1/σ²-weighted when the values carry uncertainties, a plain mean otherwise or without values. Each output row has the grouping columns (`source`, `freq_spec`, `stokes`, `scan_id`, whichever the input has), `count`, `value`, `spec` and `datetime`; other input columns are dropped. Pass `avgvals` for custom aggregation.
 
 ### Error Rescaling
 

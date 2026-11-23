@@ -524,22 +524,13 @@ end
                      stokes=:RR, spec=VisSpec(Baseline((1, 2)), UV(0, 1)), value=v±ᵤ0.1)
     tbl = StructArray([row(0, 1.0, 1), row(10, 3.0, 1), row(20, 5.0, 2), row(30, 7.0, 2)])
 
-    avg = VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), tbl)
+    avg = @inferred VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), tbl)
     @test length(avg) == 2
     @test avg.scan_id == [1, 2]
     @test avg.count == [2, 2]
     @test U.value.(avg.value) ≈ [2.0, 6.0]
     @test U.uncertainty.(avg.value) ≈ [0.1/√2, 0.1/√2]
     @test avg.datetime == fill(DateTime(2020, 1, 1, 0, 5, 0), 2)
-    # the row-building step infers; the constant-column split before it depends on the data
-    @test (@inferred VLBIData._average_data_by_time(VLBIData.FixedTimeIntervals(10u"minute"), tbl, (;);
-                                                     avgvals=VLBIData._default_avgvals)).count == [2, 2]
-
-    # a scan_id constant over the whole table is still carried, through the key rather than as a
-    # constant column
-    avg_one = VLBIData.average_data(VLBIData.FixedTimeIntervals(10u"minute"), tbl[1:2])
-    @test avg_one.scan_id == [1]
-    @test avg_one.count == [2]
 
     # without the column nothing changes: one cell holding all four rows
     tbl_noscan = StructArray(map(r -> (; r.datetime, r.source, r.freq_spec, r.stokes, r.spec, r.value), tbl))
@@ -547,4 +538,24 @@ end
     @test length(avg_noscan) == 1
     @test avg_noscan.count == [4]
     @test !hasproperty(avg_noscan, :scan_id)
+end
+
+@testitem "average_data output columns" begin
+    using Unitful
+    using Dates
+    using Uncertain
+    using VLBIData.StructArrays
+
+    row(t, f, a, v) = (datetime=DateTime(2020, 1, 1) + Second(t), source=:A, freq_spec=f, stokes=:RR,
+                       spec=VisSpec(Baseline((1, a)), UV(0, t)), value=v±ᵤ0.1, int_time=10.0u"s", elev=0.1t)
+    tbl = StructArray([row(0, 123, 2, 1.0), row(0, 124, 2, 2.0), row(10, 123, 2, 3.0), row(10, 124, 3, 4.0),
+                       row(300, 123, 2, 5.0), row(310, 124, 2, 6.0)])
+    @testset for strategy in [VLBIData.GapBasedScans(), VLBIData.IntegrationGridScans(min_gap=2u"minute"),
+                              VLBIData.FixedTimeIntervals(1u"minute"), VLBIData.ByFrequency()],
+                 mode in [VLBIData.Coherent(), VLBIData.Incoherent()]
+        avg = @inferred VLBIData.average_data(mode, strategy, tbl)
+        # the grouping and averaged columns; int_time and elev are dropped
+        scan = strategy isa VLBIData.AbstractScanStrategy ? (:scan_id,) : ()
+        @test Set(propertynames(avg)) == Set((:source, :freq_spec, :stokes, scan..., :count, :value, :spec, :datetime))
+    end
 end

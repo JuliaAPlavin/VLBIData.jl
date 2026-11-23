@@ -58,6 +58,26 @@ debias_amplitudes(uvtbl::AbstractVector) = debias_amplitudes(StructArray(uvtbl))
     end
 end
 
+"""
+    average_data([mode,] strategy, uvtbl; avgvals)
+
+Average the rows of the uv table `uvtbl` per baseline and per the groups of `strategy`:
+
+- `FixedTimeIntervals(interval)`: fixed-width time bins, per source, frequency, correlation and scan;
+- `GapBasedScans(; min_gap)`, `IntegrationGridScans(; min_gap)`: scans (see [`add_scan_ids`](@ref)), per source,
+  frequency and correlation;
+- `ByFrequency()`: across frequencies, per source, correlation, scan and time.
+
+Each output row has exactly these columns: the grouping ones present in `uvtbl` (`source`, `freq_spec`,
+`stokes`, `scan_id`, and `datetime` for `ByFrequency`), `count` (the rows averaged), `value` (if `uvtbl` has
+it: by `avgvals`, inverse-variance weighted for values with uncertainties by default), `spec` (uv 1/σ²-weighted
+when the values carry uncertainties, a plain mean otherwise), `datetime` (the bin centre or scan midpoint) and,
+for `ByFrequency`, `freq_spec` (the merged frequency). Other columns of `uvtbl` are dropped.
+
+`mode` is [`Coherent`](@ref)`()` (the default) or [`Incoherent`](@ref)`()`, which sets `avgvals`.
+"""
+function average_data end
+
 average_data(::Coherent, strategy, uvtbl; kwargs...) = average_data(strategy, uvtbl; kwargs...)
 
 average_data(::Incoherent, strategy, uvtbl) = average_data(strategy, uvtbl; avgvals=_incoh_avg)
@@ -87,23 +107,14 @@ end
     end
 end
 
-# The columns with one value in every row, carried to each averaged row; averaged and grouping columns and `extra` excluded.
-_const_part(tbl, extra = ()) =
-    @p getproperties(tbl) (@delete __[(:source, :freq_spec, :stokes, :scan_id, :value, :spec, extra...)]) filter(allequal) map(uniqueonly)
-
 function average_data(strategy::AbstractScanStrategy, uvtbl; avgvals=_default_avgvals)
     uvtbl_with_scans = add_scan_ids(strategy, uvtbl)
-    return _average_data_by_scans(uvtbl_with_scans, _const_part(uvtbl_with_scans); avgvals)
-end
-
-function _average_data_by_scans(uvtbl_with_scans, const_part; avgvals)
     intervals = scan_intervals(uvtbl_with_scans)
     NT = intersect_nt_type(eltype(uvtbl_with_scans), NamedTuple{(:source, :freq_spec, :stokes, :scan_id)})
     @p let
         uvtbl_with_scans
         groupview_vg(ContainerOptic((; bl=@o(Baseline(_.spec)), property_lenses(NT)...)))
         map((;
-            const_part...,
             delete(key(_), @o _.bl)...,
             count = length(_),
             _avg_value_part(avgvals, _group_values(_))...,
@@ -120,10 +131,6 @@ end
 
 function average_data(strategy::FixedTimeIntervals, src_; avgvals=_default_avgvals)
     src = StructArray(src_)
-    return _average_data_by_time(strategy, src, _const_part(src); avgvals)
-end
-
-function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; avgvals)
     mindt = minimum(src.datetime)
     avg_interval = @p let
         float(strategy.interval)
@@ -137,7 +144,6 @@ function _average_data_by_time(strategy::FixedTimeIntervals, src, const_part; av
             timestep=@o(trunc(Int, upreferred((_.datetime - mindt) / avg_interval))),
         )))
         map((;
-            const_part...,
             delete(key(_), @o _.bl _.timestep)...,
             count = length(_),
             _avg_value_part(avgvals, _group_values(_))...,
@@ -156,16 +162,11 @@ _aggfreq(freq_specs::AbstractVector{<:Number}) = mean(freq_specs)
 function average_data(::ByFrequency, uvtbl; avgvals=_default_avgvals)
     uvtbl = StructArray(uvtbl)
     merged_fs = _aggfreq(unique(uvtbl.freq_spec))
-    _average_data_by_frequency(uvtbl, _const_part(uvtbl, (:count, :datetime)), merged_fs; avgvals)
-end
-
-function _average_data_by_frequency(uvtbl, const_part, merged_fs; avgvals)
     NT = intersect_nt_type(eltype(uvtbl), NamedTuple{(:source, :stokes, :scan_id, :datetime)})
     @p begin
         uvtbl
         groupview_vg(ContainerOptic((; bl=@o(Baseline(_.spec)), property_lenses(NT)...)))
         map((;
-            const_part...,
             delete(key(_), @o _.bl)...,
             freq_spec=merged_fs,
             count=length(_),
