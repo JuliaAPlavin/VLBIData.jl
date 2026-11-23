@@ -648,6 +648,10 @@ end
     @test (@inferred scan_ids(GapBasedScans(), tbl)) == ids
     # one source spanning a sub-min_gap boundary stays one scan
     @test scan_ids(GapBasedScans(min_gap=5u"minute"), tbl) == [1, 1, 1, 2, 2, 2, 2, 2]
+    # the gap's type is a parameter, so the field is concrete
+    @test GapBasedScans() isa GapBasedScans{typeof(1u"minute")}
+    @test GapBasedScans(min_gap=90.0u"s") isa GapBasedScans{typeof(90.0u"s")}
+    @test scan_ids(GapBasedScans(min_gap=90.0u"s"), tbl) == ids
     # without a source column only gaps split
     @test scan_ids(GapBasedScans(), StructArray((datetime = dts,))) == [1, 1, 1, 1, 1, 1, 2, 2]
     # ids follow time order and land back on their own rows whatever the row order
@@ -697,6 +701,8 @@ end
     # gaps and sources still cut
     @test scan_ids(IntegrationGridScans(), rows([0, 2, 100, 102], 2.0u"s")) == [fill(1, 6); fill(2, 6)]
     @test (@inferred scan_ids(IntegrationGridScans(), jump)) == scan_ids(IntegrationGridScans(), jump[end:-1:1])[end:-1:1]
+    @test IntegrationGridScans(min_gap=90.0u"s") isa IntegrationGridScans{typeof(90.0u"s")}
+    @test scan_ids(IntegrationGridScans(min_gap=90.0u"s"), jump) == [fill(1, 12); fill(2, 9)]
     @test_throws "IntegrationGridScans: antenna A observes S and T" scan_ids(IntegrationGridScans(),
         StructArray([(datetime = t0, baseline = Baseline((:A, :B)), source = :S, int_time = 2.0u"s"),
                      (datetime = t0, baseline = Baseline((:A, :C)), source = :T, int_time = 2.0u"s")]))

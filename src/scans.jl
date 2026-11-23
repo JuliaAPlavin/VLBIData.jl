@@ -10,8 +10,8 @@ sub-arrays give concurrent scans, so [`scan_intervals`](@ref) may overlap. Ids a
 `(first time, first antenna, source)`, independent of row order. A table that names no antennas (no
 `baseline` or `spec` column) is one stream, where two sources at one instant are an error.
 """
-@kwdef struct GapBasedScans <: AbstractScanStrategy
-    min_gap = 1u"minute"
+@kwdef struct GapBasedScans{T} <: AbstractScanStrategy
+    min_gap::T = 1u"minute"
 end
 
 """
@@ -22,8 +22,8 @@ run started on: a different `int_time`, or more than [`GRID_TOLERANCE`](@ref) st
 `int_time` anchored at the run's first row. DiFX aligns integrations to each correlator scan's start, so
 such a jump marks a correlator scan boundary. Needs an `int_time` column.
 """
-@kwdef struct IntegrationGridScans <: AbstractScanStrategy
-    min_gap = 1u"minute"
+@kwdef struct IntegrationGridScans{T} <: AbstractScanStrategy
+    min_gap::T = 1u"minute"
 end
 
 "Largest offset from an integration grid, in steps, of a sample still on it."
